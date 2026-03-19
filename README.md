@@ -176,14 +176,23 @@ Then open your site and launch **X POS** from the app launcher.
 
 ## Contributing
 
-This project uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+We welcome contributions from the community! Whether it's bug reports, feature requests, documentation improvements, or code contributions — every bit helps.
+
+Please read our [Contributing Guide](CONTRIBUTING.md) before submitting a pull request.
+
+### Quick Start for Contributors
 
 ```bash
+cd $PATH_TO_YOUR_BENCH
+bench get-app https://github.com/aliraxa29/xpos --branch develop
+bench --site your-site.com install-app xpos
 cd apps/xpos
 pre-commit install
 ```
 
-Configured tools:
+### Code Quality
+
+This project uses `pre-commit` for code formatting and linting:
 
 - **ruff** – Python linting, import sorting, and formatting
 - **eslint** – JavaScript / TypeScript linting
@@ -196,6 +205,13 @@ feat: add barcode printing support
 fix: correct tax calculation for returns
 docs: update installation instructions
 ```
+
+### Community
+
+- [Report a Bug](https://github.com/aliraxa29/xpos/issues/new?template=bug_report.md)
+- [Request a Feature](https://github.com/aliraxa29/xpos/issues/new?template=feature_request.md)
+- [Security Policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ---
 

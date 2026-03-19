@@ -6,12 +6,30 @@ authors = [
 description = "A modern, offline-capable Point of Sale application for Frappe and ERPNext"
 requires-python = ">=3.10"
 readme = "README.md"
+license = { text = "MIT" }
 dynamic = ["version"]
+keywords = ["frappe", "erpnext", "pos", "point-of-sale", "retail", "offline", "electron", "pwa"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Frappe",
+    "Topic :: Office/Business :: Financial :: Point-Of-Sale",
+]
 dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
     "python-barcode>=0.15.1",
     "qrcode[pil]>=7.4",
 ]
+
+[project.urls]
+Homepage = "https://github.com/aliraxa29/xpos"
+Repository = "https://github.com/aliraxa29/xpos"
+Issues = "https://github.com/aliraxa29/xpos/issues"
+Changelog = "https://github.com/aliraxa29/xpos/releases"
 
 [build-system]
 requires = ["flit_core >=3.4,<4"]
