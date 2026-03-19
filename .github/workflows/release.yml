@@ -3,7 +3,7 @@ name: Generate Semantic Release
 on:
   push:
     branches:
-      - develop
+      - version-16
 
 permissions:
   contents: write

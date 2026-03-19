@@ -6,8 +6,8 @@
 
 [![Semantic Release](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](license.txt)
-[![Frappe](https://img.shields.io/badge/Frappe-v15-blue)](https://frappeframework.com)
-[![ERPNext](https://img.shields.io/badge/ERPNext-v15-blue)](https://erpnext.com)
+[![Frappe](https://img.shields.io/badge/Frappe-v16-blue)](https://frappeframework.com)
+[![ERPNext](https://img.shields.io/badge/ERPNext-v16-blue)](https://erpnext.com)
 
 </div>
 
@@ -126,10 +126,10 @@ X POS is a feature-rich, offline-first Point of Sale application built on [Frapp
 
 | Dependency | Version |
 |---|---|
-| Python | >= 3.10 |
-| Frappe Framework | v15 |
-| ERPNext | v15 |
-| Node.js | >= 18 (for builds) |
+| Python | >= 3.14 |
+| Frappe Framework | v16 |
+| ERPNext | v16 |
+| Node.js | >= 24 (for builds) |
 
 ---
 

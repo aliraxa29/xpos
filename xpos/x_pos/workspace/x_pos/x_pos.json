@@ -1,6 +1,7 @@
 {
+ "app": "xpos",
  "charts": [],
- "content": "[{\"id\":\"xpos_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">X POS</span>\",\"col\":12}},{\"id\":\"xpos_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"X POS App\",\"col\":3}},{\"id\":\"xpos_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"xpos_pos_card\",\"type\":\"card\",\"data\":{\"card_name\":\"POS\",\"col\":4}},{\"id\":\"xpos_profile_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Profile\",\"col\":4}},{\"id\":\"xpos_shift_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Shift\",\"col\":4}},{\"id\":\"xpos_cash_movement_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Cash Movement\",\"col\":4}},{\"id\":\"xpos_delivery_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Delivery Charges\",\"col\":4}},{\"id\":\"xpos_offers_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Offers &amp; Coupons\",\"col\":4}}]",
+ "content": "[{\"id\":\"xpos_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">X POS</span>\",\"col\":12}},{\"id\":\"xpos_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"X POS App\",\"col\":3}},{\"id\":\"dzbrjLkhnJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"ypPRS_RaTJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Invoice\",\"col\":3}},{\"id\":\"xpos_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"xpos_profile_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}},{\"id\":\"xpos_shift_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Shift\",\"col\":4}},{\"id\":\"xpos_cash_movement_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Cash Movement\",\"col\":4}},{\"id\":\"xpos_offers_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Offers &amp; Coupons\",\"col\":4}}]",
  "creation": "2026-02-27 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -8,62 +9,16 @@
  "for_user": "",
  "hide_custom": 0,
  "icon": "retail",
- "idx": 0,
+ "idx": 1,
  "is_hidden": 0,
  "label": "X POS",
  "links": [
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "X POS",
-   "link_count": 0,
-   "link_to": "xpos",
-   "link_type": "Page",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "POS",
-   "link_count": 1,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "POS Invoice",
    "link_count": 0,
    "link_to": "POS Invoice",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Profile",
-   "link_count": 2,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "POS Profile",
-   "link_count": 0,
-   "link_to": "POS Profile",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Scale Barcode Settings",
-   "link_count": 0,
-   "link_to": "Scale Barcode Settings",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -99,24 +54,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Delivery Charges",
-   "link_count": 1,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Delivery Charges",
-   "link_count": 0,
-   "link_to": "Delivery Charges",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Offers &amp; Coupons",
    "link_count": 4,
    "onboard": 0,
@@ -127,7 +64,7 @@
    "is_query_report": 0,
    "label": "POS Offer",
    "link_count": 0,
-   "link_to": "POS Offer",
+   "link_to": "XPOS Offer",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -147,7 +84,7 @@
    "is_query_report": 0,
    "label": "POS Coupon",
    "link_count": 0,
-   "link_to": "POS Coupon",
+   "link_to": "XPOS Coupon",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -177,13 +114,52 @@
    "is_query_report": 0,
    "label": "POS Cash Movement",
    "link_count": 0,
-   "link_to": "POS Cash Movement",
+   "link_to": "XPOS Cash Movement",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Profile",
+   "link_count": 0,
+   "link_to": "POS Profile",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Scale Barcode Settings",
+   "link_count": 0,
+   "link_to": "Scale Barcode Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Delivery Charges",
+   "link_count": 0,
+   "link_to": "Delivery Charges",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
   }
  ],
- "modified": "2026-03-01 19:59:32.320695",
+ "modified": "2026-03-20 02:56:56.878413",
  "modified_by": "Administrator",
  "module": "X POS",
  "name": "X POS",
@@ -193,9 +169,33 @@
  "public": 1,
  "quick_lists": [],
  "restrict_to_domain": "",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Sales Master Manager"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "Sales User"
+  }
+ ],
  "sequence_id": 1.0,
  "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Sales Invoice",
+   "link_to": "Sales Invoice",
+   "stats_filter": "",
+   "type": "DocType"
+  },
   {
    "color": "Blue",
    "format": "{} Active",
@@ -203,7 +203,16 @@
    "link_to": "",
    "type": "URL",
    "url": "/xpos/pos"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Pos Invoice",
+   "link_to": "POS Invoice",
+   "stats_filter": "",
+   "type": "DocType"
   }
  ],
- "title": "X POS"
+ "title": "X POS",
+ "type": "Workspace"
 }

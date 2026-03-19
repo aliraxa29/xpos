@@ -1,0 +1,22 @@
+{
+ "app": "xpos",
+ "bg_color": "gray",
+ "creation": "2026-03-20 02:17:05.415856",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "App",
+ "idx": 0,
+ "label": "X POS",
+ "link": "/xpos",
+ "link_to": "X POS",
+ "link_type": "Workspace Sidebar",
+ "logo_url": "/assets/xpos/images/xpos-logo.svg",
+ "modified": "2026-03-20 02:06:20.519295",
+ "modified_by": "Administrator",
+ "name": "X POS",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}
