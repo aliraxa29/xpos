@@ -1,7 +1,28 @@
 {
   "name": "xpos",
   "version": "0.0.1",
-  "private": true,
+  "description": "A modern, offline-capable Point of Sale application for Frappe and ERPNext",
+  "author": "Ali Raza <ar.frappe.dev@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aliraxa29/xpos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aliraxa29/xpos/issues"
+  },
+  "homepage": "https://github.com/aliraxa29/xpos#readme",
+  "keywords": [
+    "xpos",
+    "frappe",
+    "erpnext",
+    "pos",
+    "point-of-sale",
+    "vue",
+    "electron",
+    "pwa",
+    "offline"
+  ],
   "scripts": {
     "dev": "cd frontend && yarn dev",
     "build": "cd frontend && yarn install && yarn build"

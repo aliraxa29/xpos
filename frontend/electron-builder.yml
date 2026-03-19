@@ -54,13 +54,7 @@ linux:
   icon: build/icon.png
   category: Office
 
-# Auto-update: configure `publish` to point to your release server.
-# For GitHub Releases, use:
-#   publish:
-#     provider: github
-#     owner: <org>
-#     repo: <repo>
-# For a generic static server, use:
 publish:
-  provider: generic
-  url: https://releases.example.com/xpos/
+  provider: github
+  owner: aliraxa29
+  repo: xpos
