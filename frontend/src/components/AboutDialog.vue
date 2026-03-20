@@ -18,7 +18,7 @@
                     <Loader2 class="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
 
-                <div v-else class="space-y-4 text-sm overflow-hidden max-h-[200px]">
+                <div v-else class="space-y-4 text-sm overflow-y-auto max-h-[200px]">
                     <div class="flex justify-between py-2 mr-2 border-b border-border">
                         <span class="text-muted-foreground">{{ __("Version") }}</span>
                         <span class="font-medium">{{ version }}</span>
@@ -60,10 +60,6 @@
                     <div v-if="osInfo" class="flex justify-between mr-2 py-2 border-b border-border">
                         <span class="text-muted-foreground">{{ __("Server OS") }}</span>
                         <span class="font-medium">{{ osInfo }}</span>
-                    </div>
-                    <div v-if="siteName" class="flex justify-between mr-2 py-2 border-b border-border">
-                        <span class="text-muted-foreground">{{ __("Site") }}</span>
-                        <span class="font-medium">{{ siteName }}</span>
                     </div>
                     <div class="flex justify-between mr-2 py-2 border-b border-border">
                         <span class="text-muted-foreground">{{ __("Company") }}</span>
@@ -121,7 +117,6 @@ const frappeVersion = ref("");
 const erpnextVersion = ref("");
 const pythonVersion = ref("");
 const osInfo = ref("");
-const siteName = ref("");
 const platformInfo = ref<{ platform: string; arch: string } | null>(null);
 const nodeRole = ref<string | null>(null);
 const isLoadingInfo = ref(false);
@@ -152,7 +147,6 @@ async function fetchVersionInfo() {
             erpnextVersion.value = info.erpnext_version || "";
             pythonVersion.value = info.python_version || "";
             osInfo.value = info.os_info || "";
-            siteName.value = info.site_name || "";
         }
     } catch (e) {
         console.warn("Could not fetch version info:", e);
