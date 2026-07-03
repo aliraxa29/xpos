@@ -345,7 +345,7 @@ async function onBarcodeScan(barcode: string) {
 	barcodeScannerRef.value?.setScanning(true);
 	try {
 		const result = await itemStore.searchByBarcode(barcode, posStore.profileName);
-		if (result) {
+		if (result && result.item_code) {
 			handleAddItem({
 				item_code: result.item_code,
 				item_name: result.item_name,
