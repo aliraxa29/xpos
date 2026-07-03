@@ -30,15 +30,56 @@ BARCODE_TYPES = {
 	"gs1_128": "gs1_128",
 }
 
+BARCODE_TYPE_ALIASES = {
+	"ean": "ean13",
+	"ean-13": "ean13",
+	"ean-8": "ean8",
+	"upc": "upca",
+	"upc-a": "upca",
+	"code-39": "code39",
+	"code-128": "code128",
+	"gs1": "gs1_128",
+	"gs1-128": "gs1_128",
+	"gtin": "ean13",
+	"gtin-14": "itf",
+	"isbn": "isbn13",
+	"isbn-10": "isbn10",
+	"isbn-13": "isbn13",
+}
+
+
+def _normalize_barcode_type(barcode_type: str | None, default: str = "code128") -> str:
+	"""
+	Resolve any barcode type label to a supported python-barcode class name.
+
+	Accepts both the frontend identifiers (``code128``, ``ean13``) and the
+	ERPNext Item Barcode labels (``CODE-39``, ``UPC-A``, ``EAN-13`` …).
+	"""
+	if not barcode_type:
+		return default
+
+	key = str(barcode_type).strip().lower()
+	if key in BARCODE_TYPES:
+		return key
+	if key in BARCODE_TYPE_ALIASES:
+		return BARCODE_TYPE_ALIASES[key]
+
+	compact = key.replace(" ", "").replace("-", "").replace("_", "")
+	for name in BARCODE_TYPES:
+		if name.replace("_", "") == compact:
+			return name
+	for alias, name in BARCODE_TYPE_ALIASES.items():
+		if alias.replace("-", "").replace("_", "") == compact:
+			return name
+
+	return default
+
 
 def _get_barcode_class(barcode_type: str):
 	"""Return the python-barcode class for the given type identifier."""
 	import barcode as python_barcode
 
-	barcode_type = (barcode_type or "code128").lower().strip()
-	if barcode_type not in BARCODE_TYPES:
-		barcode_type = "code128"
-	return python_barcode.get_barcode_class(BARCODE_TYPES[barcode_type])
+	return python_barcode.get_barcode_class(BARCODE_TYPES[_normalize_barcode_type(barcode_type)])
 
 
 def generate_barcode(
@@ -207,11 +248,11 @@ def generate_item_barcode_label(
 		barcodes = item.get("barcodes") or []
 		if barcodes:
 			barcode_value = barcodes[0].barcode
-			barcode_type = (
-				(barcodes[0].barcode_type or barcode_type).lower().replace(" ", "").replace("-", "_")
-			)
+			barcode_type = barcodes[0].barcode_type or barcode_type
 		else:
 			barcode_value = item_code
+
+	barcode_type = _normalize_barcode_type(barcode_type)
 
 	price = 0
 	currency = frappe.defaults.get_global_default("currency") or "USD"
@@ -336,11 +377,12 @@ def get_item_barcode_labels(
 
 		qty = max(int(entry.get("qty", 1)), 1)
 		barcode_override = entry.get("barcode") or None
+		entry_type = entry.get("barcode_type") or barcode_type
 
 		label = generate_item_barcode_label(
 			item_code=item_code,
 			barcode_value=barcode_override,
-			barcode_type=barcode_type,
+			barcode_type=entry_type,
 			include_qr=include_qr,
 			width=float(width),
 			height=float(height),
@@ -364,7 +406,8 @@ def get_barcode_types() -> list[dict]:
 def search_items_for_barcode(query: str = "") -> dict:
 	"""API: Search items by name, code, or barcode for the barcode printing UI.
 
-	Returns up to 20 matching items with their first barcode (if any).
+	Returns up to 20 matching items, each with the full list of barcodes
+	attached to the item (so the user can pick which one to print).
 	"""
 	query = (query or "").strip()
 	if not query:
@@ -395,19 +438,17 @@ def search_items_for_barcode(query: str = "") -> dict:
 
 	result = []
 	for item in items:
-		barcode = (
-			frappe.db.get_value(
-				"Item Barcode",
-				{"parent": item.item_code},
-				"barcode",
-			)
-			or ""
+		barcodes = frappe.get_all(
+			"Item Barcode",
+			filters={"parent": item.item_code, "parenttype": "Item"},
+			fields=["barcode", "barcode_type", "uom"],
+			order_by="idx asc",
 		)
 		result.append(
 			{
 				"item_code": item.item_code,
 				"item_name": item.item_name,
-				"barcode": barcode,
+				"barcodes": barcodes,
 			}
 		)
 
