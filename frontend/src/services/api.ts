@@ -78,7 +78,7 @@ async function fetchCall<T = unknown>(method: string, args: Record<string, unkno
 
 		throw new Error(errorMsg);
 	}
-	if (data.message) {
+	if (data && typeof data === "object" && "message" in data) {
 		return data.message as T;
 	}
 	return data as T;
