@@ -64,10 +64,36 @@
 								v-model="labelSize"
 								class="w-full h-8 px-2 text-xs border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
 							>
-								<option value="small">{{ __("Small (38×25mm)") }}</option>
-								<option value="medium">{{ __("Medium (50×30mm)") }}</option>
-								<option value="large">{{ __("Large (60×40mm)") }}</option>
+								<option value="small">{{ __("Small (38x25mm)") }}</option>
+								<option value="medium">{{ __("Medium (50x30mm)") }}</option>
+								<option value="large">{{ __("Large (60x40mm)") }}</option>
+								<option value="custom">{{ __("Custom") }}</option>
 							</select>
+						</div>
+					</div>
+
+					<div v-if="labelSize === 'custom'" class="grid grid-cols-2 gap-2">
+						<div>
+							<label class="text-xs font-medium text-muted-foreground mb-1 block">
+								{{ __("Width (mm)") }}
+							</label>
+							<NumberInput
+								v-model="customWidth"
+								:min="10"
+								:max="200"
+								class="w-full h-8 px-2 text-xs border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+							/>
+						</div>
+						<div>
+							<label class="text-xs font-medium text-muted-foreground mb-1 block">
+								{{ __("Height (mm)") }}
+							</label>
+							<NumberInput
+								v-model="customHeight"
+								:min="10"
+								:max="200"
+								class="w-full h-8 px-2 text-xs border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+							/>
 						</div>
 					</div>
 
@@ -127,9 +153,14 @@
 								</div>
 								<div class="flex items-center gap-2 shrink-0 ms-2">
 									<span
-										v-if="item.barcode"
+										v-if="item.barcodes && item.barcodes.length === 1"
 										class="text-xs text-muted-foreground font-mono"
-										>{{ item.barcode }}</span
+										>{{ item.barcodes[0].barcode }}</span
+									>
+									<span
+										v-else-if="item.barcodes && item.barcodes.length > 1"
+										class="text-xs text-muted-foreground"
+										>{{ item.barcodes.length }} {{ __("barcodes") }}</span
 									>
 									<Plus class="w-4 h-4 text-primary" />
 								</div>
@@ -168,7 +199,7 @@
 											{{ __("Item") }}
 										</th>
 										<th
-											class="text-center px-3 py-2 font-medium text-muted-foreground w-28"
+											class="text-center px-3 py-2 font-medium text-muted-foreground w-56"
 										>
 											{{ __("Barcode") }}
 										</th>
@@ -195,9 +226,24 @@
 											</div>
 										</td>
 										<td class="px-3 py-2 text-center">
-											<span class="font-mono text-xs">{{
-												item.barcode || item.item_code
-											}}</span>
+											<select
+												v-if="item.barcodes.length"
+												v-model="item.selectedBarcode"
+												class="w-full h-8 px-2 text-xs font-mono border border-input rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+											>
+												<option
+													v-for="(bc, bidx) in item.barcodes"
+													:key="bidx"
+													:value="bc.barcode"
+												>
+													{{ bc.barcode
+													}}{{ bc.barcode_type ? ` (${bc.barcode_type})` : "" }}
+												</option>
+												<option :value="''">
+													{{ item.item_code }} ({{ __("Item Code") }})
+												</option>
+											</select>
+											<span v-else class="font-mono text-xs">{{ item.item_code }}</span>
 										</td>
 										<td class="px-3 py-2">
 											<div class="flex items-center justify-center gap-1">
@@ -250,17 +296,24 @@ import Checkbox from "@/components/ui/checkbox/Checkbox.vue";
 import { NumberInput } from "@/components/ui/number-input";
 import { usePosStore } from "@/stores/posStore";
 
+interface ItemBarcode {
+	barcode: string;
+	barcode_type?: string;
+	uom?: string;
+}
+
 interface BarcodeItem {
 	item_code: string;
 	item_name: string;
-	barcode: string;
+	barcodes: ItemBarcode[];
+	selectedBarcode: string;
 	qty: number;
 }
 
 interface SearchResult {
 	item_code: string;
 	item_name: string;
-	barcode?: string;
+	barcodes?: ItemBarcode[];
 }
 
 interface LabelData {
@@ -284,6 +337,8 @@ const isPrinting = ref(false);
 const items = ref<BarcodeItem[]>([]);
 const barcodeType = ref("code128");
 const labelSize = ref("medium");
+const customWidth = ref(50);
+const customHeight = ref(30);
 const showPrice = ref(true);
 const includeQR = ref(false);
 
@@ -297,6 +352,13 @@ const labelDims = computed(() => {
 			return { w: "38mm", h: "25mm", bw: "34mm", bh: "10mm" };
 		case "large":
 			return { w: "60mm", h: "40mm", bw: "54mm", bh: "16mm" };
+		case "custom": {
+			const w = Math.max(Number(customWidth.value) || 0, 10);
+			const h = Math.max(Number(customHeight.value) || 0, 10);
+			const bw = Math.max(w - 6, 8);
+			const bh = Math.max(Math.round(h * 0.4), 6);
+			return { w: `${w}mm`, h: `${h}mm`, bw: `${bw}mm`, bh: `${bh}mm` };
+		}
 		default:
 			return { w: "50mm", h: "30mm", bw: "44mm", bh: "12mm" };
 	}
@@ -342,12 +404,19 @@ function addItem(item: SearchResult) {
 		existing.qty += 1;
 		return;
 	}
+	const barcodes = item.barcodes || [];
 	items.value.push({
 		item_code: item.item_code,
 		item_name: item.item_name,
-		barcode: item.barcode || "",
+		barcodes,
+		selectedBarcode: barcodes.length ? barcodes[0].barcode : "",
 		qty: 1,
 	});
+}
+
+function selectedBarcodeType(item: BarcodeItem): string | undefined {
+	const match = item.barcodes.find((b) => b.barcode === item.selectedBarcode);
+	return match?.barcode_type || undefined;
 }
 
 function removeItem(idx: number) {
@@ -373,7 +442,8 @@ async function printLabels() {
 	try {
 		const payload = items.value.map((i) => ({
 			item_code: i.item_code,
-			barcode: i.barcode || undefined,
+			barcode: i.selectedBarcode || undefined,
+			barcode_type: selectedBarcodeType(i),
 			qty: i.qty,
 		}));
 
@@ -434,7 +504,8 @@ async function printLabels() {
                 }
                 .label-barcode-text {
                     font-size: 7px;
-                    font-family: 'Courier New', monospace;
+                    font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Roboto Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+                    font-variant-numeric: tabular-nums;
                     letter-spacing: 0.8px;
                     margin-top: 0.5mm;
                 }
@@ -463,7 +534,9 @@ async function printLabels() {
 				html += `<div class="label-barcode"><img src="${
 					label.barcode_uri
 				}" alt="${escapeHtml(label.barcode_value)}" /></div>`;
-				html += `<div class="label-barcode-text">${escapeHtml(label.barcode_value)}</div>`;
+			}
+			if (label.item_code && label.item_code !== label.barcode_value) {
+				html += `<div class="label-barcode-text">${escapeHtml(label.item_code)}</div>`;
 			}
 			if (showPrice.value && label.price != null) {
 				html += `<div class="label-price">${label.currency} ${Number(label.price).toFixed(2)}</div>`;
