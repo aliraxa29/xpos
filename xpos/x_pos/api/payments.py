@@ -5,11 +5,11 @@
 import json
 
 import frappe
+from erpnext.accounts.doctype.bank_account.bank_account import get_party_bank_account
 from erpnext.accounts.doctype.payment_request.payment_request import (
 	get_dummy_message,
 	get_existing_payment_request_amount,
 )
-from erpnext.accounts.party import get_party_bank_account
 from frappe import Any, _
 from frappe.utils import flt, nowdate
 

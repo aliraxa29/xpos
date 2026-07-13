@@ -21,29 +21,13 @@ def expand_item_groups(item_groups: list[str] | None):
 	if not item_groups:
 		return item_groups
 
-	try:
-		from erpnext.setup.doctype.item_group.item_group import get_child_groups
-	except Exception:
-		get_child_groups = None
-
 	expanded_groups = set()
 	for group in item_groups:
 		if not group:
 			continue
 
-		is_group = frappe.db.get_value("Item Group", group, "is_group")
-
-		if is_group:
-			if get_child_groups:
-				try:
-					descendants = get_child_groups(group) or []
-					expanded_groups.update(descendants)
-				except Exception:
-					descendants = frappe.db.get_descendants("Item Group", group) or []
-					expanded_groups.update(descendants)
-			else:
-				descendants = frappe.db.get_descendants("Item Group", group) or []
-				expanded_groups.update(descendants)
+		if frappe.db.get_value("Item Group", group, "is_group"):
+			expanded_groups.update(frappe.db.get_descendants("Item Group", group) or [])
 		else:
 			expanded_groups.add(group)
 
