@@ -9,19 +9,27 @@ from erpnext.accounts.doctype.pos_invoice_merge_log.pos_invoice_merge_log import
 from frappe.utils import flt, get_time, getdate
 
 
+def submit_allowing_negative_stock(invoice) -> None:
+	"""Submit a consolidated invoice without the negative stock guard."""
+
+	original = invoice.update_stock_ledger
+
+	def update_stock_ledger(**kwargs):
+		kwargs["allow_negative_stock"] = True
+		return original(**kwargs)
+
+	invoice.update_stock_ledger = update_stock_ledger
+	try:
+		invoice.submit()
+	finally:
+		invoice.update_stock_ledger = original
+
+
 class CustomPOSInvoiceMergeLog(ERPNextPOSInvoiceMergeLog):
 	"""Ensure consolidated credit notes keep payment totals within tolerance."""
 
 	def process_merging_into_sales_invoice(self, data):
-		"""Allow negative stock during POS consolidation.
-
-		Sales and returns are consolidated into separate documents.  The
-		sale SI is submitted before any credit notes, so its stock
-		deduction can temporarily exceed available qty when the shift
-		also contains returns for the same item.  Allowing negative stock
-		here is safe because the credit notes are processed immediately
-		after and restore the balance.
-		"""
+		"""Allow negative stock during POS consolidation."""
 		sales_invoice = self.get_new_sales_invoice()
 		sales_invoice = self.merge_pos_invoice_into(sales_invoice, data)
 
@@ -36,15 +44,7 @@ class CustomPOSInvoiceMergeLog(ERPNextPOSInvoiceMergeLog):
 			sales_invoice.posting_time = get_time(self.posting_time)
 
 		sales_invoice.save()
-
-		_orig = sales_invoice.update_stock_ledger
-
-		def _allow_negative(**kwargs):
-			kwargs["allow_negative_stock"] = True
-			return _orig(**kwargs)
-
-		sales_invoice.update_stock_ledger = _allow_negative
-		sales_invoice.submit()
+		submit_allowing_negative_stock(sales_invoice)
 
 		self.consolidated_invoice = sales_invoice.name
 
@@ -75,7 +75,7 @@ class CustomPOSInvoiceMergeLog(ERPNextPOSInvoiceMergeLog):
 			self._cap_item_rates_to_return_against(credit_note)
 
 			credit_note.save()
-			credit_note.submit()
+			submit_allowing_negative_stock(credit_note)
 
 			self.consolidated_credit_note = credit_note.name
 			credit_notes[credit_note.name] = [d.name for d in value]

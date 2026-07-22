@@ -644,7 +644,7 @@ def validate_cart_items(items: list, pos_profile: str | None = None):
 	if not _should_block(pos_profile):
 		return []
 
-	errors = _collect_stock_errors(items)
+	errors = _collect_stock_errors(items, pos_profile=pos_profile)
 	if not errors:
 		return []
 
