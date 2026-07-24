@@ -18,6 +18,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { app } from "electron";
+import { encryptSecret, decryptSecret, isEncrypted } from "./secureStore";
 import { createLogger } from "../logger";
 
 const log = createLogger("DB");
@@ -59,7 +60,13 @@ export function saveDbConfig(cfg: DbConfig): void {
 		pathsToWrite.push(path.join(process.env.APPDATA, "X POS", "db-config.json"));
 		pathsToWrite.push(path.join(process.env.APPDATA, "xpos-frontend", "db-config.json"));
 	}
-	const data = JSON.stringify(cfg, null, 2);
+	let toWrite: DbConfig = cfg;
+	try {
+		toWrite = { ...cfg, password: cfg.password ? encryptSecret(cfg.password) : cfg.password };
+	} catch (err) {
+		log.warn("Could not encrypt db-config password, writing as-is", err);
+	}
+	const data = JSON.stringify(toWrite, null, 2);
 	for (const p of pathsToWrite) {
 		try {
 			fs.mkdirSync(path.dirname(p), { recursive: true });
@@ -85,6 +92,13 @@ export function loadDbConfig(): DbConfig {
 			const raw = fs.readFileSync(candidate, "utf-8");
 			const parsed = JSON.parse(raw) as Partial<DbConfig>;
 			log.info(`Loaded DB config from: ${candidate}`);
+			if (parsed.password) {
+				try {
+					parsed.password = decryptSecret(parsed.password) ?? parsed.password;
+				} catch {
+					/* use stored value as-is */
+				}
+			}
 			return { ...DEFAULT_CONFIG, ...parsed };
 		} catch {
 			// try next candidate
@@ -278,6 +292,7 @@ async function runMigrations(): Promise<void> {
 		["list_of_stock_adjustments", "TINYINT(1) DEFAULT 0"],
 		["list_of_expense", "TINYINT(1) DEFAULT 0"],
 		["list_of_bank_drops", "TINYINT(1) DEFAULT 0"],
+		["password_salt", "VARCHAR(64) DEFAULT NULL"],
 		["invoice_settlement_report", "TINYINT(1) DEFAULT 0"],
 		["sales_report_by_time", "TINYINT(1) DEFAULT 0"],
 		["sales_summary_by_hour", "TINYINT(1) DEFAULT 0"],
@@ -321,6 +336,25 @@ async function runMigrations(): Promise<void> {
 			}
 		} catch (err) {
 			log.warn(`Migration for pos_users rename ${oldCol} -> ${newCol} failed`, err);
+		}
+	}
+
+	for (const tbl of ["pending_invoices", "pending_purchases"]) {
+		try {
+			const [cols] = await db.execute<RowDataPacket[]>(
+				"SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'status'",
+				[tbl],
+			);
+			const colType = (cols as RowDataPacket[])[0]?.COLUMN_TYPE as string | undefined;
+			if (colType && !colType.includes("dead_letter")) {
+				await db.execute(
+					`ALTER TABLE \`${tbl}\` MODIFY COLUMN \`status\` ` +
+						"ENUM('pending','syncing','synced','failed','dead_letter') DEFAULT 'pending'",
+				);
+				log.info(`Migration: added 'dead_letter' status to ${tbl}`);
+			}
+		} catch (err) {
+			log.warn(`Migration for ${tbl} dead_letter status failed`, err);
 		}
 	}
 }
@@ -425,18 +459,37 @@ export async function upsertBatch(
 	return affected;
 }
 
-export async function getMeta(key: string): Promise<string | null> {
-	const row = await queryOne<{ value: string }>("SELECT `value` FROM `sync_meta` WHERE `key` = ?", [key]);
-	return row?.value ?? null;
-}
+const SENSITIVE_META_KEYS = new Set(["api_key", "api_secret", "hub_api_secret"]);
 
-export async function setMeta(key: string, value: string): Promise<void> {
+async function writeMetaRow(key: string, value: string): Promise<void> {
 	await execute(
 		`INSERT INTO \`sync_meta\` (\`key\`, \`value\`, \`updated_at\`)
      VALUES (?, ?, NOW())
      ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`), \`updated_at\` = NOW()`,
 		[key, value],
 	);
+}
+
+export async function getMeta(key: string): Promise<string | null> {
+	const row = await queryOne<{ value: string }>("SELECT `value` FROM `sync_meta` WHERE `key` = ?", [key]);
+	const stored = row?.value ?? null;
+	if (stored == null || !SENSITIVE_META_KEYS.has(key)) return stored;
+
+	if (!isEncrypted(stored)) {
+		const reEncrypted = encryptSecret(stored);
+		if (isEncrypted(reEncrypted)) {
+			await writeMetaRow(key, reEncrypted).catch(() => {
+				/* best-effort migration */
+			});
+		}
+		return stored;
+	}
+	return decryptSecret(stored);
+}
+
+export async function setMeta(key: string, value: string): Promise<void> {
+	const toStore = SENSITIVE_META_KEYS.has(key) && value ? encryptSecret(value) : value;
+	await writeMetaRow(key, toStore);
 }
 
 export async function testConnection(

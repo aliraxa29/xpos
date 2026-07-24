@@ -40,6 +40,37 @@
 			window.xpos._messages = window.xpos.boot["__messages"];
 			window.xpos.csrf_token = "{{ csrf_token }}";
 		</script>
+		<script>
+			(function () {
+				try {
+					var b = (window.xpos && window.xpos.boot && window.xpos.boot.xpos_branding) || null;
+					if (!b) return;
+					var TOKENS = ["background","foreground","card","card_foreground","popover","popover_foreground","primary","primary_foreground","secondary","secondary_foreground","muted","muted_foreground","accent","accent_foreground","destructive","destructive_foreground","border","input","ring"];
+					function hexToHsl(hex) {
+						if (!hex) return null;
+						hex = ("" + hex).trim().replace(/^#/, "");
+						if (hex.length === 3) hex = hex.split("").map(function (c) { return c + c; }).join("");
+						if (!/^[0-9a-fA-F]{6}$/.test(hex)) return null;
+						var r = parseInt(hex.slice(0, 2), 16) / 255, g = parseInt(hex.slice(2, 4), 16) / 255, bl = parseInt(hex.slice(4, 6), 16) / 255;
+						var mx = Math.max(r, g, bl), mn = Math.min(r, g, bl), l = (mx + mn) / 2, s = 0, h = 0;
+						if (mx !== mn) { var d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); if (mx === r) h = (g - bl) / d + (g < bl ? 6 : 0); else if (mx === g) h = (bl - r) / d + 2; else h = (r - g) / d + 4; h /= 6; }
+						return Math.round(h * 360) + " " + (Math.round(s * 1000) / 10) + "% " + (Math.round(l * 1000) / 10) + "%";
+					}
+					function block(sel, tokens, radius) {
+						var d = [];
+						if (tokens) { for (var i = 0; i < TOKENS.length; i++) { var t = TOKENS[i]; var v = hexToHsl(tokens[t]); if (v) d.push("--" + t.replace(/_/g, "-") + ": " + v + ";"); } }
+						if (sel === ":root" && radius > 0) d.push("--radius: " + radius + "rem;");
+						return d.length ? sel + " {" + d.join("") + "}" : "";
+					}
+					var css = [block(":root", b.light, b.radius), block(".dark", b.dark)].filter(Boolean).join("");
+					if (css) { var st = document.getElementById("xpos-branding"); if (!st) { st = document.createElement("style"); st.id = "xpos-branding"; document.head.appendChild(st); } st.textContent = css; }
+					var fav = b.favicon || b.logo_light;
+					if (fav) { var lk = document.querySelector('link[rel="icon"]'); if (!lk) { lk = document.createElement("link"); lk.rel = "icon"; document.head.appendChild(lk); } lk.href = fav; }
+					var tc = b.splash_background || (b.light && b.light.primary);
+					if (tc) { var m = document.querySelector('meta[name="theme-color"]'); if (!m) { m = document.createElement("meta"); m.name = "theme-color"; document.head.appendChild(m); } m.content = tc; }
+				} catch (e) {}
+			})();
+		</script>
 		<script type="module" src="/src/main.ts"></script>
 	</body>
 </html>

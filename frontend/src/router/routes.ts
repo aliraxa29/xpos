@@ -131,6 +131,12 @@ const routes: RouteRecordRaw[] = [
 		component: RolePermissionsView,
 		meta: { title: "Role Permissions", requiresAuth: true, requiresAdmin: true },
 	},
+	{
+		path: "/price-checker",
+		name: "price-checker",
+		component: () => import("@/views/PriceChecker.vue"),
+		meta: { title: "Price Checker", requiresAuth: true, fullScreen: true },
+	},
 ];
 
 export default routes;

@@ -20,18 +20,21 @@ jobs:
     runs-on: ubuntu-latest
     environment: pos.xconsol.com
     timeout-minutes: 15
+    outputs:
+      released: ${{ steps.version.outputs.released }}
+      version: ${{ steps.version.outputs.version }}
     env:
       RELEASE_AUTH_TOKEN: ${{ secrets.RELEASE_TOKEN != '' && secrets.RELEASE_TOKEN || github.token }}
     steps:
       - name: Checkout Entire Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: true
           token: ${{ env.RELEASE_AUTH_TOKEN }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 20
 
@@ -48,6 +51,10 @@ jobs:
             echo "RELEASE_TOKEN is not set; falling back to github.token"
           fi
 
+      - name: Capture current release tag
+        id: pretag
+        run: echo "tag=$(git describe --tags --abbrev=0 2>/dev/null || echo none)" >> "$GITHUB_OUTPUT"
+
       - name: Create Release
         env:
           GH_TOKEN: ${{ env.RELEASE_AUTH_TOKEN }}
@@ -57,3 +64,64 @@ jobs:
           GIT_COMMITTER_NAME: "POS Bot"
           GIT_COMMITTER_EMAIL: "ar.frappe.dev@gmail.com"
         run: npx semantic-release
+
+      - name: Detect published version
+        id: version
+        run: |
+          set -e
+          git fetch --tags --force
+          NEWTAG=$(git describe --tags --abbrev=0 2>/dev/null || echo none)
+          if [ "$NEWTAG" != "none" ] && [ "$NEWTAG" != "${{ steps.pretag.outputs.tag }}" ]; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "version=${NEWTAG#v}" >> "$GITHUB_OUTPUT"
+            echo "Released new version: ${NEWTAG#v}"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            echo "No new release was created."
+          fi
+
+  build-windows:
+    name: Build & Publish Windows Installer
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      RELEASE_AUTH_TOKEN: ${{ secrets.RELEASE_TOKEN != '' && secrets.RELEASE_TOKEN || github.token }}
+      APP_VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v7
+        with:
+          ref: version-16
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: yarn install --frozen-lockfile
+
+      - name: Build Electron bundle
+        working-directory: frontend
+        run: yarn build:electron
+
+      - name: Build & publish Windows installer
+        working-directory: frontend
+        env:
+          GH_TOKEN: ${{ env.RELEASE_AUTH_TOKEN }}
+        run: >-
+          npx electron-builder --win --publish always
+          --config.extraMetadata.version=${{ env.APP_VERSION }}
+
+      - name: Summary
+        run: |
+          echo "Published X POS ${{ env.APP_VERSION }} Windows installer to the v${{ env.APP_VERSION }} release." >> "$GITHUB_STEP_SUMMARY"

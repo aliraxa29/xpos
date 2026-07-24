@@ -14,6 +14,7 @@ import type {
 	POSCoupon,
 	CalculatedTax,
 	DeliveryCharge,
+	ReceiptSnapshot,
 } from "@/types/pos.types";
 import __ from "@/lib/translate";
 import {
@@ -1015,6 +1016,64 @@ export const useCartStore = defineStore("cart", () => {
 		return data;
 	}
 
+	function getReceiptSnapshot(invoiceName: string, cashier = ""): ReceiptSnapshot {
+		const snapshotItems = items.value.map((item: CartItem) => {
+			const gross = item.qty * item.rate;
+			let discount = 0;
+			if (item.discount_percentage) {
+				discount = (gross * item.discount_percentage) / 100;
+			} else if (item.discount_amount) {
+				discount = item.qty < 0 ? -item.discount_amount : item.discount_amount;
+			}
+			return {
+				item_code: item.item_code,
+				item_name: item.local_item_name || item.item_name,
+				qty: item.qty,
+				rate: item.rate,
+				amount: Math.round(gross * 100) / 100,
+				uom: item.uom || item.stock_uom,
+				discount_percentage: item.discount_percentage,
+				discount_amount: Math.round(discount * 100) / 100,
+				price_list_rate: item.rate,
+				serial_no: item.serial_no,
+				batch_no: item.batch_no,
+				pos_notes: item.pos_notes,
+			};
+		});
+
+		const itemDiscountTotal = snapshotItems.reduce((sum, it) => sum + (it.discount_amount || 0), 0);
+		const totalDiscount = Math.round((itemDiscountTotal + (discountAmount.value || 0)) * 100) / 100;
+		const totalQty = items.value.reduce((sum: number, item: CartItem) => sum + item.qty, 0);
+		const paid = totalPayments.value;
+		const change = paid - grandTotal.value;
+
+		return {
+			name: invoiceName,
+			posting_date: postingDate.value || nowDate(),
+			posting_time: new Date().toTimeString().slice(0, 8),
+			is_return: isReturnMode.value,
+			cashier,
+			customer_name: customerName.value,
+			items: snapshotItems,
+			taxes: calculatedTaxes.value.map((t) => ({
+				description: t.description,
+				rate: t.rate,
+				amount: t.amount,
+				included_in_print_rate: !!t.included_in_print_rate,
+			})),
+			payments: payments.value
+				.filter((p) => p.amount)
+				.map((p) => ({ mode_of_payment: p.mode_of_payment, amount: p.amount })),
+			subtotal: Math.round(subtotal.value * 100) / 100,
+			total_discount: totalDiscount,
+			net_total: Math.round((subtotal.value + includedTaxAmount.value) * 100) / 100,
+			grand_total: grandTotal.value,
+			total_qty: totalQty,
+			change: change > 0.01 && !isReturnMode.value ? Math.round(change * 100) / 100 : 0,
+			notes: orderNotes.value || undefined,
+		};
+	}
+
 	function setDeliveryCharge(charge: DeliveryCharge | null): void {
 		selectedDeliveryCharge.value = charge;
 	}
@@ -1097,6 +1156,7 @@ export const useCartStore = defineStore("cart", () => {
 		openPaymentDialog,
 		closePaymentDialog,
 		getInvoiceData,
+		getReceiptSnapshot,
 		loadFromInvoice,
 		fetchDraftInvoices,
 		loadDraftInvoice,

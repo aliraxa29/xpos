@@ -23,12 +23,13 @@ async function getOrCreateHubSecret(): Promise<string> {
 }
 
 function isAuthorized(req: http.IncomingMessage): boolean {
-	if (!hubSecret) return true;
+	if (!hubSecret) return false;
 	const auth = req.headers["authorization"] || "";
-	if (auth.startsWith("Bearer ")) {
-		return crypto.timingSafeEqual(Buffer.from(auth.slice(7)), Buffer.from(hubSecret));
-	}
-	return false;
+	if (!auth.startsWith("Bearer ")) return false;
+	const provided = Buffer.from(auth.slice(7));
+	const expected = Buffer.from(hubSecret);
+	if (provided.length !== expected.length) return false;
+	return crypto.timingSafeEqual(provided, expected);
 }
 
 function json(res: http.ServerResponse, data: unknown, status = 200): void {
@@ -62,45 +63,44 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 	});
 }
 
-const PULL_TABLES: Record<string, { primaryKey: string; modifiedCol?: string }> = {
-	companies: { primaryKey: "name", modifiedCol: "modified" },
-	countries: { primaryKey: "name", modifiedCol: "modified" },
-	currencies: { primaryKey: "name", modifiedCol: "modified" },
-	uom: { primaryKey: "name", modifiedCol: "modified" },
-	brands: { primaryKey: "name", modifiedCol: "modified" },
-	industries: { primaryKey: "name", modifiedCol: "modified" },
-	modes_of_payment: { primaryKey: "name", modifiedCol: "modified" },
-	cost_centers: { primaryKey: "name", modifiedCol: "modified" },
-	warehouses: { primaryKey: "name", modifiedCol: "modified" },
-	accounts: { primaryKey: "name", modifiedCol: "modified" },
-	price_lists: { primaryKey: "name", modifiedCol: "modified" },
-	mode_of_payment_accounts: { primaryKey: "name", modifiedCol: "modified" },
-	pos_profiles: { primaryKey: "name", modifiedCol: "modified" },
-	pos_payment_methods: { primaryKey: "name", modifiedCol: "modified" },
-	items: { primaryKey: "item_code", modifiedCol: "modified" },
-	item_groups: { primaryKey: "name", modifiedCol: "modified" },
-	item_barcodes: { primaryKey: "name", modifiedCol: "modified" },
-	uom_conversion_details: { primaryKey: "name", modifiedCol: "modified" },
-	item_prices: { primaryKey: "name", modifiedCol: "modified" },
-	item_taxes: { primaryKey: "name", modifiedCol: "modified" },
-	item_vendors: { primaryKey: "name", modifiedCol: "modified" },
-	item_reorder_levels: { primaryKey: "name", modifiedCol: "modified" },
-	item_tax_templates: { primaryKey: "name", modifiedCol: "modified" },
-	item_tax_template_details: { primaryKey: "name", modifiedCol: "modified" },
-	sales_taxes_templates: { primaryKey: "name", modifiedCol: "modified" },
-	sales_taxes_charges: { primaryKey: "name", modifiedCol: "modified" },
-	pricing_rules: { primaryKey: "name", modifiedCol: "modified" },
-	pricing_rule_item_codes: { primaryKey: "name", modifiedCol: "modified" },
-	pricing_rule_item_groups: { primaryKey: "name", modifiedCol: "modified" },
-	pricing_rule_brands: { primaryKey: "name", modifiedCol: "modified" },
-	customers: { primaryKey: "name", modifiedCol: "modified" },
-	suppliers: { primaryKey: "name", modifiedCol: "modified" },
-	bins: { primaryKey: "name", modifiedCol: "modified" },
-	pos_users: { primaryKey: "name", modifiedCol: "modified" },
-	pos_users: { primaryKey: "name", modifiedCol: "modified" },
-	pos_profile_cache: { primaryKey: "name" },
-	item_tax_cache: { primaryKey: "cache_key" },
-	stock_cache: { primaryKey: "cache_key" },
+const PULL_TABLES: Record<string, { modifiedCol?: string }> = {
+	companies: { modifiedCol: "modified" },
+	countries: { modifiedCol: "modified" },
+	currencies: { modifiedCol: "modified" },
+	uom: { modifiedCol: "modified" },
+	brands: { modifiedCol: "modified" },
+	industries: { modifiedCol: "modified" },
+	modes_of_payment: { modifiedCol: "modified" },
+	cost_centers: { modifiedCol: "modified" },
+	warehouses: { modifiedCol: "modified" },
+	accounts: { modifiedCol: "modified" },
+	price_lists: { modifiedCol: "modified" },
+	mode_of_payment_accounts: { modifiedCol: "modified" },
+	pos_profiles: { modifiedCol: "modified" },
+	pos_payment_methods: { modifiedCol: "modified" },
+	items: { modifiedCol: "modified" },
+	item_groups: { modifiedCol: "modified" },
+	item_barcodes: { modifiedCol: "modified" },
+	uom_conversion_details: { modifiedCol: "modified" },
+	item_prices: { modifiedCol: "modified" },
+	item_taxes: { modifiedCol: "modified" },
+	item_vendors: { modifiedCol: "modified" },
+	item_reorder_levels: { modifiedCol: "modified" },
+	item_tax_templates: { modifiedCol: "modified" },
+	item_tax_template_details: { modifiedCol: "modified" },
+	sales_taxes_templates: { modifiedCol: "modified" },
+	sales_taxes_charges: { modifiedCol: "modified" },
+	pricing_rules: { modifiedCol: "modified" },
+	pricing_rule_item_codes: { modifiedCol: "modified" },
+	pricing_rule_item_groups: { modifiedCol: "modified" },
+	pricing_rule_brands: { modifiedCol: "modified" },
+	customers: { modifiedCol: "modified" },
+	suppliers: { modifiedCol: "modified" },
+	bins: { modifiedCol: "modified" },
+	pos_users: { modifiedCol: "modified" },
+	pos_profile_cache: {},
+	item_tax_cache: {},
+	stock_cache: {},
 };
 
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {

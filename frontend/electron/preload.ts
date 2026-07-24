@@ -63,6 +63,31 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		return () => ipcRenderer.removeListener("sync-complete", handler);
 	},
 
+	onSyncDeadLetter: (
+		callback: (info: {
+			table: string;
+			pendingTable: string;
+			id: number;
+			localId: string;
+			retryCount: number;
+			error: string;
+		}) => void,
+	) => {
+		const handler = (
+			_event: Electron.IpcRendererEvent,
+			info: {
+				table: string;
+				pendingTable: string;
+				id: number;
+				localId: string;
+				retryCount: number;
+				error: string;
+			},
+		) => callback(info);
+		ipcRenderer.on("sync-dead-letter", handler);
+		return () => ipcRenderer.removeListener("sync-dead-letter", handler);
+	},
+
 	onStockUpdated: (
 		callback: (data: { warehouse: string; item_code: string; actual_qty: number }) => void,
 	) => {
@@ -72,6 +97,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		) => callback(data);
 		ipcRenderer.on("stock-updated", handler);
 		return () => ipcRenderer.removeListener("stock-updated", handler);
+	},
+
+	onMainError: (callback: (err: { message: string; stack?: string }) => void) => {
+		const handler = (_event: Electron.IpcRendererEvent, err: { message: string; stack?: string }) =>
+			callback(err);
+		ipcRenderer.on("main-process-error", handler);
+		return () => ipcRenderer.removeListener("main-process-error", handler);
+	},
+
+	logs: {
+		list: (): Promise<string[]> => ipcRenderer.invoke("logs:list"),
+		read: (name: string): Promise<string> => ipcRenderer.invoke("logs:read", name),
 	},
 
 	triggerSync: (): Promise<boolean> => ipcRenderer.invoke("trigger-sync"),
@@ -140,6 +177,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			ipcRenderer.invoke("db:update-pending-invoice", id, updates),
 		deletePendingInvoice: (id: number) => ipcRenderer.invoke("db:delete-pending-invoice", id),
 		countPendingInvoices: (): Promise<number> => ipcRenderer.invoke("db:count-pending-invoices"),
+		getDeadLetters: () => ipcRenderer.invoke("db:get-dead-letters"),
+		countDeadLetters: (): Promise<number> => ipcRenderer.invoke("db:count-dead-letters"),
+		retryDeadLetter: (table: string, id: number): Promise<boolean> =>
+			ipcRenderer.invoke("db:retry-dead-letter", table, id),
 
 		addPendingPurchase: (record: {
 			type: string;
@@ -271,6 +312,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		upsertPosUsers: (rows: Record<string, unknown>[]) => ipcRenderer.invoke("db:upsert-pos-users", rows),
 		createLocalUser: (user: { username: string; password: string; fullName: string; role?: string }) =>
 			ipcRenderer.invoke("db:create-local-user", user),
+		verifyPassword: (username: string, password: string) =>
+			ipcRenderer.invoke("db:verify-password", username, password),
 
 		getSalesTaxTemplates: (company?: string) => ipcRenderer.invoke("db:get-sales-tax-templates", company),
 		upsertSalesTaxTemplates: (rows: Record<string, unknown>[]) =>
@@ -406,6 +449,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			html: string,
 			options?: { landscape?: boolean; margins?: Record<string, number> },
 		): Promise<{ success: boolean; error?: string }> => ipcRenderer.invoke("print:report", html, options),
+	},
+
+	fbr: {
+		fiscalizeLocal: (
+			url: string,
+			payload: Record<string, unknown>,
+		): Promise<{ success: boolean; data?: unknown; error?: string }> =>
+			ipcRenderer.invoke("fbr:fiscalize-local", url, payload),
 	},
 
 	node: {

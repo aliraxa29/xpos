@@ -97,6 +97,64 @@ def get_erp_settings():
 	return settings
 
 
+BRANDING_TOKENS = (
+	"background",
+	"foreground",
+	"card",
+	"card_foreground",
+	"popover",
+	"popover_foreground",
+	"primary",
+	"primary_foreground",
+	"secondary",
+	"secondary_foreground",
+	"muted",
+	"muted_foreground",
+	"accent",
+	"accent_foreground",
+	"destructive",
+	"destructive_foreground",
+	"border",
+	"input",
+	"ring",
+)
+
+
+def get_branding_payload():
+	"""
+	Build the XPOS branding payload consumed by the SPA (boot + offline cache).
+
+	Returns full light/dark color-token maps (hex), the corner radius, logo/favicon
+	URLs, and splash options. Safe to call before the doctype exists (returns {} so
+	the frontend falls back to its bundled defaults).
+	"""
+	try:
+		doc = frappe.get_cached_doc("XPOS Branding Settings")
+	except Exception:
+		return {}
+
+	light = {token: (doc.get(f"light_{token}") or "") for token in BRANDING_TOKENS}
+	dark = {token: (doc.get(f"dark_{token}") or "") for token in BRANDING_TOKENS}
+
+	return {
+		"light": light,
+		"dark": dark,
+		"radius": flt(doc.get("radius")) or 0.625,
+		"logo_light": doc.get("logo_light") or "",
+		"logo_dark": doc.get("logo_dark") or "",
+		"favicon": doc.get("favicon") or "",
+		"splash_background": doc.get("splash_background_color") or "",
+		"enable_splash": cint(doc.get("enable_splash")),
+	}
+
+
+@frappe.whitelist()
+def get_xpos_branding():
+	"""Return the branding payload for online refresh and offline re-caching."""
+
+	return get_branding_payload()
+
+
 @frappe.whitelist()
 def get_currencies():
 	"""Return enabled currency codes for dropdowns and cached settings."""

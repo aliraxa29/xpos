@@ -1,0 +1,457 @@
+{
+ "actions": [],
+ "creation": "2026-07-24 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "logo_splash_tab",
+  "logo_section",
+  "logo_light",
+  "column_break_logo",
+  "logo_dark",
+  "favicon",
+  "splash_section",
+  "enable_splash",
+  "splash_background_color",
+  "light_tab",
+  "light_sec_0",
+  "light_background",
+  "light_foreground",
+  "light_col_0",
+  "light_card",
+  "light_card_foreground",
+  "light_popover",
+  "light_popover_foreground",
+  "light_sec_1",
+  "light_primary",
+  "light_primary_foreground",
+  "light_ring",
+  "light_col_1",
+  "light_secondary",
+  "light_secondary_foreground",
+  "light_accent",
+  "light_accent_foreground",
+  "light_sec_2",
+  "light_muted",
+  "light_muted_foreground",
+  "light_destructive",
+  "light_col_2",
+  "light_destructive_foreground",
+  "light_border",
+  "light_input",
+  "dark_tab",
+  "dark_sec_0",
+  "dark_background",
+  "dark_foreground",
+  "dark_col_0",
+  "dark_card",
+  "dark_card_foreground",
+  "dark_popover",
+  "dark_popover_foreground",
+  "dark_sec_1",
+  "dark_primary",
+  "dark_primary_foreground",
+  "dark_ring",
+  "dark_col_1",
+  "dark_secondary",
+  "dark_secondary_foreground",
+  "dark_accent",
+  "dark_accent_foreground",
+  "dark_sec_2",
+  "dark_muted",
+  "dark_muted_foreground",
+  "dark_destructive",
+  "dark_col_2",
+  "dark_destructive_foreground",
+  "dark_border",
+  "dark_input",
+  "shape_tab",
+  "shape_section",
+  "radius"
+ ],
+ "fields": [
+  {
+   "fieldname": "logo_splash_tab",
+   "fieldtype": "Tab Break",
+   "label": "Logo & Splash"
+  },
+  {
+   "description": "SVG or PNG. Leave empty to use the built-in X POS mark. Light logo shows on light backgrounds, dark logo on dark.",
+   "fieldname": "logo_section",
+   "fieldtype": "Section Break",
+   "label": "Logo"
+  },
+  {
+   "fieldname": "logo_light",
+   "fieldtype": "Attach Image",
+   "label": "Logo (Light)"
+  },
+  {
+   "fieldname": "column_break_logo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "logo_dark",
+   "fieldtype": "Attach Image",
+   "label": "Logo (Dark)"
+  },
+  {
+   "description": "Browser-tab icon. Falls back to the light logo when empty.",
+   "fieldname": "favicon",
+   "fieldtype": "Attach Image",
+   "label": "Favicon"
+  },
+  {
+   "fieldname": "splash_section",
+   "fieldtype": "Section Break",
+   "label": "Splash Screen"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_splash",
+   "fieldtype": "Check",
+   "label": "Show splash screen on startup"
+  },
+  {
+   "description": "Optional fixed splash background. Leave empty to stay theme-aware: the splash then follows the active theme's Background color (light or dark) with the matching logo.",
+   "fieldname": "splash_background_color",
+   "fieldtype": "Color",
+   "label": "Splash Background (optional)"
+  },
+  {
+   "fieldname": "light_tab",
+   "fieldtype": "Tab Break",
+   "label": "Light Theme"
+  },
+  {
+   "fieldname": "light_sec_0",
+   "fieldtype": "Section Break",
+   "label": "Surfaces"
+  },
+  {
+   "default": "#ffffff",
+   "fieldname": "light_background",
+   "fieldtype": "Color",
+   "label": "Background"
+  },
+  {
+   "default": "#020817",
+   "fieldname": "light_foreground",
+   "fieldtype": "Color",
+   "label": "Foreground"
+  },
+  {
+   "fieldname": "light_col_0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "#ffffff",
+   "fieldname": "light_card",
+   "fieldtype": "Color",
+   "label": "Card"
+  },
+  {
+   "default": "#020817",
+   "fieldname": "light_card_foreground",
+   "fieldtype": "Color",
+   "label": "Card Foreground"
+  },
+  {
+   "default": "#ffffff",
+   "fieldname": "light_popover",
+   "fieldtype": "Color",
+   "label": "Popover"
+  },
+  {
+   "default": "#020817",
+   "fieldname": "light_popover_foreground",
+   "fieldtype": "Color",
+   "label": "Popover Foreground"
+  },
+  {
+   "fieldname": "light_sec_1",
+   "fieldtype": "Section Break",
+   "label": "Brand"
+  },
+  {
+   "default": "#5048e5",
+   "fieldname": "light_primary",
+   "fieldtype": "Color",
+   "label": "Primary (Brand)"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "light_primary_foreground",
+   "fieldtype": "Color",
+   "label": "Primary Foreground"
+  },
+  {
+   "default": "#5048e5",
+   "fieldname": "light_ring",
+   "fieldtype": "Color",
+   "label": "Ring (Focus)"
+  },
+  {
+   "fieldname": "light_col_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "#f1f5f9",
+   "fieldname": "light_secondary",
+   "fieldtype": "Color",
+   "label": "Secondary"
+  },
+  {
+   "default": "#0f172a",
+   "fieldname": "light_secondary_foreground",
+   "fieldtype": "Color",
+   "label": "Secondary Foreground"
+  },
+  {
+   "default": "#f1f5f9",
+   "fieldname": "light_accent",
+   "fieldtype": "Color",
+   "label": "Accent"
+  },
+  {
+   "default": "#0f172a",
+   "fieldname": "light_accent_foreground",
+   "fieldtype": "Color",
+   "label": "Accent Foreground"
+  },
+  {
+   "fieldname": "light_sec_2",
+   "fieldtype": "Section Break",
+   "label": "State & Borders"
+  },
+  {
+   "default": "#f1f5f9",
+   "fieldname": "light_muted",
+   "fieldtype": "Color",
+   "label": "Muted"
+  },
+  {
+   "default": "#64748b",
+   "fieldname": "light_muted_foreground",
+   "fieldtype": "Color",
+   "label": "Muted Foreground"
+  },
+  {
+   "default": "#ef4444",
+   "fieldname": "light_destructive",
+   "fieldtype": "Color",
+   "label": "Destructive"
+  },
+  {
+   "fieldname": "light_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "light_destructive_foreground",
+   "fieldtype": "Color",
+   "label": "Destructive Foreground"
+  },
+  {
+   "default": "#e2e8f0",
+   "fieldname": "light_border",
+   "fieldtype": "Color",
+   "label": "Border"
+  },
+  {
+   "default": "#e2e8f0",
+   "fieldname": "light_input",
+   "fieldtype": "Color",
+   "label": "Input"
+  },
+  {
+   "fieldname": "dark_tab",
+   "fieldtype": "Tab Break",
+   "label": "Dark Theme"
+  },
+  {
+   "fieldname": "dark_sec_0",
+   "fieldtype": "Section Break",
+   "label": "Surfaces"
+  },
+  {
+   "default": "#030711",
+   "fieldname": "dark_background",
+   "fieldtype": "Color",
+   "label": "Background"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "dark_foreground",
+   "fieldtype": "Color",
+   "label": "Foreground"
+  },
+  {
+   "fieldname": "dark_col_0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "#0d1426",
+   "fieldname": "dark_card",
+   "fieldtype": "Color",
+   "label": "Card"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "dark_card_foreground",
+   "fieldtype": "Color",
+   "label": "Card Foreground"
+  },
+  {
+   "default": "#0d1426",
+   "fieldname": "dark_popover",
+   "fieldtype": "Color",
+   "label": "Popover"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "dark_popover_foreground",
+   "fieldtype": "Color",
+   "label": "Popover Foreground"
+  },
+  {
+   "fieldname": "dark_sec_1",
+   "fieldtype": "Section Break",
+   "label": "Brand"
+  },
+  {
+   "default": "#6a63e9",
+   "fieldname": "dark_primary",
+   "fieldtype": "Color",
+   "label": "Primary (Brand)"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "dark_primary_foreground",
+   "fieldtype": "Color",
+   "label": "Primary Foreground"
+  },
+  {
+   "default": "#6a63e9",
+   "fieldname": "dark_ring",
+   "fieldtype": "Color",
+   "label": "Ring (Focus)"
+  },
+  {
+   "fieldname": "dark_col_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "#1e293b",
+   "fieldname": "dark_secondary",
+   "fieldtype": "Color",
+   "label": "Secondary"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "dark_secondary_foreground",
+   "fieldtype": "Color",
+   "label": "Secondary Foreground"
+  },
+  {
+   "default": "#222f44",
+   "fieldname": "dark_accent",
+   "fieldtype": "Color",
+   "label": "Accent"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "dark_accent_foreground",
+   "fieldtype": "Color",
+   "label": "Accent Foreground"
+  },
+  {
+   "fieldname": "dark_sec_2",
+   "fieldtype": "Section Break",
+   "label": "State & Borders"
+  },
+  {
+   "default": "#1a2333",
+   "fieldname": "dark_muted",
+   "fieldtype": "Color",
+   "label": "Muted"
+  },
+  {
+   "default": "#a3b0c2",
+   "fieldname": "dark_muted_foreground",
+   "fieldtype": "Color",
+   "label": "Muted Foreground"
+  },
+  {
+   "default": "#d44444",
+   "fieldname": "dark_destructive",
+   "fieldtype": "Color",
+   "label": "Destructive"
+  },
+  {
+   "fieldname": "dark_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "#f8fafc",
+   "fieldname": "dark_destructive_foreground",
+   "fieldtype": "Color",
+   "label": "Destructive Foreground"
+  },
+  {
+   "default": "#344256",
+   "fieldname": "dark_border",
+   "fieldtype": "Color",
+   "label": "Border"
+  },
+  {
+   "default": "#344256",
+   "fieldname": "dark_input",
+   "fieldtype": "Color",
+   "label": "Input"
+  },
+  {
+   "fieldname": "shape_tab",
+   "fieldtype": "Tab Break",
+   "label": "Shape"
+  },
+  {
+   "fieldname": "shape_section",
+   "fieldtype": "Section Break",
+   "label": "Corner Radius"
+  },
+  {
+   "default": "0.625",
+   "description": "Base corner radius used across the UI (default 0.625rem).",
+   "fieldname": "radius",
+   "fieldtype": "Float",
+   "label": "Radius (rem)",
+   "precision": "3"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-07-24 11:13:06.878797",
+ "modified_by": "Administrator",
+ "module": "X POS",
+ "name": "XPOS Branding Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

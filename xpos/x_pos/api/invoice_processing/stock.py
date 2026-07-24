@@ -3,8 +3,16 @@ from erpnext.stock.doctype.batch.batch import get_batch_qty
 from frappe import _
 from frappe.utils import cint, cstr, flt, getdate, nowdate
 
+from xpos.api.items import (
+	_get_pending_pos_qty_map,
+	get_invoice_type,
+	get_pending_pos_batch_qty_map,
+)
 from xpos.x_pos.api.invoice_processing.utils import _sanitize_item_name
-from xpos.x_pos.api.item_processing.stock import get_bulk_stock_availability, get_stock_availability
+from xpos.x_pos.api.item_processing.stock import (
+	get_bulk_stock_availability,
+	get_stock_availability,
+)
 
 
 def _is_stock_item(item):
@@ -77,15 +85,18 @@ def _collect_stock_errors(items, pos_profile=None):
 	stock_map = get_bulk_stock_availability(items_to_check)
 
 	pending_map: dict[tuple[str, str], float] = {}
+	pending_batch_map: dict[tuple[str, str], float] = {}
 	if pos_profile:
-		from xpos.api.items import _get_pending_pos_qty_map, _is_pos_invoice_mode
-
-		if _is_pos_invoice_mode(pos_profile):
+		if get_invoice_type() == "POS Invoice":
 			wh_items: dict[str, list[str]] = {}
+			wh_batches: dict[str, list[str]] = {}
 			for d in items_to_check:
 				wh = d.get("warehouse")
-				if wh:
-					wh_items.setdefault(wh, []).append(d.get("item_code"))
+				if not wh:
+					continue
+				wh_items.setdefault(wh, []).append(d.get("item_code"))
+				if d.get("batch_no"):
+					wh_batches.setdefault(wh, []).append(cstr(d.get("batch_no")))
 			for wh, codes in wh_items.items():
 				wh_list = [wh]
 				if frappe.db.get_value("Warehouse", wh, "is_group"):
@@ -94,13 +105,24 @@ def _collect_stock_errors(items, pos_profile=None):
 				for ic, qty in pmap.items():
 					pending_map[(ic, wh)] = pending_map.get((ic, wh), 0.0) + qty
 
+				batches = wh_batches.get(wh)
+				if not batches:
+					continue
+
+				bmap = get_pending_pos_batch_qty_map(wh_list, batch_nos=batches)
+				for (batch_no, _wh), qty in bmap.items():
+					key = (batch_no, wh)
+					pending_batch_map[key] = pending_batch_map.get(key, 0.0) + qty
+
 	for d in items_to_check:
 		item_code = d.get("item_code")
 		warehouse = d.get("warehouse")
 		batch_no = cstr(d.get("batch_no"))
 
 		available = stock_map.get((item_code, warehouse, batch_no), 0.0)
-		if not batch_no:
+		if batch_no:
+			available -= pending_batch_map.get((batch_no, warehouse), 0.0)
+		else:
 			available -= pending_map.get((item_code, warehouse), 0.0)
 		requested = flt(d.get("stock_qty") or (flt(d.get("qty")) * flt(d.get("conversion_factor") or 1)))
 		if requested > available:
@@ -129,7 +151,7 @@ def _should_block(pos_profile):
 	return bool(block_sale)
 
 
-def _validate_stock_on_invoice(invoice_doc):
+def validate_stock_on_invoice(invoice_doc):
 	if invoice_doc.doctype == "Sales Invoice" and not cint(getattr(invoice_doc, "update_stock", 0)):
 		frappe.logger().debug("Skipping stock validation for Sales Invoice without stock update")
 		return

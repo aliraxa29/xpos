@@ -42,6 +42,7 @@ export function useKeyboardShortcuts() {
 			if (isOnline()) {
 				void Promise.allSettled([settingsStore.fetchSettings()]);
 			}
+			window.location.reload();
 		} catch (error) {
 			console.error("Failed to clear cached data:", error);
 			showError("Failed to clear cached data");
@@ -68,6 +69,16 @@ export function useKeyboardShortcuts() {
 			global: true,
 			action: () => {
 				showShortcutsDialog.value = true;
+			},
+		},
+		{
+			id: "error-inspector",
+			keys: ["ctrl", "shift", "e"],
+			description: "Toggle Error Inspector",
+			category: "General",
+			global: true,
+			action: () => {
+				window.dispatchEvent(new CustomEvent("xpos:toggle-error-inspector"));
 			},
 		},
 		{

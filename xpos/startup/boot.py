@@ -4,6 +4,7 @@
 import frappe
 
 from xpos.api.auth import can_manage_role_permissions, get_current_user_permissions
+from xpos.api.settings import get_branding_payload
 
 
 def extend_bootinfo(bootinfo):
@@ -36,3 +37,4 @@ def extend_bootinfo(bootinfo):
 			or "System Manager" in frappe.get_roles(frappe.session.user)
 		)
 		bootinfo.xpos_can_manage_permissions = can_manage_role_permissions()
+		bootinfo.xpos_branding = get_branding_payload()

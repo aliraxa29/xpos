@@ -622,6 +622,68 @@ export interface PrintSettings {
 	letter_head: string;
 }
 
+export interface ReceiptContext {
+	company_name: string;
+	company_phone: string;
+	company_email: string;
+	company_website: string;
+	company_address: string;
+	company_tax_id: string;
+	company_logo: string;
+	receipt_header: string;
+	receipt_footer: string;
+	currency: string;
+	print_discount_amount: number;
+	print_format: string;
+	css: string;
+}
+
+export interface ReceiptSnapshotItem {
+	item_code: string;
+	item_name: string;
+	qty: number;
+	rate: number;
+	amount: number;
+	uom?: string;
+	discount_percentage?: number;
+	discount_amount?: number;
+	price_list_rate?: number;
+	serial_no?: string;
+	batch_no?: string;
+	pos_notes?: string;
+}
+
+export interface ReceiptSnapshotTax {
+	description: string;
+	rate: number;
+	amount: number;
+	included_in_print_rate: boolean;
+}
+
+export interface ReceiptSnapshotPayment {
+	mode_of_payment: string;
+	amount: number;
+}
+
+export interface ReceiptSnapshot {
+	name: string;
+	posting_date: string;
+	posting_time: string;
+	is_return: boolean;
+	cashier: string;
+	customer_name: string;
+	items: ReceiptSnapshotItem[];
+	taxes: ReceiptSnapshotTax[];
+	payments: ReceiptSnapshotPayment[];
+	subtotal: number;
+	total_discount: number;
+	net_total: number;
+	grand_total: number;
+	total_qty: number;
+	change: number;
+	notes?: string;
+}
+
 export interface ShiftCheckResult {
 	pos_opening_shift: POSOpeningShift;
 	pos_profile: POSProfile;

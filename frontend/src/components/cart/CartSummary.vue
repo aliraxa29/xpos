@@ -345,6 +345,7 @@ import { ref, computed, watch } from "vue";
 import { usePosStore } from "@/stores/posStore";
 import { hasPermission } from "@/services/userRights";
 import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useOfferStore } from "@/stores/offerStore";
 import { call, showSuccess, showError } from "@/services/api";
 import { __ } from "@/lib/translate";
@@ -373,6 +374,7 @@ import type { DeliveryCharge } from "@/types/pos.types";
 
 const posStore = usePosStore();
 const cartStore = useCartStore();
+const authStore = useAuthStore();
 const offerStore = useOfferStore();
 const offlineStore = useOfflineStore();
 const { printInvoice, printInvoiceLocal } = usePrintInvoice();
@@ -731,7 +733,12 @@ async function sendToCashier() {
 
 		if (isElectron() && window.electronAPI?.db) {
 			const result = await window.electronAPI.db.addPendingInvoice({
-				data: { ...data, is_draft: true, pos_opening_shift_local_id: shiftName },
+				data: {
+					...data,
+					is_draft: true,
+					pos_opening_shift_local_id: shiftName,
+					receipt: cartStore.getReceiptSnapshot("", authStore.userFullName),
+				},
 				customer_name: cartStore.customerName || data.customer,
 				grand_total: cartStore.grandTotal || 0,
 			});

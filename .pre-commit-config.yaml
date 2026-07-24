@@ -75,6 +75,30 @@ repos:
                 frontend/.*
             )$
 
+  - repo: local
+    hooks:
+      - id: frappe-semgrep-rules
+        name: "Run Frappe semgrep rules"
+        entry: semgrep
+        language: python
+        additional_dependencies: ['semgrep==1.168.0']
+        args:
+          - '--config=.semgrep'
+          - '--error'
+          - '--quiet'
+          - '--metrics=off'
+          - '--disable-version-check'
+        types_or: [python, javascript]
+        pass_filenames: true
+        exclude: |
+            (?x)^(
+                xpos/public/dist/.*|
+                .*node_modules.*|
+                .*boilerplate.*|
+                xpos/public/js/lib/.*|
+                frontend/.*
+            )$
+
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
     rev: v9.18.0
     hooks:

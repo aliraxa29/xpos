@@ -5,7 +5,7 @@ import json
 from collections import defaultdict
 
 import frappe
-from frappe import _
+from frappe import _, cstr
 from frappe.utils import cint, flt, getdate, now_datetime, nowdate
 from frappe.utils.background_jobs import enqueue
 
@@ -181,10 +181,43 @@ def _ensure_pos_invoice_payment_row(invoice_doc, pos_profile_doc, require_paymen
 	)
 
 
+def find_invoice_by_local_id(local_id: str | None, warehouse: str | None = None) -> tuple[str, str] | None:
+	"""Return (doctype, name) of an invoice already created for this client local_id.
+
+	The desktop/offline client assigns every cart a stable ``local_id`` and may
+	re-push it after a dropped response. Looking it up here makes invoice creation
+	idempotent so a retry returns the original invoice instead of creating a second
+	real Sales Invoice (double stock depletion + double revenue).
+	"""
+	if not local_id:
+		return None
+	for dt in ("Sales Invoice", "POS Invoice"):
+		name = frappe.db.get_value(
+			dt, {"xpos_local_id": local_id, "set_warehouse": warehouse, "docstatus": 1}, "name"
+		)
+		if name:
+			return dt, name
+	return None
+
+
 @frappe.whitelist()
-def create_invoice(data: str | dict):
-	"""Create a POS Sales Invoice from cart data."""
+def create_invoice(data: str | dict, local_id: str | None = None):
+	"""Create a POS Sales Invoice from cart data.
+
+	Args:
+	    data: JSON string (or dict) containing the cart payload.
+	    local_id: Stable client-side id used to deduplicate sync retries so the
+	        same cart is never committed twice (exactly-once invoice creation).
+	"""
 	data = json.loads(data) if isinstance(data, str) else data
+
+	local_id = local_id or data.get("local_id")
+
+	warehouse = data.get("warehouse")
+	existing = find_invoice_by_local_id(local_id, warehouse)
+	if existing:
+		dt, name = existing
+		return {**_build_invoice_response(frappe.get_doc(dt, name)), "duplicate": True}
 
 	pos_profile = data.get("pos_profile")
 	customer = data.get("customer")
@@ -241,6 +274,8 @@ def create_invoice(data: str | dict):
 		invoice_doc = frappe.new_doc(doctype)
 
 	invoice_doc.is_pos = 1
+	if local_id:
+		invoice_doc.xpos_local_id = local_id
 	invoice_doc.pos_profile = pos_profile
 	invoice_doc.customer = customer
 	invoice_doc.company = pos.company
@@ -529,12 +564,43 @@ def create_invoice(data: str | dict):
 	except Exception:
 		pass
 
-	if is_existing_draft:
-		invoice_doc.save(ignore_permissions=True)
-	else:
-		invoice_doc.insert(ignore_permissions=True)
+	try:
+		if is_existing_draft:
+			invoice_doc.save(ignore_permissions=True)
+		else:
+			invoice_doc.insert(ignore_permissions=True)
+	except frappe.exceptions.UniqueValidationError:
+		frappe.db.rollback()
+		existing = find_invoice_by_local_id(local_id, warehouse)
+		if existing:
+			dt, name = existing
+			return {**_build_invoice_response(frappe.get_doc(dt, name)), "duplicate": True}
+		raise
 
 	_validate_unpaid_balance_permissions(invoice_doc, pos, data)
+
+	from xpos.x_pos.integrations import fbr
+
+	client_fbr_number = cstr(data.get("fbr_invoice_number") or "").strip()
+	if client_fbr_number:
+		fbr.apply_fiscal_number(invoice_doc, client_fbr_number)
+		invoice_doc.save(ignore_permissions=True)
+	else:
+		outcome = fbr.prepare_fiscalization(invoice_doc)
+		if outcome.status == "local_required":
+			return {
+				"status": "fbr_local_required",
+				"name": invoice_doc.name,
+				"doctype": doctype,
+				"fbr_payload": outcome.payload,
+				"fbr_local_service_url": outcome.local_service_url,
+				"grand_total": invoice_doc.grand_total,
+				"customer": invoice_doc.customer,
+				"customer_name": invoice_doc.customer_name,
+			}
+		if outcome.status == "cloud":
+			fbr.apply_fiscal_number(invoice_doc, outcome.fbr_invoice_number, outcome.posted_on)
+			invoice_doc.save(ignore_permissions=True)
 
 	if submit_in_background:
 		enqueue(
@@ -566,6 +632,55 @@ def _submit_invoice_job(invoice_name: str, doctype: str = "Sales Invoice"):
 	except Exception:
 		frappe.log_error(f"Failed to submit {doctype} {invoice_name}", "X POS Invoice Submission")
 		frappe.db.rollback()
+
+
+@frappe.whitelist()
+def finalize_fiscal_invoice(name: str, fbr_invoice_number: str, doctype: str | None = None):
+	"""Stamp a locally-obtained FBR number on a pending draft and submit it.
+
+	Completes the offline-fiscalization handshake started by ``create_invoice`` when
+	it returned ``fbr_local_required``: the client fetched the number from the local
+	fiscalization service and passes it here to finalize the sale.
+	"""
+	from xpos.x_pos.integrations import fbr
+
+	doctype = doctype or get_invoice_type()
+	fbr_invoice_number = cstr(fbr_invoice_number or "").strip()
+	if not fbr_invoice_number:
+		frappe.throw(_("FBR invoice number is required to finalize this invoice."))
+
+	invoice_doc = frappe.get_doc(doctype, name)
+	if invoice_doc.docstatus != 0:
+		return _build_invoice_response(invoice_doc)
+
+	if invoice_doc.get("pos_profile") and not is_pos_cashier(frappe.session.user, invoice_doc.pos_profile):
+		frappe.throw(_("Only a cashier can finalize this invoice."), frappe.PermissionError)
+
+	fbr.apply_fiscal_number(invoice_doc, fbr_invoice_number)
+	invoice_doc.save(ignore_permissions=True)
+	invoice_doc.submit()
+	return _build_invoice_response(invoice_doc)
+
+
+@frappe.whitelist()
+def discard_draft_invoice(name: str, doctype: str | None = None) -> dict:
+	"""Delete a draft invoice left pending when fiscalization could not complete.
+
+	Used when both the FBR cloud and the local service are unreachable, so the sale
+	could not be finalized and the draft should not linger.
+	"""
+	doctype = doctype or get_invoice_type()
+	if not frappe.db.exists(doctype, name):
+		return {"deleted": False}
+
+	invoice_doc = frappe.get_doc(doctype, name)
+	if invoice_doc.docstatus != 0:
+		frappe.throw(_("Only a draft invoice can be discarded."))
+	if invoice_doc.get("pos_profile") and not is_pos_cashier(frappe.session.user, invoice_doc.pos_profile):
+		frappe.throw(_("Only a cashier can discard this invoice."), frappe.PermissionError)
+
+	frappe.delete_doc(doctype, name, ignore_permissions=True, force=True)
+	return {"deleted": True}
 
 
 @frappe.whitelist()

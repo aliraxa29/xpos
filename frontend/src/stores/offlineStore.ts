@@ -8,6 +8,8 @@ import {
 	updatePendingInvoice,
 	deletePendingInvoice,
 	countPendingInvoices,
+	countDeadLetters,
+	retryDeadLetter as retryDeadLetterBridge,
 } from "@/services/dbBridge";
 import type { PendingInvoice } from "@/services/idbService";
 import type { InvoiceData } from "@/types/pos.types";
@@ -18,6 +20,7 @@ export type OfflineInvoice = PendingInvoice;
 export const useOfflineStore = defineStore("offline", () => {
 	const isSyncing = ref(false);
 	const pendingCount = ref(0);
+	const deadLetterCount = ref(0);
 	const pendingInvoices = ref<OfflineInvoice[]>([]);
 	const lastSyncTime = ref("");
 	const syncErrors = ref<string[]>([]);
@@ -29,6 +32,7 @@ export const useOfflineStore = defineStore("offline", () => {
 	let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
 	const hasPending = computed(() => pendingCount.value > 0);
+	const hasDeadLetters = computed(() => deadLetterCount.value > 0);
 
 	const offlineModeEnabled = computed(() => {
 		return !!posStore.useOfflineMode;
@@ -40,6 +44,7 @@ export const useOfflineStore = defineStore("offline", () => {
 
 	const statusLabel = computed(() => {
 		if (isSyncing.value) return "Syncing...";
+		if (deadLetterCount.value > 0) return `${deadLetterCount.value} need attention`;
 		if (!isOnline.value) return "Offline";
 		if (pendingCount.value > 0) return `${pendingCount.value} pending`;
 		return "Online";
@@ -47,6 +52,7 @@ export const useOfflineStore = defineStore("offline", () => {
 
 	const statusColor = computed(() => {
 		if (isSyncing.value) return "text-blue-500";
+		if (deadLetterCount.value > 0) return "text-red-500";
 		if (!isOnline.value) return "text-red-500";
 		if (pendingCount.value > 0) return "text-amber-500";
 		return "text-emerald-500";
@@ -95,6 +101,30 @@ export const useOfflineStore = defineStore("offline", () => {
 		} catch {
 			pendingCount.value = 0;
 		}
+		await refreshDeadLetterCount();
+	}
+
+	async function refreshDeadLetterCount() {
+		try {
+			deadLetterCount.value = await countDeadLetters();
+		} catch {
+			deadLetterCount.value = 0;
+		}
+	}
+
+	async function retryDeadLetterInvoice(id: number): Promise<boolean> {
+		try {
+			const ok = await retryDeadLetterBridge("pending_invoices", id);
+			if (ok) {
+				await loadPendingInvoices();
+				await refreshDeadLetterCount();
+				syncPendingInvoices();
+			}
+			return ok;
+		} catch (error) {
+			console.error("Failed to requeue dead-letter invoice:", error);
+			return false;
+		}
 	}
 
 	async function saveOffline(
@@ -123,10 +153,14 @@ export const useOfflineStore = defineStore("offline", () => {
 	async function loadPendingInvoices() {
 		try {
 			pendingInvoices.value = (await getAllPendingInvoices()) as OfflineInvoice[];
-			pendingCount.value = pendingInvoices.value.length;
+			pendingCount.value = pendingInvoices.value.filter((inv) => inv.status !== "dead_letter").length;
+			deadLetterCount.value = pendingInvoices.value.filter(
+				(inv) => inv.status === "dead_letter",
+			).length;
 		} catch {
 			pendingInvoices.value = [];
 			pendingCount.value = 0;
+			deadLetterCount.value = 0;
 		}
 	}
 
@@ -153,22 +187,26 @@ export const useOfflineStore = defineStore("offline", () => {
 				if ((invoice.data as Record<string, unknown>)?.is_draft) {
 					continue;
 				}
+				if (invoice.status === "dead_letter") {
+					continue;
+				}
 				try {
 					invoice.status = "syncing";
 					if (invoice.id) await updatePendingInvoice(invoice.id, { status: "syncing" });
 
 					await call<{ name: string }>("xpos.api.invoices.create_invoice", {
 						data: JSON.stringify(invoice.data),
+						local_id: invoice.local_id,
 					});
 					if (invoice.id) await deletePendingInvoice(invoice.id);
 					synced++;
 				} catch (error: unknown) {
 					failed++;
-					invoice.status = "failed";
 					invoice.retry_count = (invoice.retry_count || 0) + 1;
 					invoice.error = error instanceof Error ? error.message : String(error);
+					invoice.status = invoice.retry_count >= MAX_RETRIES ? "dead_letter" : "failed";
 
-					if (invoice.retry_count >= MAX_RETRIES) {
+					if (invoice.status === "dead_letter") {
 						syncErrors.value.push(
 							`Invoice for ${invoice.customer_name || "Unknown"}: ${invoice.error}`,
 						);
@@ -176,7 +214,7 @@ export const useOfflineStore = defineStore("offline", () => {
 
 					if (invoice.id)
 						await updatePendingInvoice(invoice.id, {
-							status: "failed",
+							status: invoice.status,
 							retry_count: invoice.retry_count,
 							error: invoice.error,
 						});
@@ -221,6 +259,7 @@ export const useOfflineStore = defineStore("offline", () => {
 
 			await call<{ name: string }>("xpos.api.invoices.create_invoice", {
 				data: JSON.stringify(invoice.data),
+				local_id: invoice.local_id,
 			});
 
 			await deletePendingInvoice(id);
@@ -229,11 +268,11 @@ export const useOfflineStore = defineStore("offline", () => {
 			showSuccess(__("Invoice synced successfully"));
 			return true;
 		} catch (error: unknown) {
-			invoice.status = "failed";
 			invoice.retry_count = (invoice.retry_count || 0) + 1;
 			invoice.error = error instanceof Error ? error.message : String(error);
+			invoice.status = invoice.retry_count >= MAX_RETRIES ? "dead_letter" : "failed";
 			await updatePendingInvoice(invoice.id!, {
-				status: "failed",
+				status: invoice.status,
 				retry_count: invoice.retry_count,
 				error: invoice.error,
 			});
@@ -311,10 +350,12 @@ export const useOfflineStore = defineStore("offline", () => {
 	return {
 		isSyncing,
 		pendingCount,
+		deadLetterCount,
 		pendingInvoices,
 		lastSyncTime,
 		syncErrors,
 		hasPending,
+		hasDeadLetters,
 		offlineModeEnabled,
 		allowDeleteOfflineInvoice,
 		statusLabel,
@@ -323,6 +364,8 @@ export const useOfflineStore = defineStore("offline", () => {
 		init,
 		destroy,
 		refreshPendingCount,
+		refreshDeadLetterCount,
+		retryDeadLetterInvoice,
 		saveOffline,
 		loadPendingInvoices,
 		syncPendingInvoices,

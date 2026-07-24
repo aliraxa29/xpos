@@ -50,9 +50,20 @@
    "link_type": "DocType",
    "show_arrow": 0,
    "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Branding & Theme",
+   "link_to": "XPOS Branding Settings",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-04-26 23:13:29.433665",
+ "modified": "2026-07-24 23:13:29.433665",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "X POS",

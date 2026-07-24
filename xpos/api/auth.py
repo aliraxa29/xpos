@@ -198,10 +198,6 @@ def get_current_user_permissions() -> dict:
 
 @frappe.whitelist()
 def get_pos_users(
-	doctype: str | None = None,
-	fields: list | None = None,
-	filters: dict | None = None,
-	order_by: str = "modified asc",
 	limit_start: int = 0,
 	limit_page_length: int = 100,
 ):
@@ -325,7 +321,7 @@ def get_role_permission_matrix() -> dict:
 
 
 @frappe.whitelist()
-def set_role_permission(role: str, permission: str, enabled) -> dict:
+def set_role_permission(role: str, permission: str, enabled: bool | int | str) -> dict:
 	"""Upsert a single POS Role Permission child row and bust the cache."""
 	_require_manage_permissions()
 	if not frappe.db.exists("POS Role", role):

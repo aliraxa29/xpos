@@ -1,62 +1,47 @@
 /**
- * Windows build script — works on Linux without Wine.
+ * Local Windows build produces release/win-unpacked/ on Linux without Wine.
  *
- * electron-builder embeds an asar integrity hash into the exe using Wine.
- * On Linux (no Wine), the hash is never embedded, but the Electron fuse
- * EnableEmbeddedAsarIntegrityValidation is still ON → "Invalid package app.asar"
- * at runtime on Windows.
+ * Uses `electron-builder --win --dir` (the unpacked target needs no Wine). The
+ * NSIS installer target does need Wine, so it is left to CI (windows-latest);
+ * see .github/workflows/build-windows.yml.
  *
- * This script:
- *   1. Runs electron-builder --win (creates win-unpacked, then fails at Wine step)
- *   2. Uses @electron/fuses to flip the integrity fuse OFF in the exe
+ * The icon, .exe version-info (Company/Description/Version) and the ASAR
+ * integrity fuse are all applied by the electron-builder `afterPack` hook
+ * (scripts/afterPack.mjs), so nothing extra is needed here.
+ *
+ * The version is read from xpos/__init__.py (the single source of truth) so the
+ * unpacked build matches what CI/semantic-release publishes.
  *
  * Usage:  node scripts/build-win.mjs
  */
 
 import { spawnSync } from "child_process";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { flipFuses, FuseVersion, FuseV1Options } from "@electron/fuses";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 
-// ── Step 1: Run electron-builder --win ────────────────────────────
-// It will fail at the Wine-required step, but win-unpacked will exist.
-console.log("[build-win] Running electron-builder --win ...");
-const result = spawnSync("npx", ["electron-builder", "--win"], {
-  cwd: root,
-  stdio: "inherit",
-  shell: true,
-});
+const initPy = path.join(root, "..", "xpos", "__init__.py");
+const match = readFileSync(initPy, "utf8").match(/__version__\s*=\s*["']([^"']+)["']/);
+const version = match ? match[1] : "0.0.0";
+console.log(`[build-win] Building X POS v${version} ...`);
 
-// ── Step 2: Check that win-unpacked was produced ──────────────────
+spawnSync(
+	"npx",
+	["electron-builder", "--win", "--dir", `--config.extraMetadata.version=${version}`],
+	{ cwd: root, stdio: "inherit", shell: true }
+);
+
 const exePath = path.join(root, "release", "win-unpacked", "X POS.exe");
 if (!existsSync(exePath)) {
-  console.error(`[build-win] ERROR: exe not found at ${exePath}`);
-  console.error(
-    "[build-win] The packaging step failed before win-unpacked was created."
-  );
-  process.exit(1);
-}
-
-// ── Step 3: Flip the asar integrity fuse OFF in the Windows exe ───
-// This is a pure binary patch; no Wine needed.
-console.log(
-  `[build-win] Patching fuse: disabling ASAR integrity check in ${exePath} ...`
-);
-try {
-  await flipFuses(exePath, {
-    version: FuseVersion.V1,
-    [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false,
-  });
-  console.log("[build-win] Fuse patched successfully.");
-} catch (err) {
-  console.error("[build-win] Failed to patch fuse:", err.message);
-  process.exit(1);
+	console.error(`[build-win] ERROR: exe not found at ${exePath}`);
+	console.error("[build-win] electron-builder failed before win-unpacked was created.");
+	process.exit(1);
 }
 
 console.log(
-  "\n[build-win] Done! Copy release/win-unpacked/ to your Windows machine and run 'X POS.exe'."
+	`\n[build-win] Done! Branded X POS v${version} at:\n  ${exePath}\n` +
+		"[build-win] Copy release/win-unpacked/ to a Windows machine and run 'X POS.exe'."
 );

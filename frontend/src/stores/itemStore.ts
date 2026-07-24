@@ -338,29 +338,29 @@ export const useItemStore = defineStore("items", () => {
 			selectedItemDetail.value = result;
 			return result;
 		} catch (error) {
-			if (isNetworkError(error)) {
-				try {
-					const cached = await getCachedItemByCode(itemCode);
-					if (cached) {
-						const basicDetail = {
-							item_code: cached.item_code,
-							item_name: cached.item_name,
-							local_item_name: cached.local_item_name,
-							description: cached.description || "",
-							stock_uom: cached.stock_uom || "Nos",
-							image: cached.image || "",
-							item_group: cached.item_group || "",
-							rate: cached.rate || 0,
-							actual_qty: cached.actual_qty || 0,
-						} as unknown as ItemDetail;
-						selectedItemDetail.value = basicDetail;
-						return basicDetail;
-					}
-				} catch {
-					/* ignore cache errors */
-				}
+			if (!isNetworkError(error)) {
+				console.error("Error fetching item detail:", error);
 			}
-			console.error("Error fetching item detail:", error);
+			try {
+				const cached = await getCachedItemByCode(itemCode);
+				if (cached) {
+					const basicDetail = {
+						item_code: cached.item_code,
+						item_name: cached.item_name,
+						local_item_name: cached.local_item_name,
+						description: cached.description || "",
+						stock_uom: cached.stock_uom || "Nos",
+						image: cached.image || "",
+						item_group: cached.item_group || "",
+						rate: cached.rate || 0,
+						actual_qty: cached.actual_qty || 0,
+					} as unknown as ItemDetail;
+					selectedItemDetail.value = basicDetail;
+					return basicDetail;
+				}
+			} catch {
+				/* ignore cache errors */
+			}
 			return null;
 		} finally {
 			isLoadingDetail.value = false;

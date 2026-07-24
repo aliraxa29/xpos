@@ -1,24 +1,35 @@
-"""Mixin that augments POS Invoice Merge Log to stabilise consolidated return payments."""
+"""Override POS Invoice Merge Log to stabilise consolidated return payments."""
 
 from __future__ import annotations
 
 import frappe
+from erpnext.accounts.doctype.pos_invoice_merge_log.pos_invoice_merge_log import (
+	POSInvoiceMergeLog as ERPNextPOSInvoiceMergeLog,
+)
 from frappe.utils import flt, get_time, getdate
 
 
-class CustomPOSInvoiceMergeLog:
-	"""Mixin that ensures consolidated credit notes keep payment totals within tolerance."""
+def submit_allowing_negative_stock(invoice) -> None:
+	"""Submit a consolidated invoice without the negative stock guard."""
+
+	original = invoice.update_stock_ledger
+
+	def update_stock_ledger(**kwargs):
+		kwargs["allow_negative_stock"] = True
+		return original(**kwargs)
+
+	invoice.update_stock_ledger = update_stock_ledger
+	try:
+		invoice.submit()
+	finally:
+		invoice.update_stock_ledger = original
+
+
+class CustomPOSInvoiceMergeLog(ERPNextPOSInvoiceMergeLog):
+	"""Ensure consolidated credit notes keep payment totals within tolerance."""
 
 	def process_merging_into_sales_invoice(self, data):
-		"""Allow negative stock during POS consolidation.
-
-		Sales and returns are consolidated into separate documents.  The
-		sale SI is submitted before any credit notes, so its stock
-		deduction can temporarily exceed available qty when the shift
-		also contains returns for the same item.  Allowing negative stock
-		here is safe because the credit notes are processed immediately
-		after and restore the balance.
-		"""
+		"""Allow negative stock during POS consolidation."""
 		sales_invoice = self.get_new_sales_invoice()
 		sales_invoice = self.merge_pos_invoice_into(sales_invoice, data)
 
@@ -33,22 +44,15 @@ class CustomPOSInvoiceMergeLog:
 			sales_invoice.posting_time = get_time(self.posting_time)
 
 		sales_invoice.save()
-
-		_orig = sales_invoice.update_stock_ledger
-
-		def _allow_negative(**kwargs):
-			kwargs["allow_negative_stock"] = True
-			return _orig(**kwargs)
-
-		sales_invoice.update_stock_ledger = _allow_negative
-		sales_invoice.submit()
+		submit_allowing_negative_stock(sales_invoice)
 
 		self.consolidated_invoice = sales_invoice.name
 
 		return sales_invoice
 
 	def process_merging_into_credit_notes(self, data):
-		"""Duplicate ERPNext's loop so we can normalise item rates before save.
+		"""
+		Duplicate ERPNext's loop so we can normalise item rates before save.
 		The credit note's return_against is the consolidated SI, but rates come
 		from POS return invoices whose net_rate may be slightly higher due to
 		rounding in different calculation paths.  Capping them to the SI rate
@@ -72,7 +76,7 @@ class CustomPOSInvoiceMergeLog:
 			self._cap_item_rates_to_return_against(credit_note)
 
 			credit_note.save()
-			credit_note.submit()
+			submit_allowing_negative_stock(credit_note)
 
 			self.consolidated_credit_note = credit_note.name
 			credit_notes[credit_note.name] = [d.name for d in value]
@@ -80,12 +84,8 @@ class CustomPOSInvoiceMergeLog:
 		return credit_notes
 
 	def _cap_item_rates_to_return_against(self, credit_note) -> None:
-		"""Cap credit note item rates that exceed the consolidated SI rate.
-
-		A POS return item's net_rate can be marginally higher than the
-		corresponding row in the consolidated SI due to rounding.
-		validate_returned_items throws when rate > ref.rate, so we clamp here
-		and recalculate totals so _normalize_return_payments stays consistent.
+		"""
+		Cap credit note item rates that exceed the consolidated SI rate.
 		"""
 		si_rates = {
 			row.name: flt(row.rate)

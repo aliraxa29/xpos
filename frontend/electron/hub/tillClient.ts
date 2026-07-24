@@ -1,5 +1,6 @@
 import { net } from "electron";
 import { upsertBatch, query, execute, getMeta, setMeta } from "../database/dbService";
+import { getPrimaryKeyForTable } from "../sync/syncConfig";
 import { createLogger } from "../logger";
 
 const log = createLogger("TillClient");
@@ -53,46 +54,47 @@ function hubFetch<T = unknown>(path: string, opts: { method?: string; body?: str
 }
 
 const PULL_TABLES = [
-	{ table: "companies", primaryKey: "name" },
-	{ table: "countries", primaryKey: "name" },
-	{ table: "currencies", primaryKey: "name" },
-	{ table: "uom", primaryKey: "name" },
-	{ table: "brands", primaryKey: "name" },
-	{ table: "industries", primaryKey: "name" },
-	{ table: "modes_of_payment", primaryKey: "name" },
-	{ table: "cost_centers", primaryKey: "name" },
-	{ table: "warehouses", primaryKey: "name" },
-	{ table: "accounts", primaryKey: "name" },
-	{ table: "price_lists", primaryKey: "name" },
-	{ table: "mode_of_payment_accounts", primaryKey: "name" },
-	{ table: "pos_profiles", primaryKey: "name" },
-	{ table: "pos_payment_methods", primaryKey: "name" },
-	{ table: "items", primaryKey: "item_code" },
-	{ table: "item_groups", primaryKey: "name" },
-	{ table: "item_barcodes", primaryKey: "name" },
-	{ table: "uom_conversion_details", primaryKey: "name" },
-	{ table: "item_prices", primaryKey: "name" },
-	{ table: "item_taxes", primaryKey: "name" },
-	{ table: "item_vendors", primaryKey: "name" },
-	{ table: "item_reorder_levels", primaryKey: "name" },
-	{ table: "item_tax_templates", primaryKey: "name" },
-	{ table: "item_tax_template_details", primaryKey: "name" },
-	{ table: "sales_taxes_templates", primaryKey: "name" },
-	{ table: "sales_taxes_charges", primaryKey: "name" },
-	{ table: "pricing_rules", primaryKey: "name" },
-	{ table: "pricing_rule_item_codes", primaryKey: "name" },
-	{ table: "pricing_rule_item_groups", primaryKey: "name" },
-	{ table: "pricing_rule_brands", primaryKey: "name" },
-	{ table: "customers", primaryKey: "name" },
-	{ table: "suppliers", primaryKey: "name" },
-	{ table: "bins", primaryKey: "name" },
-	{ table: "pos_users", primaryKey: "name" },
+	"companies",
+	"countries",
+	"currencies",
+	"uom",
+	"brands",
+	"industries",
+	"modes_of_payment",
+	"cost_centers",
+	"warehouses",
+	"accounts",
+	"price_lists",
+	"mode_of_payment_accounts",
+	"pos_profiles",
+	"pos_payment_methods",
+	"items",
+	"item_groups",
+	"item_barcodes",
+	"uom_conversion_details",
+	"item_prices",
+	"item_taxes",
+	"item_vendors",
+	"item_reorder_levels",
+	"item_tax_templates",
+	"item_tax_template_details",
+	"sales_taxes_templates",
+	"sales_taxes_charges",
+	"pricing_rules",
+	"pricing_rule_item_codes",
+	"pricing_rule_item_groups",
+	"pricing_rule_brands",
+	"customers",
+	"suppliers",
+	"bins",
+	"pos_users",
 ] as const;
 
 async function pullFromHub(): Promise<number> {
 	let totalPulled = 0;
 
-	for (const { table, primaryKey } of PULL_TABLES) {
+	for (const table of PULL_TABLES) {
+		const primaryKey = getPrimaryKeyForTable(table);
 		const since = await getMeta(`till_last_sync_${table}`);
 		let offset = 0;
 		let hasMore = true;
@@ -131,14 +133,11 @@ async function pullDeletionsFromHub(): Promise<number> {
 	}>(`/api/deletions${since ? `?since=${encodeURIComponent(since)}` : ""}`);
 
 	let deleted = 0;
-	const keyColMap: Record<string, string> = {};
-	for (const { table, primaryKey } of PULL_TABLES) {
-		keyColMap[table] = primaryKey;
-	}
+	const knownTables = new Set<string>(PULL_TABLES);
 
 	for (const row of result.data) {
-		const keyCol = keyColMap[row.table_name];
-		if (keyCol) {
+		if (knownTables.has(row.table_name)) {
+			const keyCol = getPrimaryKeyForTable(row.table_name);
 			await execute(`DELETE FROM \`${row.table_name}\` WHERE \`${keyCol}\` = ?`, [row.record_key]);
 			deleted++;
 		}

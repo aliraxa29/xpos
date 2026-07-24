@@ -180,8 +180,13 @@ export async function applyPricingRules(ctx: PricingContext): Promise<PricingRes
 
 		if (rule.min_qty && ctx.qty < rule.min_qty) return false;
 		if (rule.max_qty && ctx.qty > rule.max_qty) return false;
-		if (rule.min_amt && ctx.qty * ctx.price_list_rate < rule.min_amt) return false;
-		if (rule.max_amt && ctx.qty * ctx.price_list_rate > rule.max_amt) return false;
+
+		const amtBasis =
+			rule.apply_on === "Transaction"
+				? (ctx.transaction_amount ?? ctx.qty * ctx.price_list_rate)
+				: ctx.qty * ctx.price_list_rate;
+		if (rule.min_amt && amtBasis < rule.min_amt) return false;
+		if (rule.max_amt && amtBasis > rule.max_amt) return false;
 
 		if (rule.applicable_for) {
 			switch (rule.applicable_for) {
@@ -223,68 +228,87 @@ export async function applyPricingRules(ctx: PricingContext): Promise<PricingRes
 
 	scored.sort((a, b) => (b._score ?? 0) - (a._score ?? 0));
 
-	let appliedPrice = false;
-
 	for (const rule of scored) {
-		if (rule.price_or_product_discount === "Price") {
-			applyPriceRule(rule, ctx, result);
-			appliedPrice = true;
-			if (!rule.is_cumulative) break;
-		} else if (rule.price_or_product_discount === "Product") {
+		if (rule.price_or_product_discount === "Product") {
 			applyProductRule(rule, ctx, result);
 		}
 	}
 
-	if (!appliedPrice) {
-		result.rate = ctx.rate;
+	const priceRules = scored.filter((r) => r.price_or_product_discount === "Price");
+	if (priceRules.length > 0) {
+		const best = priceRules[0];
+		const toApply = best.is_cumulative ? priceRules.filter((r) => r.is_cumulative) : [best];
+		applyPriceRules(toApply, ctx, result);
 	}
 
 	return result;
 }
 
-function applyPriceRule(rule: PricingRule, ctx: PricingContext, result: PricingResult): void {
-	const discountType = rule.rate_or_discount || "Discount Percentage";
+function round2(n: number): number {
+	return Math.round((n + Number.EPSILON) * 100) / 100;
+}
 
-	result.pricing_rule = rule.name;
-	result.pricing_rule_title = rule.title || rule.name;
+/**
+ * Apply a set of Price pricing rules to a single line and write the resolved
+ * rate/discount onto `result`.
+ *
+ * `rules` is either a single non-cumulative rule or the full set of cumulative
+ * rules (highest-scored first). Discounts are accumulated against the original
+ * price_list_rate so percentage rules stack additively (matching ERPNext) rather
+ * than compounding, and the running total is rounded to cash precision so
+ * stacked "Discount Amount" rules don't drift. Margin is applied once, from the
+ * highest-scored rule that defines one.
+ */
+function applyPriceRules(rules: PricingRule[], ctx: PricingContext, result: PricingResult): void {
+	if (rules.length === 0) return;
 
-	if (discountType === "Rate") {
-		result.rate = Number(rule.rate) || 0;
-		result.discount_percentage = 0;
-		result.discount_amount = ctx.price_list_rate - result.rate;
-	} else if (discountType === "Discount Percentage") {
-		const pct = Number(rule.discount_percentage) || 0;
-		if (rule.is_cumulative) {
-			result.discount_percentage += pct;
-		} else {
-			result.discount_percentage = pct;
+	const base = ctx.price_list_rate;
+	let workingRate = base;
+	let rateOverridden = false;
+	let totalDiscount = 0;
+	let marginRule: PricingRule | null = null;
+
+	for (const rule of rules) {
+		const discountType = rule.rate_or_discount || "Discount Percentage";
+
+		if (discountType === "Rate") {
+			if (!rateOverridden) {
+				workingRate = Number(rule.rate) || 0;
+				rateOverridden = true;
+			}
+		} else if (discountType === "Discount Percentage") {
+			totalDiscount += (base * (Number(rule.discount_percentage) || 0)) / 100;
+		} else if (discountType === "Discount Amount") {
+			totalDiscount += Number(rule.discount_amount) || 0;
 		}
-		result.discount_amount = (ctx.price_list_rate * result.discount_percentage) / 100;
-		result.rate = ctx.price_list_rate - result.discount_amount;
-	} else if (discountType === "Discount Amount") {
-		const amt = Number(rule.discount_amount) || 0;
-		if (rule.is_cumulative) {
-			result.discount_amount += amt;
-		} else {
-			result.discount_amount = amt;
-		}
-		result.rate = ctx.price_list_rate - result.discount_amount;
-		if (ctx.price_list_rate > 0) {
-			result.discount_percentage = (result.discount_amount / ctx.price_list_rate) * 100;
+
+		if (!marginRule && rule.margin_type && rule.margin_rate_or_amount) {
+			marginRule = rule;
 		}
 	}
 
-	if (rule.margin_type && rule.margin_rate_or_amount) {
-		result.margin_type = rule.margin_type;
-		result.margin_rate_or_amount = Number(rule.margin_rate_or_amount);
-		if (rule.margin_type === "Percentage") {
-			result.rate = result.rate * (1 + rule.margin_rate_or_amount / 100);
-		} else if (rule.margin_type === "Amount") {
-			result.rate += rule.margin_rate_or_amount;
+	const top = rules[0];
+	result.pricing_rule = top.name;
+	result.pricing_rule_title = top.title || top.name;
+
+	totalDiscount = round2(totalDiscount);
+	let rate = workingRate - totalDiscount;
+
+	result.discount_amount = round2(base - rate);
+	result.discount_percentage = base > 0 ? round2((result.discount_amount / base) * 100) : 0;
+
+	if (marginRule) {
+		const marginValue = Number(marginRule.margin_rate_or_amount);
+		result.margin_type = marginRule.margin_type;
+		result.margin_rate_or_amount = marginValue;
+		if (marginRule.margin_type === "Percentage") {
+			rate = rate * (1 + marginValue / 100);
+		} else if (marginRule.margin_type === "Amount") {
+			rate += marginValue;
 		}
 	}
 
-	if (result.rate < 0) result.rate = 0;
+	result.rate = rate < 0 ? 0 : rate;
 }
 
 function applyProductRule(rule: PricingRule, ctx: PricingContext, result: PricingResult): void {
@@ -337,10 +361,13 @@ export async function applyPricingRulesToCart(
 ): Promise<Map<string, PricingResult>> {
 	const results = new Map<string, PricingResult>();
 
+	const transactionAmount = cartItems.reduce((sum, item) => sum + item.qty * item.price_list_rate, 0);
+
 	for (const item of cartItems) {
 		const ctx: PricingContext = {
 			...item,
 			...opts,
+			transaction_amount: transactionAmount,
 		};
 		const pricingResult = await applyPricingRules(ctx);
 		results.set(item.item_code, pricingResult);

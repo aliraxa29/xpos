@@ -30,14 +30,14 @@ def _update_csv_from_po(app: str, locale: str | None = None):
 		update_po(app, _locale)
 		catalog = get_catalog(app, _locale)
 
-		with open(csv_file) as f:
+		with open(csv_file) as f:  # nosemgrep: frappe-security-file-traversal
 			csv_translations = {(row[0], row[2] if len(row) > 2 else None): row[1] for row in csv.reader(f)}
 
 		for message in list(catalog):
 			if (message.id, message.context or "") in csv_translations or not message.string:
 				catalog.delete(message.id, message.context)
 
-		with open(csv_file, "a") as f:
+		with open(csv_file, "a") as f:  # nosemgrep: frappe-security-file-traversal
 			writer = csv.writer(f)
 			for message in catalog._messages.values():
 				if (

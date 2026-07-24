@@ -1,10 +1,12 @@
 appId: com.xpos.app
 productName: X POS
-copyright: Copyright © 2026
+copyright: Copyright © 2026 Kodlyft
 
 directories:
   buildResources: build
   output: release
+
+afterPack: scripts/afterPack.mjs
 
 files:
   - dist/**/*
@@ -26,6 +28,7 @@ win:
         - x64
   artifactName: ${productName}-${version}-Setup.${ext}
   icon: build/icon.ico
+  legalTrademarks: X POS
 
 nsis:
   oneClick: false

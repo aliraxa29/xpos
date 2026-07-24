@@ -20,7 +20,7 @@ from xpos.x_pos.api.invoice_processing.stock import (
 	_merge_duplicate_taxes,
 	_should_block,
 	_strip_client_freebies_from_payload,
-	_validate_stock_on_invoice,
+	validate_stock_on_invoice,
 )
 from xpos.x_pos.api.invoice_processing.utils import (
 	_build_invoice_remarks,
@@ -510,7 +510,7 @@ def submit_invoice(invoice: str, data: str | dict, submit_in_background: bool = 
 
 	set_batch_nos_for_bundles(invoice_doc, "warehouse", throw=True)
 
-	_validate_stock_on_invoice(invoice_doc)
+	validate_stock_on_invoice(invoice_doc)
 
 	_apply_write_off_settings(invoice_doc, data)
 
@@ -579,7 +579,7 @@ def submit_in_background_job(*args, **kwargs):
 		invoice_doc.flags.ignore_permissions = True
 		frappe.flags.ignore_account_permission = True
 
-		_validate_stock_on_invoice(invoice_doc)
+		validate_stock_on_invoice(invoice_doc)
 		if hasattr(invoice_doc, "validate_credit_limit"):
 			invoice_doc.validate_credit_limit()
 
@@ -636,7 +636,7 @@ def validate_cart_items(items: list, pos_profile: str | None = None):
 	if not _should_block(pos_profile):
 		return []
 
-	errors = _collect_stock_errors(items)
+	errors = _collect_stock_errors(items, pos_profile=pos_profile)
 	if not errors:
 		return []
 

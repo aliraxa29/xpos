@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed, watch } from "vue";
 import { call } from "@/services/api";
-import { cachePOSData, getCachedPOSData } from "@/services/dbBridge";
+import { cachePOSData, getCachedPOSData, cacheReceiptContext } from "@/services/dbBridge";
 import { isElectron } from "@/services/electronBridge";
 import { loadPermissions } from "@/services/userRights";
 import {
@@ -15,6 +15,7 @@ import {
 	type PrintFormat,
 	type TaxDetail,
 	type PrintSettings,
+	type ReceiptContext,
 } from "@/types/pos.types";
 import { isOnline } from "@/utils";
 
@@ -206,6 +207,7 @@ export const usePosStore = defineStore("pos", () => {
 
 				if (result) {
 					applyShiftState(result);
+					refreshReceiptContext(result.pos_profile?.name || "");
 
 					import("@/stores/settingsStore").then(({ useSettingsStore }) => {
 						const settingsStore = useSettingsStore();
@@ -371,6 +373,7 @@ export const usePosStore = defineStore("pos", () => {
 			isReady.value = true;
 
 			fetchPrintFormats();
+			refreshReceiptContext(profileName);
 
 			import("@/stores/settingsStore").then(({ useSettingsStore }) => {
 				const settingsStore = useSettingsStore();
@@ -461,6 +464,19 @@ export const usePosStore = defineStore("pos", () => {
 			printFormats.value = result || [];
 		} catch (error) {
 			console.error("Error fetching print formats:", error);
+		}
+	}
+
+	async function refreshReceiptContext(profileName: string): Promise<void> {
+		if (!isElectron() || !isOnline() || !profileName) return;
+		try {
+			const ctx = await call<ReceiptContext>("xpos.api.print_formats.get_receipt_context", {
+				pos_profile: profileName,
+				print_format: defaultPrintFormat.value,
+			});
+			await cacheReceiptContext(profileName, ctx);
+		} catch (error) {
+			console.warn("[XPOS] Failed to cache receipt context:", error);
 		}
 	}
 

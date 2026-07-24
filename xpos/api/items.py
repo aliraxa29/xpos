@@ -4,6 +4,8 @@
 import json
 
 import frappe
+from frappe.query_builder import DocType
+from frappe.query_builder.functions import Sum
 from frappe.utils import cint, flt, getdate, nowdate
 
 from xpos.api.utilities import get_invoice_type
@@ -723,6 +725,44 @@ def _get_pending_pos_qty_map(
 
 	rows = query.run(as_dict=True)
 	return {r.item_code: flt(r.total_qty) for r in rows}
+
+
+def get_pending_pos_batch_qty_map(
+	warehouses: list[str],
+	batch_nos: list[str] | None = None,
+) -> dict[tuple[str, str], float]:
+	"""
+	Return qty sold per batch in submitted but unconsolidated POS Invoices.
+	"""
+
+	if not warehouses:
+		return {}
+
+	POSInv = DocType("POS Invoice")
+	POSItem = DocType("POS Invoice Item")
+
+	query = (
+		frappe.qb.from_(POSItem)
+		.join(POSInv)
+		.on(POSItem.parent == POSInv.name)
+		.select(
+			POSItem.batch_no,
+			POSItem.warehouse,
+			Sum(POSItem.stock_qty).as_("total_qty"),
+		)
+		.where(POSInv.docstatus == 1)
+		.where((POSInv.consolidated_invoice == "") | (POSInv.consolidated_invoice.isnull()))
+		.where(POSItem.warehouse.isin(warehouses))
+		.where(POSItem.batch_no.notnull())
+		.where(POSItem.batch_no != "")
+		.groupby(POSItem.batch_no, POSItem.warehouse)
+	)
+
+	if batch_nos:
+		query = query.where(POSItem.batch_no.isin(batch_nos))
+
+	rows = query.run(as_dict=True)
+	return {(r.batch_no, r.warehouse): flt(r.total_qty) for r in rows}
 
 
 def _get_batch_data(item_code: str, warehouse: str, today: str | None = None):

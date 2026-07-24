@@ -174,6 +174,22 @@
 						/>
 					</div>
 				</template>
+
+				<div
+					v-else
+					class="flex flex-col items-center justify-center gap-2 py-10 text-center text-muted-foreground"
+				>
+					<AlertCircle class="w-8 h-8 opacity-50" />
+					<p class="text-sm font-medium text-foreground">
+						{{ itemForDetail?.item_name || __("Item details unavailable") }}
+					</p>
+					<p v-if="itemForDetail?.item_code" class="text-xs font-mono">
+						{{ itemForDetail.item_code }}
+					</p>
+					<p class="text-xs">
+						{{ __("Could not load details for this item. Check your connection and try again.") }}
+					</p>
+				</div>
 			</div>
 
 			<DialogFooter class="shrink-0 border-t border-border px-5 py-4">
@@ -206,7 +222,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Check, Plus } from "lucide-vue-next";
+import { Loader2, Search, Check, Plus, AlertCircle } from "lucide-vue-next";
 import __ from "@/lib/translate";
 
 const itemStore = useItemStore();

@@ -1,11 +1,12 @@
 import { usePosStore } from "@/stores/posStore";
 import { call, showError } from "@/services/api";
+import { getCachedReceiptContext } from "@/services/dbBridge";
+import { buildReceiptHtml } from "@/services/receiptTemplate";
+import type { ReceiptSnapshot } from "@/types/pos.types";
 import { __ } from "@/lib/translate";
 
 export interface PrintInvoiceOptions {
-	/** Override the print format (defaults to the POS profile's default thermal receipt). */
 	format?: string;
-	/** Override the resolved doctype. */
 	doctype?: "Sales Invoice" | "POS Invoice";
 }
 
@@ -66,6 +67,20 @@ export function usePrintInvoice() {
 			const invoice = await window.electronAPI.db.getPendingInvoice(localId);
 			if (!invoice) {
 				showError(__("Invoice not found for printing"));
+				return;
+			}
+			const snapshot = (invoice.data as Record<string, unknown>)?.receipt as
+				| ReceiptSnapshot
+				| undefined;
+			const context = await getCachedReceiptContext(posStore.profileName);
+
+			if (snapshot && context) {
+				if (!snapshot.name) snapshot.name = `LOCAL-${localId}`;
+				const html = buildReceiptHtml(snapshot, context);
+				const result = await window.electronAPI.print.printReport(html);
+				if (!result?.success) {
+					showError(__("Failed to print invoice locally"));
+				}
 				return;
 			}
 

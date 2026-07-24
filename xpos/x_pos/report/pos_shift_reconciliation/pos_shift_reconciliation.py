@@ -55,22 +55,23 @@ def _get_items_sold(invoices, doctype):
 	if not names:
 		return []
 
-	item_table = f"`tab{doctype} Item`"
-	return frappe.db.sql(
-		f"""
-		SELECT
-			item_code,
-			item_name,
-			uom,
-			ROUND(SUM(qty), 3) AS qty,
-			ROUND(SUM(amount), 2) AS amount
-		FROM {item_table}
-		WHERE parent IN %(names)s AND parenttype = %(dt)s
-		GROUP BY item_code
-		ORDER BY item_name ASC
-		""",
-		{"names": names, "dt": doctype},
-		as_dict=True,
+	from frappe.query_builder import DocType
+	from frappe.query_builder.functions import Round, Sum
+
+	item = DocType(f"{doctype} Item")
+	return (
+		frappe.qb.from_(item)
+		.select(
+			item.item_code,
+			item.item_name,
+			item.uom,
+			Round(Sum(item.qty), 3).as_("qty"),
+			Round(Sum(item.amount), 2).as_("amount"),
+		)
+		.where((item.parent.isin(names)) & (item.parenttype == doctype))
+		.groupby(item.item_code)
+		.orderby(item.item_name)
+		.run(as_dict=True)
 	)
 
 

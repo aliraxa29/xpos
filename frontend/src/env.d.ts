@@ -47,6 +47,7 @@ declare global {
 	var locals: Locals;
 
 	interface Window {
+		__: (txt: string, args?: (string | number)[]) => string;
 		__xposBundlePromise?: Promise<unknown>;
 		xpos?: XPosGlobal;
 		electronAPI?: import("@/services/electronBridge").ElectronAPI;
