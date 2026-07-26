@@ -14,12 +14,12 @@ from frappe.utils.background_jobs import enqueue
 from xpos.x_pos.api.invoice_processing.stock import (
 	_apply_item_name_overrides,
 	_auto_set_return_batches,
-	_collect_stock_errors,
 	_deduplicate_free_items,
 	_merge_duplicate_taxes,
 	_should_block,
 	_strip_client_freebies_from_payload,
 	_validate_stock_on_invoice,
+	collect_stock_errors,
 )
 from xpos.x_pos.api.invoice_processing.utils import (
 	_build_invoice_remarks,
@@ -644,7 +644,7 @@ def validate_cart_items(items: list, pos_profile: str | None = None):
 	if not _should_block(pos_profile):
 		return []
 
-	errors = _collect_stock_errors(items, pos_profile=pos_profile)
+	errors = collect_stock_errors(items, pos_profile=pos_profile)
 	if not errors:
 		return []
 

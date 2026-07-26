@@ -12,6 +12,31 @@ from frappe.utils.background_jobs import enqueue
 from xpos.api.utilities import get_profile_setting
 
 
+def enforce_stock_availability(invoice_doc):
+	"""
+	Block the sale when it would take stock below zero.
+
+	The cart guard in the browser is advisory only - it works off a snapshot
+	that goes stale, and offline replay bypasses it entirely - so this is the
+	authoritative check.  Bins are locked first so two terminals cannot both
+	sell the last unit.
+	"""
+
+	from xpos.x_pos.api.invoice_processing.stock import _validate_stock_on_invoice
+	from xpos.x_pos.api.item_processing.stock import lock_bins_for_update
+
+	if invoice_doc.get("is_return"):
+		return
+
+	lock_bins_for_update(
+		[
+			{"item_code": row.item_code, "warehouse": row.warehouse}
+			for row in (invoice_doc.get("items") or []) + (invoice_doc.get("packed_items") or [])
+		]
+	)
+	_validate_stock_on_invoice(invoice_doc)
+
+
 def _get_item_rate_precision():
 	"""Return item rate precision from System Settings float_precision, default 3."""
 	val = frappe.db.get_default("float_precision")
@@ -541,11 +566,13 @@ def create_invoice(data: str | dict):
 	else:
 		invoice_doc.insert(ignore_permissions=True)
 
+	enforce_stock_availability(invoice_doc)
+
 	_validate_unpaid_balance_permissions(invoice_doc, pos, data)
 
 	if submit_in_background:
 		enqueue(
-			_submit_invoice_job,
+			submit_invoice_job,
 			queue="short",
 			timeout=300,
 			invoice_name=invoice_doc.name,
@@ -564,15 +591,22 @@ def create_invoice(data: str | dict):
 	return _build_invoice_response(invoice_doc)
 
 
-def _submit_invoice_job(invoice_name: str, doctype: str = "Sales Invoice"):
+def submit_invoice_job(invoice_name: str, doctype: str = "Sales Invoice"):
 	"""Background job to submit an invoice."""
+	user = frappe.session.user
 	try:
 		doc = frappe.get_doc(doctype, invoice_name)
+		enforce_stock_availability(doc)
 		doc.submit()
 		frappe.db.commit()
-	except Exception:
-		frappe.log_error(f"Failed to submit {doctype} {invoice_name}", "X POS Invoice Submission")
+	except Exception as e:
 		frappe.db.rollback()
+		frappe.log_error(f"Failed to submit {doctype} {invoice_name}: {e}", "X POS Invoice Submission")
+		frappe.publish_realtime(
+			"pos_invoice_submit_error",
+			{"invoice": invoice_name, "error": str(e)},
+			user=user,
+		)
 
 
 @frappe.whitelist()

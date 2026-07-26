@@ -25,6 +25,13 @@ export const useOfflineStore = defineStore("offline", () => {
 	const posStore = usePosStore();
 
 	const MAX_RETRIES = 3;
+
+	function isStockRejection(error: unknown): boolean {
+		const excType = (error as { excType?: string })?.excType;
+		if (excType) return excType === "XPosInsufficientStockError";
+		const msg = error instanceof Error ? error.message : String(error ?? "");
+		return /insufficient stock|not enough stock/i.test(msg);
+	}
 	const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 	let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -145,12 +152,16 @@ export const useOfflineStore = defineStore("offline", () => {
 
 			let synced = 0;
 			let failed = 0;
+			let rejected = 0;
 
 			for (const invoice of invoices) {
 				if (!isOnline.value) {
 					break;
 				}
 				if ((invoice.data as Record<string, unknown>)?.is_draft) {
+					continue;
+				}
+				if (invoice.status === "rejected") {
 					continue;
 				}
 				try {
@@ -163,10 +174,25 @@ export const useOfflineStore = defineStore("offline", () => {
 					if (invoice.id) await deletePendingInvoice(invoice.id);
 					synced++;
 				} catch (error: unknown) {
+					invoice.error = error instanceof Error ? error.message : String(error);
+
+					if (isStockRejection(error)) {
+						rejected++;
+						invoice.status = "rejected";
+						syncErrors.value.push(
+							`Invoice for ${invoice.customer_name || "Unknown"}: ${invoice.error}`,
+						);
+						if (invoice.id)
+							await updatePendingInvoice(invoice.id, {
+								status: "rejected",
+								error: invoice.error,
+							});
+						continue;
+					}
+
 					failed++;
 					invoice.status = "failed";
 					invoice.retry_count = (invoice.retry_count || 0) + 1;
-					invoice.error = error instanceof Error ? error.message : String(error);
 
 					if (invoice.retry_count >= MAX_RETRIES) {
 						syncErrors.value.push(
@@ -192,6 +218,14 @@ export const useOfflineStore = defineStore("offline", () => {
 			}
 			if (failed > 0) {
 				showError(`Failed to sync ${failed} invoice${failed > 1 ? "s" : ""}. Will retry.`);
+			}
+			if (rejected > 0) {
+				showError(
+					__(
+						"{0} offline invoice(s) were rejected for insufficient stock and will not retry. Review them in the pending list.",
+						[String(rejected)],
+					),
+				);
 			}
 		} catch (error) {
 			console.error("Sync error:", error);
@@ -229,9 +263,21 @@ export const useOfflineStore = defineStore("offline", () => {
 			showSuccess(__("Invoice synced successfully"));
 			return true;
 		} catch (error: unknown) {
+			invoice.error = error instanceof Error ? error.message : String(error);
+
+			if (isStockRejection(error)) {
+				invoice.status = "rejected";
+				await updatePendingInvoice(invoice.id!, {
+					status: "rejected",
+					error: invoice.error,
+				});
+				await loadPendingInvoices();
+				showError(invoice.error);
+				return false;
+			}
+
 			invoice.status = "failed";
 			invoice.retry_count = (invoice.retry_count || 0) + 1;
-			invoice.error = error instanceof Error ? error.message : String(error);
 			await updatePendingInvoice(invoice.id!, {
 				status: "failed",
 				retry_count: invoice.retry_count,

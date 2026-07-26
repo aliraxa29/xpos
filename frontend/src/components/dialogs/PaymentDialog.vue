@@ -1028,6 +1028,12 @@ async function submitPayment(withPrint: boolean = true) {
 		return;
 	}
 
+	const stockCheck = await cartStore.revalidateStock();
+	if (!stockCheck.valid) {
+		showError(stockCheck.messages.join("\n"));
+		return;
+	}
+
 	isSubmitting.value = true;
 	printAfterSave.value = withPrint;
 

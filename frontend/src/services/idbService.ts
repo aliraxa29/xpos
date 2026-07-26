@@ -69,7 +69,7 @@ function sanitizeForIdb<T>(value: T): T {
 export interface PendingInvoice {
 	id?: number;
 	data: unknown;
-	status: "pending" | "syncing" | "failed";
+	status: "pending" | "syncing" | "failed" | "rejected";
 	created_at: string;
 	error?: string;
 	retry_count: number;

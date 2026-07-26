@@ -396,15 +396,17 @@ def get_item_detail(
 	result["uom"] = item.stock_uom
 	result["conversion_factor"] = 1.0
 
-	result["actual_qty"] = get_stock_qty(item_code, warehouse) if warehouse else 0
+	result["actual_qty"] = get_stock_qty(item_code, warehouse, pos_profile=pos_profile) if warehouse else 0
 
 	batches = []
 	if item.has_batch_no and warehouse:
+		pending_batches = get_pending_batch_qty(warehouse, pos_profile)
 		for b in _get_batch_data(item_code, warehouse, today):
+			batch_no = b["batch_no"]
 			batches.append(
 				{
-					"batch_no": b["batch_no"],
-					"qty": flt(b.get("batch_qty", 0)),
+					"batch_no": batch_no,
+					"qty": flt(b.get("batch_qty", 0)) - pending_batches.get(batch_no, 0.0),
 					"expiry_date": b.get("expiry_date"),
 				}
 			)
@@ -487,7 +489,9 @@ def get_item_variants(
 			"price_list_rate",
 		)
 		v["rate"] = flt(rate)
-		v["actual_qty"] = get_stock_qty(v["item_code"], warehouse) if warehouse else 0
+		v["actual_qty"] = (
+			get_stock_qty(v["item_code"], warehouse, pos_profile=pos_profile) if warehouse else 0
+		)
 
 	from collections import defaultdict
 
@@ -586,11 +590,12 @@ def get_stock_availability(items: str | list, warehouse: str | None = None, pos_
 			from erpnext.stock.doctype.batch.batch import get_batch_qty
 
 			qty = flt(get_batch_qty(batch_no, item_warehouse))
+			if use_pos_deduction:
+				qty -= get_pending_batch_qty(item_warehouse, pos_profile).get(batch_no, 0.0)
 		else:
 			qty = flt(get_stock_qty(item_code, item_warehouse))
-
-		if use_pos_deduction and not batch_no:
-			qty -= pending_map.get(item_code, 0.0)
+			if use_pos_deduction:
+				qty -= pending_map.get(item_code, 0.0)
 
 		results.append({"item_code": item_code, "actual_qty": qty})
 
@@ -691,6 +696,27 @@ def _is_pos_invoice_mode(pos_profile: str) -> bool:
 	return bool(
 		frappe.db.get_value("POS Profile", pos_profile, "create_pos_invoice_instead_of_sales_invoice")
 	)
+
+
+def get_pending_batch_qty(warehouse: str, pos_profile: str | None) -> dict[str, float]:
+	"""Return batch_no -> qty already sold on unconsolidated POS Invoices.
+
+	Batch quantities come from the stock ledger, which in POS Invoice mode has
+	not moved yet, so they need the same pending deduction as item quantities.
+	"""
+
+	if not warehouse or not pos_profile or not _is_pos_invoice_mode(pos_profile):
+		return {}
+
+	warehouses = [warehouse]
+	if frappe.db.get_value("Warehouse", warehouse, "is_group"):
+		warehouses = frappe.db.get_descendants("Warehouse", warehouse) or []
+
+	pending: dict[str, float] = {}
+	for (batch_no, _wh), qty in get_pending_pos_batch_qty_map(warehouses).items():
+		pending[batch_no] = pending.get(batch_no, 0.0) + qty
+
+	return pending
 
 
 def _get_pending_pos_qty_map(

@@ -226,6 +226,17 @@ const qtyInputRef = ref<InstanceType<typeof NumberInput> | null>(null);
 const itemForDetail = computed(() => itemStore.selectedItemForDetail);
 const detail = computed(() => itemStore.selectedItemDetail);
 
+const itemForCart = computed(() => {
+	if (!itemForDetail.value) return null;
+	if (!detail.value) return itemForDetail.value;
+	const detailQty = detail.value.actual_qty;
+	return {
+		...itemForDetail.value,
+		actual_qty: detailQty === undefined ? itemForDetail.value.actual_qty : Number(detailQty),
+		batches: detail.value.batches,
+	};
+});
+
 watch(detail, (d) => {
 	if (d) {
 		selectedUOM.value = d.uom || d.stock_uom;
@@ -331,14 +342,14 @@ function toggleSerial(sn: string): void {
 }
 
 function addToCart(): void {
-	if (!itemForDetail.value || !canAdd.value) return;
+	if (!itemForDetail.value || !itemForCart.value || !canAdd.value) return;
 
 	const rate = priceInput.value;
 
 	if (detail.value?.has_serial_no && selectedSerials.value.length > 0) {
 		for (const sn of selectedSerials.value) {
 			const result = cartStore.addItemWithDetails(
-				itemForDetail.value,
+				itemForCart.value,
 				1,
 				rate,
 				selectedUOM.value,
@@ -353,7 +364,7 @@ function addToCart(): void {
 		}
 	} else {
 		const result = cartStore.addItemWithDetails(
-			itemForDetail.value,
+			itemForCart.value,
 			selectedQty.value,
 			rate,
 			selectedUOM.value,

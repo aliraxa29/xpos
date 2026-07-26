@@ -76,7 +76,9 @@ async function fetchCall<T = unknown>(method: string, args: Record<string, unkno
 			errorMsg = data.message || `HTTP error! status: ${response.status}`;
 		}
 
-		throw new Error(errorMsg);
+		const err = new Error(errorMsg) as Error & { excType?: string };
+		if (data.exc_type) err.excType = data.exc_type;
+		throw err;
 	}
 	if (data && typeof data === "object" && "message" in data) {
 		return data.message as T;

@@ -268,39 +268,156 @@ export const useCartStore = defineStore("cart", () => {
 
 	const hasOffers = computed(() => appliedOffers.value.length > 0 || !!appliedCoupon.value);
 
-	function canAddItem(item: POSItem): { allowed: boolean; message?: string } {
-		const posStore = usePosStore();
-		const allowNegativeStock = posStore.stockSettings?.allow_negative_stock;
+	function stockQtyOf(row: { qty: number; conversion_factor?: number }): number {
+		return row.qty * (row.conversion_factor || 1);
+	}
 
-		if (allowNegativeStock) {
+	function committedStockQty(itemCode: string, batchNo?: string): number {
+		return items.value
+			.filter((i: CartItem) => {
+				if (i.item_code !== itemCode) return false;
+				return batchNo ? i.batch_no === batchNo : true;
+			})
+			.reduce((sum: number, i: CartItem) => sum + stockQtyOf(i), 0);
+	}
+
+	function checkAvailability(
+		item: POSItem,
+		requestedQty: number,
+		conversionFactor = 1,
+		batchNo?: string,
+		replacesRowQty = 0,
+	): { allowed: boolean; message?: string } {
+		const posStore = usePosStore();
+
+		if (posStore.stockSettings?.allow_negative_stock) {
 			return { allowed: true };
 		}
-
+		if (!posStore.blockSaleBeyondAvailableQty) {
+			return { allowed: true };
+		}
 		if (Number(item.is_stock_item) === 0) {
 			return { allowed: true };
 		}
 
+		const uomLabel = item.uom || item.stock_uom;
 		const actualQty = item.actual_qty ?? 0;
 		if (actualQty <= 0) {
-			return {
-				allowed: false,
-				message: `${item.item_name} is out of stock`,
-			};
+			return { allowed: false, message: __("{0} is out of stock", [item.item_name]) };
 		}
 
-		const existingItem = items.value.find(
-			(i: CartItem) => i.item_code === item.item_code && !i.serial_no && !i.batch_no,
-		);
-		const currentQtyInCart = existingItem?.qty || 0;
+		const requestedStockQty = requestedQty * (conversionFactor || 1);
 
-		if (currentQtyInCart + 1 > actualQty) {
+		if (batchNo) {
+			const batchQty = getBatchQty(item, batchNo);
+			if (batchQty !== undefined) {
+				const committedInBatch = committedStockQty(item.item_code, batchNo) - replacesRowQty;
+				if (committedInBatch + requestedStockQty > batchQty) {
+					return {
+						allowed: false,
+						message: __("Only {0} of batch {1} available", [String(batchQty), batchNo]),
+					};
+				}
+			}
+		}
+
+		const committed = committedStockQty(item.item_code) - replacesRowQty;
+		if (committed + requestedStockQty > actualQty) {
 			return {
 				allowed: false,
-				message: `Only ${actualQty} ${item.uom || item.stock_uom} of ${item.item_name} available`,
+				message: __("Only {0} {1} of {2} available", [String(actualQty), uomLabel, item.item_name]),
 			};
 		}
 
 		return { allowed: true };
+	}
+
+	function getBatchQty(item: POSItem, batchNo: string): number | undefined {
+		const batches = item.batches as { batch_no: string; qty: number }[] | undefined;
+		return batches?.find((b) => b.batch_no === batchNo)?.qty;
+	}
+
+	function canAddItem(item: POSItem): { allowed: boolean; message?: string } {
+		return checkAvailability(item, 1, (item as CartItem).conversion_factor || 1, item.batch_no);
+	}
+
+	async function revalidateStock(): Promise<{ valid: boolean; messages: string[] }> {
+		const posStore = usePosStore();
+
+		if (posStore.stockSettings?.allow_negative_stock || !posStore.blockSaleBeyondAvailableQty) {
+			return { valid: true, messages: [] };
+		}
+		if (isReturnMode.value) {
+			return { valid: true, messages: [] };
+		}
+
+		const stockItems = items.value.filter((i: CartItem) => Number(i.is_stock_item) !== 0);
+		if (stockItems.length === 0) {
+			return { valid: true, messages: [] };
+		}
+
+		const warehouse = posStore.warehouse;
+		if (!warehouse) {
+			return { valid: true, messages: [] };
+		}
+
+		const itemCodes = [...new Set(stockItems.map((i: CartItem) => i.item_code))];
+		const freshMap = await fetchAvailability(itemCodes, warehouse, posStore.profileName);
+
+		if (freshMap.size === 0) {
+			return { valid: true, messages: [] };
+		}
+
+		for (const row of items.value) {
+			const qty = freshMap.get(row.item_code);
+			if (qty !== undefined) row.actual_qty = qty;
+		}
+
+		const messages: string[] = [];
+		for (const [itemCode, available] of freshMap) {
+			const required = committedStockQty(itemCode);
+			if (required > available) {
+				const row = stockItems.find((i: CartItem) => i.item_code === itemCode);
+				messages.push(
+					__("Only {0} {1} of {2} available", [
+						String(available),
+						row?.stock_uom || "",
+						row?.item_name || itemCode,
+					]),
+				);
+			}
+		}
+
+		return { valid: messages.length === 0, messages };
+	}
+
+	async function fetchAvailability(
+		itemCodes: string[],
+		warehouse: string,
+		posProfile: string,
+	): Promise<Map<string, number>> {
+		try {
+			const fresh = await call<{ item_code: string; actual_qty: number }[]>(
+				"xpos.api.items.get_stock_availability",
+				{
+					items: JSON.stringify(itemCodes),
+					warehouse,
+					pos_profile: posProfile || undefined,
+				},
+			);
+			if (fresh?.length) {
+				return new Map(fresh.map((s) => [s.item_code, s.actual_qty || 0]));
+			}
+		} catch {}
+
+		const cached = new Map<string, number>();
+		for (const itemCode of itemCodes) {
+			try {
+				const entry = await getCachedStockForItem(warehouse, itemCode);
+				if (entry) cached.set(itemCode, entry.actual_qty);
+			} catch {}
+		}
+		return cached;
 	}
 
 	function addItem(item: POSItem): { success: boolean; message?: string } {
@@ -352,39 +469,9 @@ export const useCartStore = defineStore("cart", () => {
 		item: POSItem,
 		qty: number,
 		batchNo?: string,
+		conversionFactor = 1,
 	): { allowed: boolean; message?: string } {
-		const posStore = usePosStore();
-		const allowNegativeStock = posStore.stockSettings?.allow_negative_stock;
-
-		if (allowNegativeStock) {
-			return { allowed: true };
-		}
-
-		if (Number(item.is_stock_item) === 0) {
-			return { allowed: true };
-		}
-
-		const actualQty = item.actual_qty ?? 0;
-		if (actualQty <= 0) {
-			return {
-				allowed: false,
-				message: `${item.item_name} is out of stock`,
-			};
-		}
-
-		const existingItems = items.value.filter(
-			(i: CartItem) => i.item_code === item.item_code && (!batchNo || i.batch_no === batchNo),
-		);
-		const currentQtyInCart = existingItems.reduce((sum, i) => sum + i.qty, 0);
-
-		if (currentQtyInCart + qty > actualQty) {
-			return {
-				allowed: false,
-				message: `Only ${actualQty} ${item.uom || item.stock_uom} of ${item.item_name} available`,
-			};
-		}
-
-		return { allowed: true };
+		return checkAvailability(item, qty, conversionFactor, batchNo);
 	}
 
 	function addItemWithDetails(
@@ -404,8 +491,8 @@ export const useCartStore = defineStore("cart", () => {
 			return { success: false, message: __("This item is not in the original invoice") };
 		}
 
-		if (!isReturnMode.value && !serialNo) {
-			const stockCheck = canAddItemWithDetails(item, qty, batchNo);
+		if (!isReturnMode.value) {
+			const stockCheck = canAddItemWithDetails(item, qty, batchNo, conversionFactor || 1);
 			if (!stockCheck.allowed) {
 				return { success: false, message: stockCheck.message };
 			}
@@ -476,18 +563,16 @@ export const useCartStore = defineStore("cart", () => {
 		const item = items.value[index];
 		if (!item) return { success: false, message: __("Item not found") };
 
-		if (!isReturnMode.value && qty > item.qty && Number(item.is_stock_item) !== 0) {
-			const posStore = usePosStore();
-			const allowNegativeStock = posStore.stockSettings?.allow_negative_stock;
-
-			if (!allowNegativeStock) {
-				const actualQty = item.actual_qty ?? 0;
-				if (qty > actualQty) {
-					return {
-						success: false,
-						message: `Only ${actualQty} ${item.uom || item.stock_uom} of ${item.item_name} available`,
-					};
-				}
+		if (!isReturnMode.value && qty > item.qty) {
+			const stockCheck = checkAvailability(
+				item,
+				qty,
+				item.conversion_factor || 1,
+				item.batch_no || undefined,
+				stockQtyOf(item),
+			);
+			if (!stockCheck.allowed) {
+				return { success: false, message: stockCheck.message };
 			}
 		}
 
@@ -1064,6 +1149,7 @@ export const useCartStore = defineStore("cart", () => {
 		remainingPayment,
 		hasOffers,
 		canAddItem,
+		revalidateStock,
 		canAddItemWithDetails,
 		addItem,
 		addItemWithDetails,
