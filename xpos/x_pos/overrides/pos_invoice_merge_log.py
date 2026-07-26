@@ -176,7 +176,7 @@ class CustomPOSInvoiceMergeLog(ERPNextPOSInvoiceMergeLog):
 			self._cap_item_rates_to_return_against(credit_note)
 
 			credit_note.save()
-			credit_note.submit()
+			submit_allowing_negative_stock(credit_note)
 
 			self.consolidated_credit_note = credit_note.name
 			credit_notes[credit_note.name] = [d.name for d in value]
