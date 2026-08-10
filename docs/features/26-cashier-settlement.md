@@ -16,6 +16,8 @@ This mirrors how many pharmacies and high-traffic retail counters operate: sales
 
 Under the hood this reuses the existing draft-invoice workflow. Unsettled bills are drafts (`docstatus = 0`) flagged with a `POS Awaiting Settlement` field, which keeps them separate from ordinary [held orders](07-draft-orders.md). When a bill is settled, the invoice is re-associated with the **cashier's** open shift, so the collected amount is reconciled in the cashier's shift, not the terminal operator's.
 
+> **Not the same as an open tab.** Send to Cashier is a one-way hand-off: once sent, only a cashier may touch the bill, and it is meant to be paid immediately. An [open tab](27-open-tabs.md) stays editable and is meant to be added to over time, by whoever is on shift. Use Cashier Settlement to split ringing up from collecting; use open tabs to keep a customer's order alive across a shift change.
+
 ---
 
 ## Enabling the Feature

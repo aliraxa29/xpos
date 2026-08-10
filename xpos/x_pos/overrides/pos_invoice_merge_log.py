@@ -6,7 +6,10 @@ import frappe
 from erpnext.accounts.doctype.pos_invoice_merge_log.pos_invoice_merge_log import (
 	POSInvoiceMergeLog as ERPNextPOSInvoiceMergeLog,
 )
-from frappe.utils import flt, get_time, getdate
+from frappe import _
+from frappe.utils import cint, flt, get_time, getdate
+
+from xpos.x_pos.api.item_processing.stock import get_stock_availability
 
 
 def submit_allowing_negative_stock(invoice) -> None:
@@ -25,8 +28,113 @@ def submit_allowing_negative_stock(invoice) -> None:
 		invoice.update_stock_ledger = original
 
 
+def negative_stock_allowed() -> bool:
+	return bool(cint(frappe.db.get_single_value("Stock Settings", "allow_negative_stock") or 0))
+
+
 class CustomPOSInvoiceMergeLog(ERPNextPOSInvoiceMergeLog):
 	"""Ensure consolidated credit notes keep payment totals within tolerance."""
+
+	def on_submit(self):
+		"""Guard the consolidation against overselling."""
+
+		pos_invoices = [frappe.get_cached_doc("POS Invoice", d.pos_invoice) for d in self.pos_invoices]
+
+		self.validate_net_stock(pos_invoices)
+		super().on_submit()
+		self.assert_no_negative_stock(pos_invoices)
+
+	def collect_net_stock_movement(self, pos_invoices) -> dict[tuple[str, str], float]:
+		"""Sum stock movement per ``(item_code, warehouse)`` across the merge log."""
+
+		movement: dict[tuple[str, str], float] = {}
+
+		for invoice in pos_invoices:
+			for table, qty_field in (("items", "stock_qty"), ("packed_items", "qty")):
+				for row in invoice.get(table) or []:
+					item_code = row.get("item_code")
+					warehouse = row.get("warehouse")
+					if not item_code or not warehouse:
+						continue
+					if not cint(frappe.get_cached_value("Item", item_code, "is_stock_item") or 0):
+						continue
+
+					qty = flt(row.get(qty_field))
+					if not qty:
+						continue
+
+					key = (item_code, warehouse)
+					movement[key] = movement.get(key, 0.0) + qty
+
+		return movement
+
+	def validate_net_stock(self, pos_invoices) -> None:
+		"""Throw when the shift's *net* movement exceeds available stock."""
+
+		if negative_stock_allowed():
+			return
+
+		shortfalls = []
+		for (item_code, warehouse), net_qty in self.collect_net_stock_movement(pos_invoices).items():
+			if net_qty <= 0:
+				continue
+
+			available = flt(get_stock_availability(item_code, warehouse))
+			if net_qty > available:
+				shortfalls.append(
+					_("<li>{0} in {1}: required {2}, available {3}</li>").format(
+						frappe.bold(item_code),
+						frappe.bold(warehouse),
+						frappe.bold(flt(net_qty, 2)),
+						frappe.bold(flt(available, 2)),
+					)
+				)
+
+		if shortfalls:
+			frappe.throw(
+				_(
+					"Cannot consolidate: the following items were sold beyond available stock.<br>"
+					"<ul>{0}</ul>"
+				).format("".join(shortfalls)),
+				title=_("Insufficient Stock"),
+			)
+
+	def assert_no_negative_stock(self, pos_invoices) -> None:
+		"""Fail the whole consolidation if any bin ended up below zero.
+
+		``on_submit`` runs in a single transaction, so throwing here rolls back
+		the consolidated invoice, every credit note and this merge log
+		together - there is no half-consolidated state to clean up.  This is
+		the backstop for anything the arithmetic in :meth:`validate_net_stock`
+		cannot model: bundles, UOM edge cases, serial/batch bundles.
+		"""
+
+		if negative_stock_allowed():
+			return
+
+		keys = list(self.collect_net_stock_movement(pos_invoices))
+		if not keys:
+			return
+
+		negatives = []
+		for item_code, warehouse in keys:
+			actual_qty = flt(
+				frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse}, "actual_qty")
+			)
+			if actual_qty < 0:
+				negatives.append(
+					_("<li>{0} in {1}: {2}</li>").format(
+						frappe.bold(item_code), frappe.bold(warehouse), frappe.bold(flt(actual_qty, 2))
+					)
+				)
+
+		if negatives:
+			frappe.throw(
+				_(
+					"Consolidation would leave negative stock and has been rolled back.<br><ul>{0}</ul>"
+				).format("".join(negatives)),
+				title=_("Negative Stock"),
+			)
 
 	def process_merging_into_sales_invoice(self, data):
 		"""Allow negative stock during POS consolidation."""

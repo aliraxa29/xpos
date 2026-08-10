@@ -75,6 +75,8 @@ The POS Profile is the central configuration hub for X POS. It controls every as
 | Block Sale Beyond Available Qty | Prevent selling beyond available stock |
 | Enable Cashier Settlement | Create unsettled bills at the terminal for a cashier to settle later (see [Cashier Settlement](26-cashier-settlement.md)) |
 | Print Backup Receipt | Print a non-genuine backup receipt at the terminal when a bill is sent to the cashier |
+| Allow Open Tab Recall | Let a cashier pull draft invoices raised on any shift of this profile, not just their own. Also needs the *Recall Other Shifts' Tabs* role permission (see [Open Tabs](27-open-tabs.md)) |
+| Allow Outstanding Settlement | Let a cashier collect payment against past submitted invoices that still carry a balance. Also needs the *Settle Outstanding Invoice* role permission (see [Open Tabs](27-open-tabs.md)) |
 
 ---
 

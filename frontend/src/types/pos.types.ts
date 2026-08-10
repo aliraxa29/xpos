@@ -43,6 +43,8 @@ export interface POSProfile {
 	display_item_code?: boolean;
 	allow_zero_rated_items?: boolean;
 	enable_cashier_settlement?: boolean;
+	allow_open_tab_recall?: boolean;
+	allow_outstanding_settlement?: boolean;
 	print_backup_receipt?: boolean;
 	auto_set_batch?: boolean;
 	search_serial_no?: boolean;
@@ -183,6 +185,11 @@ export interface CartItem extends POSItem {
 	item_tax_template?: string;
 	item_tax_map?: Record<string, number>;
 	pos_offer_applied?: boolean;
+	uid?: string;
+	pos_pricing_rules?: string[];
+	pos_rate_overridden?: boolean;
+	pos_is_free_item?: boolean;
+	pos_free_item_rule?: string;
 }
 
 export interface ItemGroup {
@@ -350,6 +357,8 @@ export interface InvoiceItem {
 	offer_applied?: boolean;
 	is_offer?: boolean;
 	is_replace?: boolean;
+	is_free_item?: number;
+	pricing_rules?: string;
 }
 
 export interface InvoicePayment {
@@ -362,6 +371,7 @@ export interface InvoicePayment {
 
 export interface InvoiceData {
 	name?: string;
+	modified?: string;
 	doctype?: string;
 	pos_profile: string;
 	customer: string;
@@ -369,6 +379,7 @@ export interface InvoiceData {
 	posting_date?: string;
 	additional_discount_percentage?: number;
 	discount_amount?: number;
+	apply_discount_on?: string;
 	payments?: InvoicePayment[];
 	pos_notes?: string;
 	pos_delivery_date?: string;
@@ -537,6 +548,26 @@ export interface OutstandingInvoice {
 	outstanding_amount: number;
 	posting_date: string;
 	customer: string;
+	customer_name?: string;
+	paid_amount?: number;
+	currency?: string;
+	status?: string;
+}
+
+export interface OpenTab {
+	name: string;
+	customer: string;
+	customer_name?: string;
+	posting_date?: string;
+	grand_total?: number;
+	total_qty?: number;
+	currency?: string;
+	creation?: string;
+	modified?: string;
+	pos_opening_shift?: string;
+	owner?: string;
+	paid_amount?: number;
+	pos_awaiting_settlement?: boolean | number;
 }
 
 export interface PaymentRequest {

@@ -112,6 +112,10 @@ export function isNetworkError(error: unknown): boolean {
 	);
 }
 
+export function isTabConflictError(error: unknown): boolean {
+	return (error as { excType?: string } | null)?.excType === "TimestampMismatchError";
+}
+
 /**
  * Debounce function to limit the rate at which a function can fire.
  */

@@ -3,7 +3,7 @@ import { ref, computed, watch } from "vue";
 import { call } from "@/services/api";
 import { cachePOSData, getCachedPOSData, cacheReceiptContext } from "@/services/dbBridge";
 import { isElectron } from "@/services/electronBridge";
-import { loadPermissions } from "@/services/userRights";
+import { hasPermission, loadPermissions } from "@/services/userRights";
 import {
 	type POSOpeningShift,
 	type POSProfile,
@@ -156,6 +156,14 @@ export const usePosStore = defineStore("pos", () => {
 	const applyCustomerDiscount = computed(() => !!posProfile.value?.apply_customer_discount);
 
 	const enableCashierSettlement = computed(() => !!posProfile.value?.enable_cashier_settlement);
+
+	const allowOpenTabRecall = computed(
+		() => !!posProfile.value?.allow_open_tab_recall && hasPermission("recall_other_shift_tabs"),
+	);
+
+	const allowOutstandingSettlement = computed(
+		() => !!posProfile.value?.allow_outstanding_settlement && hasPermission("settle_outstanding_invoice"),
+	);
 
 	const printBackupReceipt = computed(() => !!posProfile.value?.print_backup_receipt);
 
@@ -539,6 +547,8 @@ export const usePosStore = defineStore("pos", () => {
 		useCustomerCredit,
 		applyCustomerDiscount,
 		enableCashierSettlement,
+		allowOpenTabRecall,
+		allowOutstandingSettlement,
 		printBackupReceipt,
 		cashModeOfPayment,
 		purchaseTaxes,

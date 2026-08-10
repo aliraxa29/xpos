@@ -19,6 +19,8 @@ POS_PERMISSIONS = (
 	("allow_change_price", "Change Price", "Discounts & Pricing"),
 	# Sales Operations
 	("sale_return", "Sale Return", "Sales Operations"),
+	("recall_other_shift_tabs", "Recall Other Shifts' Tabs", "Sales Operations"),
+	("settle_outstanding_invoice", "Settle Outstanding Invoice", "Sales Operations"),
 	# Cash Management
 	("expense", "Expense", "Cash Management"),
 	("bank_drop", "Bank Drop", "Cash Management"),

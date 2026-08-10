@@ -11,6 +11,8 @@ export interface PosPermissions {
 	show_edit_discount_field: boolean;
 	allow_change_price: boolean;
 	sale_return: boolean;
+	recall_other_shift_tabs: boolean;
+	settle_outstanding_invoice: boolean;
 	expense: boolean;
 	bank_drop: boolean;
 	current_stock_by_brand: boolean;
@@ -26,6 +28,8 @@ const DEFAULT_PERMISSIONS: PosPermissions = {
 	show_edit_discount_field: false,
 	allow_change_price: false,
 	sale_return: false,
+	recall_other_shift_tabs: false,
+	settle_outstanding_invoice: false,
 	expense: false,
 	bank_drop: false,
 	current_stock_by_brand: false,

@@ -315,6 +315,8 @@ watch(
 async function loadInitialData() {
 	await Promise.all([itemStore.fetchItems(posStore.profileName), itemStore.fetchItemGroups()]);
 
+	cartStore.refreshPricingSnapshot(true).catch(() => {});
+
 	nextTick(() => barcodeScannerRef.value?.focus());
 }
 

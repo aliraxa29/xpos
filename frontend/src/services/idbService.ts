@@ -583,6 +583,15 @@ export async function getCachedOffers(posProfile: string): Promise<unknown[] | n
 	return val ? (val as unknown[]) : null;
 }
 
+export async function cachePricingRules(posProfile: string, rules: unknown[]): Promise<void> {
+	await setMeta(`pricing_rules::${posProfile}`, rules);
+}
+
+export async function getCachedPricingRules(posProfile: string): Promise<unknown[] | null> {
+	const val = await getMeta(`pricing_rules::${posProfile}`);
+	return val ? (val as unknown[]) : null;
+}
+
 export async function cacheReceiptContext(
 	posProfile: string,
 	context: import("@/types/pos.types").ReceiptContext,

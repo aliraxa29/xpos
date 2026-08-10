@@ -57,3 +57,8 @@ htmlcov/
 .pytest_cache/
 coverage/
 xpos/public/node_modules
+
+# Cypress run artifacts
+frontend/tests/e2e/videos/
+frontend/tests/e2e/screenshots/
+frontend/tests/e2e/downloads/

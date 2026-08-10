@@ -26,10 +26,16 @@
 		<div class="flex-1 min-w-0">
 			<p class="text-[11px] font-medium text-foreground leading-tight truncate">
 				{{ item.item_name }}
+				<span
+					v-if="item.pos_is_free_item"
+					class="ms-1 px-1 py-px rounded text-[9px] font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400"
+				>
+					{{ __("Free") }}
+				</span>
 			</p>
 
 			<div class="flex items-center gap-1 mt-0.5 flex-wrap">
-				<template v-if="hasPermission('allow_change_price')">
+				<template v-if="hasPermission('allow_change_price') && !item.pos_is_free_item">
 					<span class="text-[11px] text-muted-foreground">{{ currencySymbol }}</span>
 					<input
 						ref="rateInput"
@@ -104,30 +110,45 @@
 			</div>
 
 			<div class="flex items-center gap-1 mt-1 flex-wrap">
-				<Button variant="secondary" size="icon-sm" class="w-5 h-5" @click="decrementQty">
-					<Minus class="w-2.5 h-2.5" />
-				</Button>
-				<input
-					ref="qtyInput"
-					:value="item.qty"
-					type="number"
-					min="0"
-					class="w-9 h-5 text-center text-[10px] font-semibold text-foreground bg-muted/50 rounded border border-border focus:outline-none focus:ring-1 focus:ring-ring dark:bg-accent/50 dark:border-muted-foreground/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none px-1"
-					@change="onQtyChange"
-					@keydown.up.prevent="focusAdjacentItem(-1, 'qty')"
-					@keydown.down.prevent="focusAdjacentItem(1, 'qty')"
-					@keydown="blockInvalidNumericKeys"
-				/>
-				<Button
-					variant="secondary"
-					size="icon-sm"
-					class="w-5 h-5 bg-primary/10 text-primary hover:bg-primary/20"
-					@click="incrementQty"
-				>
-					<Plus class="w-2.5 h-2.5" />
-				</Button>
+				<template v-if="item.pos_is_free_item">
+					<span class="text-[10px] font-semibold text-muted-foreground px-1">
+						{{ __("Qty") }}: {{ item.qty }}
+					</span>
+				</template>
+				<template v-else>
+					<Button variant="secondary" size="icon-sm" class="w-5 h-5" @click="decrementQty">
+						<Minus class="w-2.5 h-2.5" />
+					</Button>
+					<input
+						ref="qtyInput"
+						:value="item.qty"
+						type="number"
+						min="0"
+						class="w-9 h-5 text-center text-[10px] font-semibold text-foreground bg-muted/50 rounded border border-border focus:outline-none focus:ring-1 focus:ring-ring dark:bg-accent/50 dark:border-muted-foreground/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none px-1"
+						@change="onQtyChange"
+						@keydown.up.prevent="focusAdjacentItem(-1, 'qty')"
+						@keydown.down.prevent="focusAdjacentItem(1, 'qty')"
+						@keydown="blockInvalidNumericKeys"
+					/>
+					<Button
+						variant="secondary"
+						size="icon-sm"
+						class="w-5 h-5 bg-primary/10 text-primary hover:bg-primary/20"
+						@click="incrementQty"
+					>
+						<Plus class="w-2.5 h-2.5" />
+					</Button>
+				</template>
 
-				<template v-if="hasPermission('show_edit_discount_field')">
+				<span
+					v-if="isAutoDiscount"
+					class="ms-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-700"
+					:title="autoDiscountTitle"
+				>
+					{{ __("Auto") }}
+				</span>
+
+				<template v-if="hasPermission('show_edit_discount_field') && !item.pos_is_free_item">
 					<button
 						@click="showDiscountInput = !showDiscountInput"
 						class="ms-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-all"
@@ -214,6 +235,7 @@ import { useItemStore } from "@/stores/itemStore";
 import { Button } from "@/components/ui/button";
 import { Package, Minus, Plus, Trash2, Percent, ChevronDown } from "lucide-vue-next";
 import type { ItemUOM } from "@/types/pos.types";
+import __ from "@/lib/translate";
 
 const props = defineProps({
 	item: { type: Object, required: true },
@@ -245,6 +267,12 @@ const hasMultipleUOMs = computed(() => itemUOMs.value.length > 1);
 
 const hasItemDiscount = computed(
 	() => (props.item.discount_percentage || 0) > 0 || (props.item.discount_amount || 0) > 0,
+);
+
+const isAutoDiscount = computed(() => (props.item.pos_pricing_rules?.length || 0) > 0);
+
+const autoDiscountTitle = computed(() =>
+	isAutoDiscount.value ? __("Applied by pricing rule: {0}", [props.item.pos_pricing_rules.join(", ")]) : "",
 );
 
 const formatDiscount = computed(() => {

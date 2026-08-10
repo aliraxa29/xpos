@@ -10,6 +10,7 @@ import {
 	countPendingInvoices,
 	countDeadLetters,
 	retryDeadLetter as retryDeadLetterBridge,
+	adjustCachedStock,
 } from "@/services/dbBridge";
 import type { PendingInvoice } from "@/services/idbService";
 import type { InvoiceData } from "@/types/pos.types";
@@ -28,6 +29,13 @@ export const useOfflineStore = defineStore("offline", () => {
 	const posStore = usePosStore();
 
 	const MAX_RETRIES = 3;
+
+	function isStockRejection(error: unknown): boolean {
+		const excType = (error as { excType?: string })?.excType;
+		if (excType) return excType === "XPosInsufficientStockError";
+		const msg = error instanceof Error ? error.message : String(error ?? "");
+		return /insufficient stock|not enough stock/i.test(msg);
+	}
 	const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 	let syncIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -127,10 +135,52 @@ export const useOfflineStore = defineStore("offline", () => {
 		}
 	}
 
+	function itemCodesOf(invoice: OfflineInvoice): string[] {
+		const items = (invoice.data as InvoiceData | undefined)?.items;
+		return Array.isArray(items) ? items.map((i) => i.item_code).filter(Boolean) : [];
+	}
+
+	async function reserveStock(reservations?: { item_code: string; stock_qty: number }[]): Promise<void> {
+		if (!reservations?.length) return;
+		const warehouse = usePosStore().warehouse;
+		if (!warehouse) return;
+
+		await adjustCachedStock(
+			warehouse,
+			reservations.map((r) => ({ item_code: r.item_code, delta: -r.stock_qty })),
+		);
+	}
+
+	async function reconcileStockFromServer(itemCodes: string[]): Promise<void> {
+		const posStore = usePosStore();
+		const warehouse = posStore.warehouse;
+		if (!warehouse || itemCodes.length === 0) return;
+
+		try {
+			const fresh = await call<{ item_code: string; actual_qty: number }[]>(
+				"xpos.api.items.get_stock_availability",
+				{
+					items: JSON.stringify([...new Set(itemCodes)]),
+					warehouse,
+					pos_profile: posStore.profileName || undefined,
+				},
+			);
+			if (!fresh?.length) return;
+
+			const { updateStockQty } = await import("@/services/dbBridge");
+			for (const row of fresh) {
+				await updateStockQty(warehouse, row.item_code, row.actual_qty || 0);
+			}
+		} catch (error) {
+			console.warn("[XPOS Offline] Failed to reconcile stock after rejection:", error);
+		}
+	}
+
 	async function saveOffline(
 		invoiceData: InvoiceData,
 		customerName?: string,
 		grandTotal?: number,
+		reservations?: { item_code: string; stock_qty: number }[],
 	): Promise<{ success: boolean; localId?: number }> {
 		try {
 			const record = {
@@ -140,6 +190,9 @@ export const useOfflineStore = defineStore("offline", () => {
 			};
 
 			const result = await addPendingInvoice(record);
+
+			await reserveStock(reservations);
+
 			await refreshPendingCount();
 			await loadPendingInvoices();
 
@@ -179,6 +232,7 @@ export const useOfflineStore = defineStore("offline", () => {
 
 			let synced = 0;
 			let failed = 0;
+			let rejected = 0;
 
 			for (const invoice of invoices) {
 				if (!isOnline.value) {
@@ -201,9 +255,26 @@ export const useOfflineStore = defineStore("offline", () => {
 					if (invoice.id) await deletePendingInvoice(invoice.id);
 					synced++;
 				} catch (error: unknown) {
+					invoice.error = error instanceof Error ? error.message : String(error);
+
+					if (isStockRejection(error)) {
+						rejected++;
+						invoice.status = "dead_letter";
+						syncErrors.value.push(
+							`Invoice for ${invoice.customer_name || "Unknown"}: ${invoice.error}`,
+						);
+						if (invoice.id)
+							await updatePendingInvoice(invoice.id, {
+								status: "dead_letter",
+								error: invoice.error,
+							});
+
+						await reconcileStockFromServer(itemCodesOf(invoice));
+						continue;
+					}
+
 					failed++;
 					invoice.retry_count = (invoice.retry_count || 0) + 1;
-					invoice.error = error instanceof Error ? error.message : String(error);
 					invoice.status = invoice.retry_count >= MAX_RETRIES ? "dead_letter" : "failed";
 
 					if (invoice.status === "dead_letter") {
@@ -230,6 +301,14 @@ export const useOfflineStore = defineStore("offline", () => {
 			}
 			if (failed > 0) {
 				showError(`Failed to sync ${failed} invoice${failed > 1 ? "s" : ""}. Will retry.`);
+			}
+			if (rejected > 0) {
+				showError(
+					__(
+						"{0} offline invoice(s) were rejected for insufficient stock and will not retry. Review them in the pending list.",
+						[String(rejected)],
+					),
+				);
 			}
 		} catch (error) {
 			console.error("Sync error:", error);
@@ -268,8 +347,20 @@ export const useOfflineStore = defineStore("offline", () => {
 			showSuccess(__("Invoice synced successfully"));
 			return true;
 		} catch (error: unknown) {
-			invoice.retry_count = (invoice.retry_count || 0) + 1;
 			invoice.error = error instanceof Error ? error.message : String(error);
+
+			if (isStockRejection(error)) {
+				invoice.status = "dead_letter";
+				await updatePendingInvoice(invoice.id!, {
+					status: "dead_letter",
+					error: invoice.error,
+				});
+				await loadPendingInvoices();
+				showError(invoice.error);
+				return false;
+			}
+
+			invoice.retry_count = (invoice.retry_count || 0) + 1;
 			invoice.status = invoice.retry_count >= MAX_RETRIES ? "dead_letter" : "failed";
 			await updatePendingInvoice(invoice.id!, {
 				status: invoice.status,

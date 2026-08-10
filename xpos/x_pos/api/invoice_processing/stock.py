@@ -153,15 +153,38 @@ def _should_block(pos_profile):
 
 def validate_stock_on_invoice(invoice_doc):
 	if invoice_doc.doctype == "Sales Invoice" and not cint(getattr(invoice_doc, "update_stock", 0)):
-		frappe.logger().debug("Skipping stock validation for Sales Invoice without stock update")
 		return
-	items_to_check = [d.as_dict() for d in invoice_doc.items if d.get("is_stock_item")]
+
+	items_to_check = [d.as_dict() for d in invoice_doc.items]
 	if hasattr(invoice_doc, "packed_items"):
 		items_to_check.extend([d.as_dict() for d in invoice_doc.packed_items])
 	pos_profile = getattr(invoice_doc, "pos_profile", None)
 	errors = _collect_stock_errors(items_to_check, pos_profile=pos_profile)
 	if errors and _should_block(pos_profile):
-		frappe.throw(frappe.as_json({"errors": errors}), frappe.ValidationError)
+		throw_insufficient_stock(errors)
+
+
+class XPosInsufficientStockError(frappe.ValidationError):
+	"""Raised when a sale would take stock below zero."""
+
+
+def throw_insufficient_stock(errors) -> None:
+	"""Raise a cashier-readable error for rows that exceed available stock."""
+
+	rows = "".join(
+		_("<li>{0} in {1}: requested {2}, available {3}</li>").format(
+			frappe.bold(e.get("item_code")),
+			frappe.bold(e.get("warehouse")),
+			frappe.bold(flt(e.get("requested_qty"), 2)),
+			frappe.bold(flt(e.get("available_qty"), 2)),
+		)
+		for e in errors
+	)
+	frappe.throw(
+		_("Not enough stock to complete this sale.<br><ul>{0}</ul>").format(rows),
+		XPosInsufficientStockError,
+		title=_("Insufficient Stock"),
+	)
 
 
 def _auto_set_return_batches(invoice_doc):

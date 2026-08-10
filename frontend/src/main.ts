@@ -12,28 +12,36 @@ import { dayjs } from "@/utils/datetime";
 import translate from "./lib/translate";
 
 if (!isElectron() && import.meta.env.PROD) {
-	import("virtual:pwa-register").then(({ registerSW }) => {
-		const updateSW = registerSW({
-			onNeedRefresh() {
-				if (confirm("A new version of X POS is available. Reload to update?")) {
-					updateSW(true);
-				}
-			},
-			onOfflineReady() {
-				console.log("[XPOS PWA] App is ready for offline use");
-			},
-			onRegisteredSW(_swUrl, r) {
-				if (r) {
-					setInterval(
-						() => {
-							r.update();
-						},
-						60 * 60 * 1000,
-					);
-				}
-			},
-		});
-	});
+	if ("serviceWorker" in navigator) {
+		navigator.serviceWorker
+			.register("/xpos/sw.js", { scope: "/xpos/" })
+			.then((registration) => {
+				console.log("[XPOS PWA] Service worker registered for", registration.scope);
+
+				registration.addEventListener("updatefound", () => {
+					const installing = registration.installing;
+					if (!installing) return;
+					installing.addEventListener("statechange", () => {
+						if (installing.state === "installed" && navigator.serviceWorker.controller) {
+							if (confirm("A new version of X POS is available. Reload to update?")) {
+								installing.postMessage({ type: "SKIP_WAITING" });
+								window.location.reload();
+							}
+						}
+					});
+				});
+
+				setInterval(
+					() => {
+						registration.update();
+					},
+					60 * 60 * 1000,
+				);
+			})
+			.catch((error) => {
+				console.error("[XPOS PWA] Service worker registration failed:", error);
+			});
+	}
 } else {
 	getApiBaseUrl().then((url) => {
 		console.log("[XPOS Electron] Server URL:", url);

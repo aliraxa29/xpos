@@ -1,4 +1,5 @@
-const PosView = () => import("@/views/PosView.vue");
+import PosView from "@/views/PosView.vue";
+
 const OrdersView = () => import("@/views/OrdersView.vue");
 const CashierView = () => import("@/views/CashierView.vue");
 const ReportsIndexView = () => import("@/views/ReportsIndexView.vue");

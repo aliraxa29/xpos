@@ -15,6 +15,8 @@ ALL_PERMISSION_KEYS = (
 	"show_edit_discount_field",
 	"allow_change_price",
 	"sale_return",
+	"recall_other_shift_tabs",
+	"settle_outstanding_invoice",
 	"expense",
 	"bank_drop",
 	"current_stock_by_brand",

@@ -192,7 +192,7 @@ def set_patient(doc):
 
 
 def auto_set_delivery_charges(doc):
-	if not doc.pos_profile:
+	if not doc.pos_profile or is_consolidated(doc):
 		return
 
 	if getattr(getattr(doc, "flags", None), "xpos_skip_auto_delivery_charges", False):
@@ -224,8 +224,16 @@ def auto_set_delivery_charges(doc):
 			doc.pos_delivery_charges_rate = None
 
 
+def is_consolidated(doc):
+	"""
+	True for the Sales Invoice / credit note produced by POS consolidation.
+	"""
+
+	return bool(doc.get("is_consolidated"))
+
+
 def calc_delivery_charges(doc):
-	if not doc.pos_profile:
+	if not doc.pos_profile or is_consolidated(doc):
 		return
 
 	old_doc = None
@@ -282,12 +290,16 @@ def calc_delivery_charges(doc):
 			{
 				"charge_type": "Actual",
 				"description": doc.pos_delivery_charges,
+				"rate": 0,
 				"tax_amount": doc.pos_delivery_charges_rate,
 				"cost_center": charges_doc.cost_center,
 				"account_head": charges_doc.shipping_account,
 			},
 		)
 		calculate_taxes_and_totals = True
+
+		if doc.get("additional_discount_percentage") and doc.apply_discount_on == "Grand Total":
+			doc.apply_discount_on = "Net Total"
 
 	if calculate_taxes_and_totals:
 		doc.calculate_taxes_and_totals()

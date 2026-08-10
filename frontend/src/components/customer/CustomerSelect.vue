@@ -493,6 +493,8 @@ function selectCustomer(cust: {
 	image?: string;
 	mobile_no?: string;
 	email_id?: string;
+	customer_group?: string;
+	territory?: string;
 }) {
 	cartStore.setCustomer(cust);
 	close();

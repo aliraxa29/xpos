@@ -33,6 +33,7 @@
 | 24 | [POS Profile Configuration](24-pos-profile-config.md) | Complete POS Profile settings reference |
 | 25 | [Keyboard Shortcuts](25-keyboard-shortcuts.md) | Full keyboard shortcut reference |
 | 26 | [Cashier Settlement](26-cashier-settlement.md) | Create bills at the terminal, collect payment at a separate cashier |
+| 27 | [Open Tabs](27-open-tabs.md) | Recall a customer's tab across shifts, and settle past credit sales |
 
 ---
 

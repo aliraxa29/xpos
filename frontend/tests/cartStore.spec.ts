@@ -325,6 +325,48 @@ describe("Cart Store", () => {
 			expect(cartStore.currentDraftName).toBe("DRAFT-001");
 			expect(cartStore.isSavingDraft).toBe(true);
 		});
+
+		it("sends the concurrency token alongside the draft name", () => {
+			const cartStore = useCartStore();
+			cartStore.currentDraftName = "DRAFT-001";
+			cartStore.currentDraftModified = "2026-08-10 21:00:00";
+
+			const data = cartStore.getInvoiceData("POS-PROFILE-1", "POS-OS-0001");
+
+			expect(data.name).toBe("DRAFT-001");
+			expect(data.modified).toBe("2026-08-10 21:00:00");
+		});
+
+		it("omits the token for a cart that is not a recalled draft", () => {
+			const cartStore = useCartStore();
+
+			const data = cartStore.getInvoiceData("POS-PROFILE-1", "POS-OS-0001");
+
+			expect(data.name).toBeUndefined();
+			expect(data.modified).toBeUndefined();
+		});
+
+		it("omits the token when a draft was saved without one", () => {
+			const cartStore = useCartStore();
+			cartStore.currentDraftName = "DRAFT-001";
+			cartStore.currentDraftModified = "";
+
+			const data = cartStore.getInvoiceData("POS-PROFILE-1", "POS-OS-0001");
+
+			expect(data.name).toBe("DRAFT-001");
+			expect(data.modified).toBeUndefined();
+		});
+
+		it("clears the token with the rest of the cart", () => {
+			const cartStore = useCartStore();
+			cartStore.currentDraftName = "DRAFT-001";
+			cartStore.currentDraftModified = "2026-08-10 21:00:00";
+
+			cartStore.clearCart();
+
+			expect(cartStore.currentDraftName).toBe("");
+			expect(cartStore.currentDraftModified).toBe("");
+		});
 	});
 
 	describe("Order Notes and Delivery", () => {

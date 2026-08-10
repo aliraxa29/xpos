@@ -4,7 +4,14 @@ import { loadPermissions, resetPermissions } from "@/services/userRights";
 import { UserSession } from "@/types/pos.types";
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { isOnline } from "@/utils";
+import { isOnline, isNetworkError } from "@/utils";
+
+function friendlyMessage(err: unknown, fallback: string): string {
+	if (isNetworkError(err)) return "Cannot reach the server. Check your connection and try again.";
+	const message = err instanceof Error ? err.message : "";
+	if (!message || message.includes("Traceback") || message.startsWith("__")) return fallback;
+	return message;
+}
 
 export const useAuthStore = defineStore("auth", () => {
 	const isLoading = ref(false);
@@ -133,7 +140,7 @@ export const useAuthStore = defineStore("auth", () => {
 			return true;
 		} catch (err) {
 			console.error("Login failed:", err);
-			error.value = err instanceof Error ? err.message : "Login failed";
+			error.value = friendlyMessage(err, "Invalid login credentials.");
 			return false;
 		} finally {
 			isLoading.value = false;
@@ -184,7 +191,7 @@ export const useAuthStore = defineStore("auth", () => {
 			return true;
 		} catch (err) {
 			console.error("Login failed:", err);
-			error.value = "Login failed";
+			error.value = friendlyMessage(err, "Could not sign in. Please try again.");
 			return false;
 		}
 	}
@@ -201,7 +208,7 @@ export const useAuthStore = defineStore("auth", () => {
 			return true;
 		} catch (err) {
 			console.error("Reset password failed:", err);
-			error.value = err instanceof Error ? err.message : "Failed to send reset email";
+			error.value = friendlyMessage(err, "Failed to send reset email.");
 			return false;
 		} finally {
 			isLoading.value = false;

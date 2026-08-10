@@ -891,6 +891,25 @@ export async function getCachedStockForItem(warehouse: string, itemCode: string)
 	return idb.getCachedStockForItem(warehouse, itemCode);
 }
 
+export async function adjustCachedStock(
+	warehouse: string,
+	deltas: { item_code: string; delta: number }[],
+): Promise<void> {
+	if (!warehouse || deltas.length === 0) return;
+
+	for (const { item_code, delta } of deltas) {
+		if (!delta) continue;
+		try {
+			const current = await getCachedStockForItem(warehouse, item_code);
+			if (!current) continue;
+
+			await updateStockQty(warehouse, item_code, (current.actual_qty || 0) + delta);
+		} catch (error) {
+			console.warn("[XPOS Offline] Failed to adjust cached stock for", item_code, error);
+		}
+	}
+}
+
 export async function cacheCustomers(customers: Customer[]): Promise<void> {
 	if (isElectron()) {
 		await getDb().upsertCustomers(customers as unknown as Record<string, unknown>[]);
@@ -996,6 +1015,24 @@ export async function getCachedOffers(posProfile: string): Promise<unknown[] | n
 	}
 	const idb = await import("./idbService");
 	return idb.getCachedOffers(posProfile);
+}
+
+export async function cachePricingRules(posProfile: string, rules: unknown[]): Promise<void> {
+	if (isElectron()) {
+		await getDb().setMeta(`pricing_rules::${posProfile}`, JSON.stringify(rules));
+		return;
+	}
+	const idb = await import("./idbService");
+	await idb.cachePricingRules(posProfile, rules);
+}
+
+export async function getCachedPricingRules(posProfile: string): Promise<unknown[] | null> {
+	if (isElectron()) {
+		const val = await getDb().getMeta(`pricing_rules::${posProfile}`);
+		return val ? JSON.parse(val) : null;
+	}
+	const idb = await import("./idbService");
+	return idb.getCachedPricingRules(posProfile);
 }
 
 export async function cacheReceiptContext(

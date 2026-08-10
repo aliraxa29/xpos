@@ -1,377 +1,428 @@
-import {
-	getItemPrice,
-	getPricingRules,
-	getPricingRuleItems,
-	getPricingRuleGroups,
-	getPricingRuleBrands,
-} from "@/services/dbBridge";
-import { isElectron } from "@/services/electronBridge";
+/**
+ * Offline Pricing Rule engine.
+ *
+ * The cart normally asks the server to price it, because only ERPNext's own
+ * engine is guaranteed to match what the invoice will store on save. When the
+ * network is gone this module takes over, evaluating a snapshot of the active
+ * rules that was cached while the terminal was still online.
+ */
 
-export interface PricingContext {
-	item_code: string;
-	item_group?: string;
-	brand?: string;
-	qty: number;
-	rate: number;
-	price_list_rate: number;
-	price_list?: string;
-	customer?: string;
-	customer_group?: string;
-	territory?: string;
-	warehouse?: string;
-	company?: string;
-	coupon_code?: string;
-	transaction_amount?: number;
-}
+import { getCachedPricingRules } from "@/services/dbBridge";
 
-export interface PricingResult {
-	rate: number;
-	discount_percentage: number;
-	discount_amount: number;
-	pricing_rule?: string;
-	pricing_rule_title?: string;
-	margin_type?: string;
-	margin_rate_or_amount?: number;
-	free_items: FreeItemResult[];
-}
-
-export interface FreeItemResult {
-	item_code: string;
-	qty: number;
-	rate: number;
-	uom?: string;
-	pricing_rule: string;
-}
-
-interface PricingRule {
+export interface PricingRuleSnapshot {
 	name: string;
 	title?: string;
 	apply_on: string;
 	price_or_product_discount: string;
 	rate_or_discount?: string;
-	selling: number;
+	apply_discount_on?: string;
+	priority?: number | string;
+	apply_multiple_pricing_rules?: number;
+	apply_discount_on_rate?: number;
+	coupon_code_based?: number;
+	company?: string;
+	currency?: string;
+	for_price_list?: string;
 	applicable_for?: string;
+	customer?: string;
+	min_qty?: number;
+	max_qty?: number;
+	min_amt?: number;
+	max_amt?: number;
+	valid_from?: string | null;
+	valid_upto?: string | null;
+	rate?: number;
+	discount_percentage?: number;
+	discount_amount?: number;
+	margin_type?: string;
+	margin_rate_or_amount?: number;
+	same_item?: number;
+	free_item?: string;
+	free_qty?: number;
+	free_item_uom?: string;
+	free_item_rate?: number;
+	is_recursive?: number;
+	recurse_for?: number;
+	apply_recursion_over?: number;
+	round_free_qty?: number;
+	customer_groups?: string[];
+	territories?: string[];
+	warehouses?: string[];
+	item_codes?: string[];
+	item_groups?: string[];
+	brands?: string[];
+	free_item_name?: string | null;
+	free_item_stock_uom?: string | null;
+	offline_supported?: number;
+}
+
+export interface CartPricingLine {
+	row_id: string;
+	item_code: string;
+	item_group?: string;
+	brand?: string;
+	variant_of?: string;
+	qty: number;
+	uom?: string;
+	conversion_factor?: number;
+	rate: number;
+	price_list_rate?: number;
+	warehouse?: string;
+	pricing_rules?: string;
+}
+
+export interface PricingContext {
 	company?: string;
 	customer?: string;
 	customer_group?: string;
 	territory?: string;
-	for_price_list?: string;
+	price_list?: string;
+	currency?: string;
 	warehouse?: string;
-	min_qty: number;
-	max_qty: number;
-	min_amt: number;
-	max_amt: number;
-	valid_from?: string;
-	valid_upto?: string;
+	coupon_code?: string;
+	posting_date?: string;
+}
+
+export interface LinePricing {
+	row_id: string;
+	item_code: string;
+	price_list_rate: number;
+	rate: number;
 	discount_percentage: number;
 	discount_amount: number;
-	rate: number;
-	margin_type?: string;
+	margin_type?: string | null;
 	margin_rate_or_amount: number;
-	priority: number;
-	is_cumulative: number;
-	coupon_code_based: number;
-	same_item: number;
-	free_item?: string;
-	free_qty: number;
-	free_item_rate: number;
-	free_item_uom?: string;
-	round_free_qty: number;
-	is_recursive: number;
-	recurse_for: number;
-	apply_recursion_over: number;
-	_matched_item_codes?: string[];
-	_matched_item_groups?: string[];
-	_matched_brands?: string[];
-	_score?: number;
+	pricing_rules: string[];
 }
 
-let rulesCache: PricingRule[] | null = null;
-let ruleChildrenCache: Map<string, { itemCodes: string[]; itemGroups: string[]; brands: string[] }> =
-	new Map();
-let cacheTimestamp = 0;
-const CACHE_TTL = 60_000; // 1 minute
-
-export function invalidatePricingCache(): void {
-	rulesCache = null;
-	ruleChildrenCache.clear();
-	cacheTimestamp = 0;
+export interface FreeItemLine {
+	item_code: string;
+	item_name?: string | null;
+	qty: number;
+	uom?: string | null;
+	stock_uom?: string | null;
+	conversion_factor: number;
+	rate: number;
+	price_list_rate: number;
+	pricing_rules: string;
+	is_free_item: 1;
 }
 
-async function loadRules(company?: string): Promise<PricingRule[]> {
-	const now = Date.now();
-	if (rulesCache && now - cacheTimestamp < CACHE_TTL) {
-		return rulesCache;
+export interface TransactionPricing {
+	additional_discount_percentage: number;
+	discount_amount: number;
+	apply_discount_on: string;
+	from_pricing_rule: boolean;
+}
+
+export interface CartPricingResult {
+	updates: LinePricing[];
+	free_lines: FreeItemLine[];
+	invoice_updates: TransactionPricing;
+}
+
+const APPLY_ON_ORDER = ["Item Code", "Item Group", "Brand"] as const;
+
+function flt(value: unknown): number {
+	const n = typeof value === "number" ? value : parseFloat(String(value ?? ""));
+	return Number.isFinite(n) ? n : 0;
+}
+
+function round(value: number, precision = 2): number {
+	const factor = 10 ** precision;
+	return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+function today(): string {
+	return new Date().toISOString().slice(0, 10);
+}
+
+export async function loadPricingRuleSnapshot(posProfile: string): Promise<PricingRuleSnapshot[]> {
+	if (!posProfile) return [];
+	try {
+		const cached = await getCachedPricingRules(posProfile);
+		return (cached as PricingRuleSnapshot[] | null) ?? [];
+	} catch {
+		return [];
+	}
+}
+
+function matchesScope(rule: PricingRuleSnapshot, ctx: PricingContext, date: string): boolean {
+	if (rule.offline_supported === 0) return false;
+
+	if (rule.valid_from && rule.valid_from > date) return false;
+	if (rule.valid_upto && rule.valid_upto < date) return false;
+
+	if (rule.company && ctx.company && rule.company !== ctx.company) return false;
+	if (rule.for_price_list && rule.for_price_list !== (ctx.price_list || "")) return false;
+	if (rule.customer && rule.customer !== (ctx.customer || "")) return false;
+
+	if (rule.customer_groups?.length) {
+		if (!ctx.customer_group || !rule.customer_groups.includes(ctx.customer_group)) return false;
+	}
+	if (rule.territories?.length) {
+		if (!ctx.territory || !rule.territories.includes(ctx.territory)) return false;
 	}
 
-	const raw = (await getPricingRules({ company })) as PricingRule[];
+	if (rule.coupon_code_based && !ctx.coupon_code) return false;
 
-	const childPromises = raw.map(async (rule) => {
-		if (ruleChildrenCache.has(rule.name)) return;
-		const [itemCodes, itemGroups, brands] = await Promise.all([
-			rule.apply_on === "Item Code" ? getPricingRuleItems(rule.name) : Promise.resolve([]),
-			rule.apply_on === "Item Group" ? getPricingRuleGroups(rule.name) : Promise.resolve([]),
-			rule.apply_on === "Brand" ? getPricingRuleBrands(rule.name) : Promise.resolve([]),
-		]);
-		ruleChildrenCache.set(rule.name, {
-			itemCodes: (itemCodes as { item_code: string }[]).map((c) => c.item_code),
-			itemGroups: (itemGroups as { item_group: string }[]).map((g) => g.item_group),
-			brands: (brands as { brand: string }[]).map((b) => b.brand),
-		});
-	});
-
-	await Promise.all(childPromises);
-
-	rulesCache = raw;
-	cacheTimestamp = now;
-	return raw;
+	return true;
 }
 
-export async function resolveItemPrice(
-	itemCode: string,
-	priceList: string,
-): Promise<{ rate: number; is_price_inclusive_tax?: boolean } | null> {
-	if (!isElectron()) return null;
+function matchesLine(rule: PricingRuleSnapshot, line: CartPricingLine, ctx: PricingContext): boolean {
+	if (rule.warehouses?.length) {
+		const warehouse = line.warehouse || ctx.warehouse;
+		if (!warehouse || !rule.warehouses.includes(warehouse)) return false;
+	}
 
-	const price = (await getItemPrice(itemCode, priceList)) as {
-		price_list_rate?: number;
-		is_price_inclusive_tax?: boolean;
-	} | null;
-
-	if (!price || !price.price_list_rate) return null;
-
-	return {
-		rate: Number(price.price_list_rate),
-		is_price_inclusive_tax: !!price.is_price_inclusive_tax,
-	};
+	if (rule.apply_on === "Item Code") {
+		const codes = rule.item_codes || [];
+		return codes.includes(line.item_code) || (!!line.variant_of && codes.includes(line.variant_of));
+	}
+	if (rule.apply_on === "Item Group") {
+		return !!line.item_group && (rule.item_groups || []).includes(line.item_group);
+	}
+	if (rule.apply_on === "Brand") {
+		return !!line.brand && (rule.brands || []).includes(line.brand);
+	}
+	return false;
 }
 
-export async function applyPricingRules(ctx: PricingContext): Promise<PricingResult> {
-	const result: PricingResult = {
-		rate: ctx.rate,
-		discount_percentage: 0,
-		discount_amount: 0,
-		free_items: [],
-	};
+function withinQtyAndAmount(rule: PricingRuleSnapshot, stockQty: number, amount: number): boolean {
+	if (rule.min_qty && stockQty < flt(rule.min_qty)) return false;
+	if (rule.max_qty && stockQty > flt(rule.max_qty)) return false;
+	if (rule.min_amt && amount < flt(rule.min_amt)) return false;
+	if (rule.max_amt && amount > flt(rule.max_amt)) return false;
+	return true;
+}
 
-	if (!isElectron()) return result;
+function selectForLine(candidates: PricingRuleSnapshot[], ctx: PricingContext): PricingRuleSnapshot[] {
+	if (!candidates.length) return [];
 
-	const allRules = await loadRules(ctx.company);
-	const today = new Date().toISOString().slice(0, 10);
+	let byLevel: PricingRuleSnapshot[] = [];
+	for (const applyOn of APPLY_ON_ORDER) {
+		const level = candidates.filter((r) => r.apply_on === applyOn);
+		if (!level.length) continue;
+		byLevel = byLevel.concat(level);
+		if (!byLevel.every((r) => r.apply_multiple_pricing_rules)) break;
+	}
+	if (!byLevel.length) return [];
 
-	const candidates = allRules.filter((rule) => {
-		if (rule.valid_from && rule.valid_from > today) return false;
-		if (rule.valid_upto && rule.valid_upto < today) return false;
-		if (rule.coupon_code_based && !ctx.coupon_code) return false;
-		if (rule.company && ctx.company && rule.company !== ctx.company) return false;
-		const children = ruleChildrenCache.get(rule.name);
-		if (!children) return false;
+	if (byLevel.every((r) => r.apply_multiple_pricing_rules)) {
+		return [...byLevel].sort((a, b) => Number(a.priority || 1) - Number(b.priority || 1));
+	}
 
-		if (rule.apply_on === "Item Code") {
-			if (!children.itemCodes.includes(ctx.item_code)) return false;
-		} else if (rule.apply_on === "Item Group") {
-			if (!ctx.item_group || !children.itemGroups.includes(ctx.item_group)) return false;
-		} else if (rule.apply_on === "Brand") {
-			if (!ctx.brand || !children.brands.includes(ctx.brand)) return false;
-		} else if (rule.apply_on === "Transaction") {
-		} else {
-			return false;
+	let best = byLevel;
+	const maxPriority = Math.max(...best.map((r) => Number(r.priority || 0)));
+	if (maxPriority) {
+		best = best.filter((r) => Number(r.priority || 0) === maxPriority);
+	}
+	if (best.length > 1 && ctx.currency) {
+		const sameCurrency = best.filter((r) => r.currency === ctx.currency);
+		if (sameCurrency.length) best = sameCurrency;
+	}
+	if (best.length > 1 && ctx.price_list) {
+		const samePriceList = best.filter((r) => r.for_price_list === ctx.price_list);
+		if (samePriceList.length) best = samePriceList;
+	}
+	return best.slice(0, 1);
+}
+
+function applyPriceRules(
+	rules: PricingRuleSnapshot[],
+	line: CartPricingLine,
+	ctx: PricingContext,
+	result: LinePricing,
+): void {
+	for (const rule of rules) {
+		const type = rule.rate_or_discount || "";
+
+		if (
+			rule.margin_type === "Percentage" ||
+			(rule.margin_type === "Amount" && rule.currency === ctx.currency)
+		) {
+			result.margin_type = rule.margin_type;
+			result.margin_rate_or_amount = rule.apply_multiple_pricing_rules
+				? result.margin_rate_or_amount + flt(rule.margin_rate_or_amount)
+				: flt(rule.margin_rate_or_amount);
 		}
 
-		if (rule.min_qty && ctx.qty < rule.min_qty) return false;
-		if (rule.max_qty && ctx.qty > rule.max_qty) return false;
-
-		const amtBasis =
-			rule.apply_on === "Transaction"
-				? (ctx.transaction_amount ?? ctx.qty * ctx.price_list_rate)
-				: ctx.qty * ctx.price_list_rate;
-		if (rule.min_amt && amtBasis < rule.min_amt) return false;
-		if (rule.max_amt && amtBasis > rule.max_amt) return false;
-
-		if (rule.applicable_for) {
-			switch (rule.applicable_for) {
-				case "Customer":
-					if (!ctx.customer || rule.customer !== ctx.customer) return false;
-					break;
-				case "Customer Group":
-					if (!ctx.customer_group || rule.customer_group !== ctx.customer_group) return false;
-					break;
-				case "Territory":
-					if (!ctx.territory || rule.territory !== ctx.territory) return false;
-					break;
+		if (type === "Rate") {
+			if (rule.currency === ctx.currency && flt(rule.rate)) {
+				result.price_list_rate = flt(rule.rate);
+			}
+			result.discount_percentage = 0;
+		} else if (type === "Discount Percentage") {
+			if (rule.apply_discount_on_rate && result.discount_percentage) {
+				result.discount_percentage +=
+					(100 - result.discount_percentage) * (flt(rule.discount_percentage) / 100);
+				result.discount_amount = result.price_list_rate * (result.discount_percentage / 100);
+			} else if (result.price_list_rate) {
+				result.discount_amount += result.price_list_rate * (flt(rule.discount_percentage) / 100);
+				result.discount_percentage = (result.discount_amount / result.price_list_rate) * 100;
+			}
+		} else if (type === "Discount Amount") {
+			if (rule.apply_discount_on_rate && result.discount_amount) {
+				result.discount_amount +=
+					(result.price_list_rate - result.discount_amount) * (flt(rule.discount_amount) / 100);
+			} else {
+				result.discount_amount += flt(rule.discount_amount);
 			}
 		}
+	}
 
-		if (rule.for_price_list && ctx.price_list && rule.for_price_list !== ctx.price_list) return false;
+	if (result.price_list_rate) {
+		result.rate = round(result.price_list_rate * (1 - result.discount_percentage / 100));
+		if (result.discount_amount) {
+			result.rate = round(result.price_list_rate - result.discount_amount);
+		}
+	}
+	result.discount_amount = round(result.discount_amount);
+	result.discount_percentage = round(result.discount_percentage);
+	result.price_list_rate = round(result.price_list_rate);
+}
 
-		if (rule.warehouse && ctx.warehouse && rule.warehouse !== ctx.warehouse) return false;
+function buildFreeItem(
+	rule: PricingRuleSnapshot,
+	line: CartPricingLine | null,
+	triggerQty: number,
+): FreeItemLine | null {
+	const freeItemCode = rule.same_item && rule.apply_on !== "Transaction" ? line?.item_code : rule.free_item;
+	if (!freeItemCode) return null;
 
-		return true;
-	});
+	let qty = flt(rule.free_qty) || 1;
 
-	if (candidates.length === 0) return result;
+	if (rule.is_recursive) {
+		const eligible = triggerQty - flt(rule.apply_recursion_over);
+		if (eligible <= 0) return null;
+		const recurseFor = flt(rule.recurse_for) || 1;
+		qty = rule.round_free_qty
+			? Math.floor(eligible / recurseFor) * (flt(rule.free_qty) || 1)
+			: (eligible * qty) / recurseFor;
+	}
 
-	const scored = candidates.map((rule) => {
-		let score = (rule.priority || 0) * 1000;
-		if (rule.apply_on === "Item Code") score += 100;
-		else if (rule.apply_on === "Item Group") score += 50;
-		else if (rule.apply_on === "Brand") score += 25;
-		else score += 10; // Transaction
+	if (qty <= 0) return null;
 
-		if (rule.for_price_list) score += 150;
-		if (rule.applicable_for === "Customer" && rule.customer) score += 300;
-		else if (rule.applicable_for === "Customer Group" && rule.customer_group) score += 200;
-		else if (rule.applicable_for === "Territory" && rule.territory) score += 100;
+	const sameItem = rule.same_item && rule.apply_on !== "Transaction";
+	return {
+		item_code: freeItemCode,
+		item_name: sameItem ? null : rule.free_item_name,
+		qty,
+		uom: rule.free_item_uom || (sameItem ? line?.uom : rule.free_item_stock_uom) || null,
+		stock_uom: sameItem ? null : rule.free_item_stock_uom,
+		conversion_factor: 1,
+		rate: flt(rule.free_item_rate),
+		price_list_rate: flt(rule.free_item_rate),
+		pricing_rules: rule.name,
+		is_free_item: 1,
+	};
+}
 
-		return { ...rule, _score: score };
-	});
+function applyTransactionRules(
+	rules: PricingRuleSnapshot[],
+	ctx: PricingContext,
+	totalQty: number,
+	total: number,
+	freeLines: FreeItemLine[],
+): TransactionPricing {
+	const result: TransactionPricing = {
+		additional_discount_percentage: 0,
+		discount_amount: 0,
+		apply_discount_on: "Grand Total",
+		from_pricing_rule: false,
+	};
 
-	scored.sort((a, b) => (b._score ?? 0) - (a._score ?? 0));
+	const candidates = rules
+		.filter((r) => r.apply_on === "Transaction" && withinQtyAndAmount(r, totalQty, total))
+		.sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0));
 
-	for (const rule of scored) {
-		if (rule.price_or_product_discount === "Product") {
-			applyProductRule(rule, ctx, result);
+	for (const rule of candidates) {
+		if (rule.price_or_product_discount === "Price") {
+			if (rule.apply_discount_on) result.apply_discount_on = rule.apply_discount_on;
+			if (flt(rule.discount_percentage)) {
+				result.additional_discount_percentage = flt(rule.discount_percentage);
+				result.from_pricing_rule = true;
+			} else if (flt(rule.discount_amount)) {
+				result.discount_amount = flt(rule.discount_amount);
+				result.from_pricing_rule = true;
+			}
+		} else if (rule.price_or_product_discount === "Product") {
+			const free = buildFreeItem(rule, null, totalQty);
+			if (free) freeLines.push(free);
 		}
 	}
 
-	const priceRules = scored.filter((r) => r.price_or_product_discount === "Price");
-	if (priceRules.length > 0) {
-		const best = priceRules[0];
-		const toApply = best.is_cumulative ? priceRules.filter((r) => r.is_cumulative) : [best];
-		applyPriceRules(toApply, ctx, result);
-	}
+	if (result.additional_discount_percentage) result.discount_amount = 0;
 
 	return result;
 }
 
-function round2(n: number): number {
-	return Math.round((n + Number.EPSILON) * 100) / 100;
-}
+export function applyPricingRulesToCart(
+	lines: CartPricingLine[],
+	ctx: PricingContext,
+	rules: PricingRuleSnapshot[],
+): CartPricingResult {
+	const date = ctx.posting_date || today();
+	const inScope = rules.filter((rule) => matchesScope(rule, ctx, date));
 
-/**
- * Apply a set of Price pricing rules to a single line and write the resolved
- * rate/discount onto `result`.
- *
- * `rules` is either a single non-cumulative rule or the full set of cumulative
- * rules (highest-scored first). Discounts are accumulated against the original
- * price_list_rate so percentage rules stack additively (matching ERPNext) rather
- * than compounding, and the running total is rounded to cash precision so
- * stacked "Discount Amount" rules don't drift. Margin is applied once, from the
- * highest-scored rule that defines one.
- */
-function applyPriceRules(rules: PricingRule[], ctx: PricingContext, result: PricingResult): void {
-	if (rules.length === 0) return;
+	const updates: LinePricing[] = [];
+	const freeLines: FreeItemLine[] = [];
+	const freeByKey = new Map<string, FreeItemLine>();
 
-	const base = ctx.price_list_rate;
-	let workingRate = base;
-	let rateOverridden = false;
-	let totalDiscount = 0;
-	let marginRule: PricingRule | null = null;
+	let totalQty = 0;
+	let total = 0;
 
-	for (const rule of rules) {
-		const discountType = rule.rate_or_discount || "Discount Percentage";
+	for (const line of lines) {
+		const qty = Math.abs(flt(line.qty));
+		const conversionFactor = flt(line.conversion_factor) || 1;
+		const stockQty = qty * conversionFactor;
+		const priceListRate = flt(line.price_list_rate ?? line.rate);
+		const amount = priceListRate * qty;
 
-		if (discountType === "Rate") {
-			if (!rateOverridden) {
-				workingRate = Number(rule.rate) || 0;
-				rateOverridden = true;
-			}
-		} else if (discountType === "Discount Percentage") {
-			totalDiscount += (base * (Number(rule.discount_percentage) || 0)) / 100;
-		} else if (discountType === "Discount Amount") {
-			totalDiscount += Number(rule.discount_amount) || 0;
-		}
-
-		if (!marginRule && rule.margin_type && rule.margin_rate_or_amount) {
-			marginRule = rule;
-		}
-	}
-
-	const top = rules[0];
-	result.pricing_rule = top.name;
-	result.pricing_rule_title = top.title || top.name;
-
-	totalDiscount = round2(totalDiscount);
-	let rate = workingRate - totalDiscount;
-
-	result.discount_amount = round2(base - rate);
-	result.discount_percentage = base > 0 ? round2((result.discount_amount / base) * 100) : 0;
-
-	if (marginRule) {
-		const marginValue = Number(marginRule.margin_rate_or_amount);
-		result.margin_type = marginRule.margin_type;
-		result.margin_rate_or_amount = marginValue;
-		if (marginRule.margin_type === "Percentage") {
-			rate = rate * (1 + marginValue / 100);
-		} else if (marginRule.margin_type === "Amount") {
-			rate += marginValue;
-		}
-	}
-
-	result.rate = rate < 0 ? 0 : rate;
-}
-
-function applyProductRule(rule: PricingRule, ctx: PricingContext, result: PricingResult): void {
-	const freeItemCode = rule.same_item ? ctx.item_code : rule.free_item;
-	if (!freeItemCode) return;
-
-	let freeQty = Number(rule.free_qty) || 0;
-
-	if (rule.is_recursive && rule.recurse_for > 0 && rule.apply_recursion_over > 0) {
-		const eligibleQty = ctx.qty - rule.apply_recursion_over;
-		if (eligibleQty <= 0) return;
-		freeQty = Math.floor(eligibleQty / rule.recurse_for) * freeQty;
-	}
-
-	if (rule.round_free_qty) {
-		freeQty = Math.round(freeQty);
-	}
-
-	if (freeQty <= 0) return;
-
-	result.free_items.push({
-		item_code: freeItemCode,
-		qty: freeQty,
-		rate: Number(rule.free_item_rate) || 0,
-		uom: rule.free_item_uom || undefined,
-		pricing_rule: rule.name,
-	});
-}
-
-export interface CartPricingItem {
-	item_code: string;
-	item_group?: string;
-	brand?: string;
-	qty: number;
-	rate: number;
-	price_list_rate: number;
-}
-
-export async function applyPricingRulesToCart(
-	cartItems: CartPricingItem[],
-	opts: {
-		price_list?: string;
-		customer?: string;
-		customer_group?: string;
-		territory?: string;
-		warehouse?: string;
-		company?: string;
-		coupon_code?: string;
-	},
-): Promise<Map<string, PricingResult>> {
-	const results = new Map<string, PricingResult>();
-
-	const transactionAmount = cartItems.reduce((sum, item) => sum + item.qty * item.price_list_rate, 0);
-
-	for (const item of cartItems) {
-		const ctx: PricingContext = {
-			...item,
-			...opts,
-			transaction_amount: transactionAmount,
+		const result: LinePricing = {
+			row_id: line.row_id,
+			item_code: line.item_code,
+			price_list_rate: priceListRate,
+			rate: flt(line.rate),
+			discount_percentage: 0,
+			discount_amount: 0,
+			margin_type: null,
+			margin_rate_or_amount: 0,
+			pricing_rules: [],
 		};
-		const pricingResult = await applyPricingRules(ctx);
-		results.set(item.item_code, pricingResult);
+
+		const candidates = inScope.filter(
+			(rule) => matchesLine(rule, line, ctx) && withinQtyAndAmount(rule, stockQty, amount),
+		);
+		const selected = selectForLine(candidates, ctx);
+
+		const priceRules = selected.filter((r) => r.price_or_product_discount === "Price");
+		if (priceRules.length) {
+			applyPriceRules(priceRules, line, ctx, result);
+		}
+
+		for (const rule of selected) {
+			if (rule.price_or_product_discount !== "Product") continue;
+			const free = buildFreeItem(rule, line, qty);
+			if (!free) continue;
+			const key = `${free.item_code}::${free.pricing_rules}`;
+			const existing = freeByKey.get(key);
+			if (existing) {
+				existing.qty += free.qty;
+			} else {
+				freeByKey.set(key, free);
+				freeLines.push(free);
+			}
+		}
+
+		result.pricing_rules = selected.map((r) => r.name);
+		updates.push(result);
+
+		totalQty += qty;
+		total += (result.rate || priceListRate) * qty;
 	}
 
-	return results;
+	const invoiceUpdates = applyTransactionRules(inScope, ctx, totalQty, round(total), freeLines);
+
+	return { updates, free_lines: freeLines, invoice_updates: invoiceUpdates };
 }

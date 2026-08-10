@@ -13,6 +13,7 @@ export default defineConfig({
 		vue(),
 		VitePWA({
 			registerType: "autoUpdate",
+			injectRegister: false,
 			includeAssets: ["pwa-192x192.svg", "pwa-512x512.svg", "apple-touch-icon.svg"],
 			manifest: {
 				name: "X POS - Point of Sale",
@@ -65,9 +66,9 @@ export default defineConfig({
 				enabled: false,
 			},
 			workbox: {
-				globPatterns: ["**/*.{js,css,html,svg,png,ico,woff,woff2,ttf,eot}"],
-				navigateFallback: "index.html",
-				navigateFallbackAllowlist: [/^\/xpos/],
+				globPatterns: ["**/*.{js,css,svg,png,ico,woff,woff2,ttf,eot}"],
+				globIgnores: ["**/index.html"],
+				modifyURLPrefix: { "": "/assets/xpos/xpos/" },
 				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
 				runtimeCaching: [
 					{

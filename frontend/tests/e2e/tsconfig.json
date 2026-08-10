@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"baseUrl": "../..",
+		"paths": {
+			"@/*": ["src/*"]
+		},
+		"types": ["cypress", "node"],
+		"noEmit": true
+	},
+	"include": ["**/*.ts", "../../cypress.config.ts"],
+	"exclude": ["videos", "screenshots"]
+}

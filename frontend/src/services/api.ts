@@ -18,6 +18,89 @@ function getCsrfToken(): string {
 	);
 }
 
+const EXCEPTION_MESSAGES: Record<string, string> = {
+	AuthenticationError: "Invalid login credentials.",
+	SessionExpired: "Your session has expired. Please sign in again.",
+	CSRFTokenError: "Your session has expired. Please reload and try again.",
+	PermissionError: "You do not have permission to do this.",
+	DoesNotExistError: "The requested record no longer exists.",
+	DuplicateEntryError: "A record with these details already exists.",
+	LinkExistsError: "This record is linked to other records and cannot be removed.",
+	TimestampMismatchError: "This record was changed by someone else. Please reload and try again.",
+	ValidationError: "The server rejected this request. Please check the details and try again.",
+	RateLimitExceededError: "Too many attempts. Please wait a moment and try again.",
+};
+
+const STATUS_MESSAGES: Record<number, string> = {
+	401: "Invalid login credentials.",
+	403: "You do not have permission to do this.",
+	404: "The requested record no longer exists.",
+	409: "This record was changed by someone else. Please reload and try again.",
+	413: "That upload is too large.",
+	429: "Too many attempts. Please wait a moment and try again.",
+	502: "The server is unreachable. Please try again shortly.",
+	503: "The server is unreachable. Please try again shortly.",
+	504: "The server took too long to respond. Please try again.",
+};
+
+function toTraceback(exc: unknown): string {
+	if (Array.isArray(exc)) return exc.join("\n");
+	if (typeof exc !== "string") return "";
+	try {
+		const parsed = JSON.parse(exc);
+		return Array.isArray(parsed) ? parsed.join("\n") : String(parsed);
+	} catch {
+		return exc;
+	}
+}
+
+function messageFromTraceback(traceback: string): string {
+	const lastLine = traceback
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean)
+		.pop();
+	if (!lastLine) return "";
+	const match = /^(?:[\w.]+\.)?(\w*(?:Error|Exception))(?::\s*(.+))?$/.exec(lastLine);
+	if (!match) return lastLine.startsWith("File ") ? "" : lastLine;
+	return match[2]?.trim() ?? "";
+}
+
+function extractErrorMessage(data: Record<string, unknown>, status: number, traceback: string): string {
+	if (data._server_messages) {
+		try {
+			const serverMessages = JSON.parse(data._server_messages as string);
+			const firstMessage = serverMessages[0];
+			const parsed = typeof firstMessage === "string" ? JSON.parse(firstMessage) : firstMessage;
+			const text = parsed.message || parsed.title;
+			if (text) return stripHtml(String(text));
+		} catch {}
+	}
+
+	if (typeof data.message === "string" && data.message.trim() && !data.message.includes("Traceback")) {
+		return stripHtml(data.message);
+	}
+
+	const fromTraceback = messageFromTraceback(traceback);
+	if (fromTraceback) return stripHtml(fromTraceback);
+
+	const excType = typeof data.exc_type === "string" ? data.exc_type : "";
+	if (excType) {
+		return (
+			EXCEPTION_MESSAGES[excType] || `${excType.replace(/([a-z])([A-Z])/g, "$1 $2")}. Please try again.`
+		);
+	}
+
+	return STATUS_MESSAGES[status] || "Something went wrong. Please try again.";
+}
+
+function stripHtml(value: string): string {
+	const doc = new DOMParser().parseFromString(value, "text/html");
+	return (doc.body.textContent || "")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 async function fetchCall<T = unknown>(method: string, args: Record<string, unknown> = {}): Promise<T> {
 	if (!isOnline()) {
 		throw new Error("__offline__");
@@ -31,8 +114,6 @@ async function fetchCall<T = unknown>(method: string, args: Record<string, unkno
 		"X-Frappe-CSRF-Token": csrfToken,
 	};
 
-	// In Electron, inject API key auth so Frappe sees an authenticated user
-	// (cross-origin fetch can't use session cookies reliably)
 	if (isElectron()) {
 		const { apiKey, apiSecret } = getApiCredentialsSync();
 		if (apiKey && apiSecret) {
@@ -40,8 +121,6 @@ async function fetchCall<T = unknown>(method: string, args: Record<string, unkno
 		}
 	}
 
-	// In Electron, API calls go to the remote server (absolute URL).
-	// In browser/PWA, same-origin relative URLs.
 	const baseUrl = getApiBaseUrlSync();
 	const url = `${baseUrl}/api/method/${method}`;
 
@@ -60,22 +139,9 @@ async function fetchCall<T = unknown>(method: string, args: Record<string, unkno
 	const data = await response.json();
 
 	if (!response.ok || data.exc) {
-		let errorMsg: string;
+		const traceback = toTraceback(data.exc);
+		const errorMsg = extractErrorMessage(data, response.status, traceback);
 
-		if (data._server_messages) {
-			try {
-				const serverMessages = JSON.parse(data._server_messages);
-				const firstMessage = serverMessages[0];
-				const parsed = typeof firstMessage === "string" ? JSON.parse(firstMessage) : firstMessage;
-				errorMsg = parsed.message || parsed.title || String(parsed);
-			} catch {
-				errorMsg = data._server_messages;
-			}
-		} else if (data.exc) {
-			errorMsg = Array.isArray(data.exc) ? data.exc[0] : data.exc;
-		} else {
-			errorMsg = data.message || `HTTP error! status: ${response.status}`;
-		}
 		captureError({
 			source: "api",
 			title: `${response.status} ${method}`,
@@ -83,11 +149,13 @@ async function fetchCall<T = unknown>(method: string, args: Record<string, unkno
 			method,
 			status: response.status,
 			args,
-			traceback: Array.isArray(data.exc) ? data.exc.join("\n") : data.exc,
+			traceback,
 			exceptionType: data.exc_type,
 		});
 
-		throw new Error(errorMsg);
+		const err = new Error(errorMsg) as Error & { excType?: string };
+		if (data.exc_type) err.excType = data.exc_type;
+		throw err;
 	}
 	if (data && typeof data === "object" && "message" in data) {
 		return data.message as T;

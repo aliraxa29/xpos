@@ -17,6 +17,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt, nowdate
 
+from xpos.api.utilities import can_settle_outstanding
+
 
 @frappe.whitelist()
 def get_available_credit(customer: str, company: str) -> list[dict]:
@@ -72,36 +74,57 @@ def get_available_credit(customer: str, company: str) -> list[dict]:
 
 @frappe.whitelist()
 def get_outstanding_invoices(
-	customer: str,
-	company: str,
+	customer: str | None = None,
+	company: str | None = None,
 	currency: str | None = None,
 	pos_profile: str | None = None,
 	page_start: int = 0,
 	page_length: int = 20,
+	search_term: str | None = None,
 ) -> list[dict]:
-	"""Fetch outstanding invoices for a customer"""
+	"""Fetch submitted invoices that still carry a balance."""
+	if not customer and not can_settle_outstanding(pos_profile):
+		frappe.throw(
+			_("You are not permitted to list unpaid invoices across customers."),
+			frappe.PermissionError,
+		)
+
 	filters = {
-		"customer": customer,
-		"company": company,
 		"docstatus": 1,
 		"outstanding_amount": [">", 0],
 		"is_return": 0,
 	}
 
+	if customer:
+		filters["customer"] = customer
+	if company:
+		filters["company"] = company
 	if currency:
 		filters["currency"] = currency
+
+	or_filters = None
+	if search_term:
+		pattern = f"%{search_term.strip()}%"
+		or_filters = {
+			"name": ["like", pattern],
+			"customer": ["like", pattern],
+			"customer_name": ["like", pattern],
+		}
 
 	invoices = frappe.get_list(
 		"Sales Invoice",
 		filters=filters,
+		or_filters=or_filters,
 		fields=[
 			"name",
 			"customer",
 			"customer_name",
 			"posting_date",
 			"grand_total",
+			"paid_amount",
 			"outstanding_amount",
 			"currency",
+			"status",
 		],
 		limit_start=page_start,
 		limit_page_length=page_length,
@@ -225,6 +248,71 @@ def create_payment_entry(data: str | dict) -> dict:
 		"name": pe.name,
 		"paid_amount": pe.paid_amount,
 		"status": "Submitted" if pe.docstatus == 1 else "Draft",
+	}
+
+
+@frappe.whitelist()
+def settle_outstanding_invoice(
+	invoice: str,
+	amount: float,
+	mode_of_payment: str,
+	pos_opening_shift: str,
+	pos_profile: str | None = None,
+) -> dict:
+	"""Collect payment against a past submitted invoice from the POS.
+
+	This is the credit-sale half of open tabs: the sale is already submitted, so it
+	is settled with a Payment Entry rather than by loading a cart.
+	"""
+	if not can_settle_outstanding(pos_profile):
+		frappe.throw(
+			_("You are not permitted to settle outstanding invoices."),
+			frappe.PermissionError,
+		)
+
+	if not pos_opening_shift:
+		frappe.throw(_("An open shift is required to settle an invoice."))
+
+	if not frappe.db.exists("Sales Invoice", invoice):
+		frappe.throw(_("Sales Invoice {0} does not exist").format(invoice))
+
+	invoice_doc = frappe.get_doc("Sales Invoice", invoice)
+
+	if invoice_doc.docstatus != 1:
+		frappe.throw(_("Only a submitted invoice can be settled."))
+
+	outstanding_amount = flt(invoice_doc.outstanding_amount)
+	if outstanding_amount <= 0:
+		frappe.throw(_("Invoice {0} has nothing outstanding.").format(invoice))
+
+	amount = flt(amount)
+	if amount <= 0:
+		frappe.throw(_("Payment amount must be greater than zero."))
+
+	if amount > outstanding_amount + 0.009:
+		frappe.throw(
+			_("Payment of {0} exceeds the {1} outstanding on invoice {2}.").format(
+				amount, outstanding_amount, invoice
+			)
+		)
+
+	result = create_payment_entry(
+		{
+			"customer": invoice_doc.customer,
+			"company": invoice_doc.company,
+			"amount": amount,
+			"mode_of_payment": mode_of_payment,
+			"reference_doctype": "Sales Invoice",
+			"reference_name": invoice,
+			"reference_no": pos_opening_shift,
+			"submit": True,
+		}
+	)
+
+	return {
+		"payment_entry": result.get("name"),
+		"allocated_amount": amount,
+		"outstanding_after": flt(frappe.db.get_value("Sales Invoice", invoice, "outstanding_amount")),
 	}
 
 

@@ -1,5 +1,13 @@
 <template>
 	<div class="shrink-0 border-t border-border bg-background px-4 py-4 space-y-3 dark:border-border">
+		<div
+			v-if="cartStore.pricingSource === 'offline'"
+			class="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-400"
+		>
+			<WifiOff class="w-3 h-3 shrink-0" />
+			{{ __("Prices calculated offline, will be confirmed when the invoice syncs") }}
+		</div>
+
 		<div class="space-y-1.5">
 			<div class="flex items-center justify-between text-sm">
 				<span class="text-muted-foreground">{{ __("Subtotal") }}</span>
@@ -175,6 +183,7 @@
 					size="sm"
 					class="dark:border-border dark:text-foreground"
 					:disabled="cartStore.isEmpty"
+					data-testid="hold-order"
 					@click="holdOrder"
 				>
 					<Clock class="w-4 h-4" />
@@ -350,6 +359,7 @@ import { useOfferStore } from "@/stores/offerStore";
 import { call, showSuccess, showError } from "@/services/api";
 import { __ } from "@/lib/translate";
 import { isElectron } from "@/services/electronBridge";
+import { isTabConflictError } from "@/utils";
 import { useOfflineStore } from "@/stores/offlineStore";
 import { usePrintInvoice } from "@/composables/usePrintInvoice";
 import { Button } from "@/components/ui/button";
@@ -368,6 +378,7 @@ import {
 	Percent,
 	FileText,
 	Truck,
+	WifiOff,
 	X,
 } from "lucide-vue-next";
 import type { DeliveryCharge } from "@/types/pos.types";
@@ -690,8 +701,17 @@ async function holdOrder() {
 			}
 		}
 	} catch (error: unknown) {
+		if (handleTabConflict(error)) return;
 		showError(__("Failed to save draft: {0}", [extractErrorMessage(error)]));
 	}
+}
+
+function handleTabConflict(error: unknown): boolean {
+	if (!isTabConflictError(error)) return false;
+
+	showError(__("This tab was changed on another terminal. Reload it and try again."));
+	cartStore.openDraftDialog();
+	return true;
 }
 
 async function sendToCashier() {
@@ -772,6 +792,7 @@ async function sendToCashier() {
 			}
 		}
 	} catch (error: unknown) {
+		if (handleTabConflict(error)) return;
 		showError(__("Failed to send to cashier: {0}", [extractErrorMessage(error)]));
 	}
 }

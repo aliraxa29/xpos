@@ -214,3 +214,46 @@ def can_close_shift(user: str | None = None, pos_profile: str | None = None) -> 
 	from xpos.api.auth import user_has_pos_permission
 
 	return user_has_pos_permission("close_shift", user, pos_profile)
+
+
+def pos_profile_flag(pos_profile: str | None, fieldname: str) -> bool:
+	"""Read a POS Profile checkbox, treating a not-yet-migrated column as off.
+
+	Both open-tab gates ship as custom fields, so a site that has upgraded the
+	code but not run ``bench migrate`` must fall back to disabled rather than
+	raising.
+	"""
+	if not pos_profile:
+		return False
+	if not frappe.db.has_column("POS Profile", fieldname):
+		return False
+	return bool(frappe.db.get_value("POS Profile", pos_profile, fieldname))
+
+
+def can_recall_other_shift_tabs(pos_profile: str | None = None, user: str | None = None) -> bool:
+	"""Return whether ``user`` may pull open tabs raised on another shift.
+
+	Both gates must agree: the POS Profile has to opt in, and the user's POS Role
+	has to grant ``recall_other_shift_tabs``. Both are off by default, so the
+	behaviour of an existing site is unchanged until an administrator enables them.
+	"""
+	from xpos.api.auth import user_has_pos_permission
+
+	if not pos_profile_flag(pos_profile, "allow_open_tab_recall"):
+		return False
+
+	return user_has_pos_permission("recall_other_shift_tabs", user, pos_profile)
+
+
+def can_settle_outstanding(pos_profile: str | None = None, user: str | None = None) -> bool:
+	"""Return whether ``user`` may settle a past unpaid invoice from the POS.
+
+	Gated the same way as :func:`can_recall_other_shift_tabs` - profile opt-in plus
+	the ``settle_outstanding_invoice`` role permission.
+	"""
+	from xpos.api.auth import user_has_pos_permission
+
+	if not pos_profile_flag(pos_profile, "allow_outstanding_settlement"):
+		return False
+
+	return user_has_pos_permission("settle_outstanding_invoice", user, pos_profile)

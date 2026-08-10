@@ -33,7 +33,11 @@ X POS allows you to hold (park) an order and resume it later, enabling you to se
 2. The **Draft Invoice Dialog** opens
 
 ### Browsing Drafts
-The dialog shows all held orders for the current shift:
+The dialog shows all held orders for the current shift. A profile can also be configured to
+let a cashier pull tabs raised on *other* shifts, which is how a bar keeps a customer's tab
+alive across a shift change. See [Open Tabs](27-open-tabs.md).
+
+Each entry shows:
 - **Customer name** — Who the order belongs to
 - **Date & time** — When the order was held
 - **Item count** — Number of items in the order

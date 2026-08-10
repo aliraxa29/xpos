@@ -32,6 +32,49 @@ def get_stock_availability(item_code: str, warehouse: str) -> float:
 	return flt(rows[0].actual_qty) if rows else 0.0
 
 
+def lock_bins_for_update(items: list[dict]) -> None:
+	"""
+	Take a row lock on the Bin rows an invoice is about to consume.
+
+	Availability checks are read-then-write: without a lock two terminals can
+	both read the last unit as available and both sell it.  Locking the bins
+	before validating serialises those transactions so the second one sees the
+	first one's deduction.
+
+	Rows are locked in a deterministic ``(item_code, warehouse)`` order so two
+	carts sharing items acquire them in the same sequence and cannot deadlock.
+	The lock is held until the surrounding transaction commits.
+	"""
+
+	targets = set()
+	for d in items or []:
+		item_code = d.get("item_code")
+		warehouse = d.get("warehouse")
+		if not item_code or not warehouse:
+			continue
+
+		warehouses = [warehouse]
+		if frappe.db.get_value("Warehouse", warehouse, "is_group"):
+			warehouses = frappe.db.get_descendants("Warehouse", warehouse) or []
+
+		for wh in warehouses:
+			targets.add((item_code, wh))
+
+	if not targets:
+		return
+
+	bin_doctype = DocType("Bin")
+	for item_code, warehouse in sorted(targets):
+		(
+			frappe.qb.from_(bin_doctype)
+			.select(bin_doctype.name)
+			.where(bin_doctype.item_code == item_code)
+			.where(bin_doctype.warehouse == warehouse)
+			.for_update()
+			.run()
+		)
+
+
 @frappe.whitelist()
 def get_bulk_stock_availability(items: list[dict]) -> dict[tuple[str, str, str], float]:
 	"""

@@ -49,6 +49,8 @@ doctype_js = {
 }
 
 extend_bootinfo = "xpos.startup.boot.extend_bootinfo"
+
+page_renderer = ["xpos.pwa.ServiceWorkerPage"]
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
