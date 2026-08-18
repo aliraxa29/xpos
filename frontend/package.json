@@ -61,7 +61,7 @@
     "electron": "^39.8.10",
     "electron-builder": "^26.0.12",
     "jsdom": "^29.1.1",
-    "postcss": "^8.4.38",
+    "postcss": "^8.5.23",
     "resedit": "^1.7.2",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
