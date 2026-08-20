@@ -1,8 +1,8 @@
 app_name = "xpos"
 app_title = "X POS"
-app_publisher = "Ali Raza"
+app_publisher = "Kodlyft"
 app_description = "A modern, offline-capable Point of Sale application for Frappe and ERPNext"
-app_email = "ar.frappe.dev@gmail.com"
+app_email = "hello@kodlyft.com"
 app_license = "mit"
 
 # Apps

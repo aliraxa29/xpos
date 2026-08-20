@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Ali Raza and contributors
+// Copyright (c) 2026, Kodlyft and contributors
 // For license information, please see license.txt
 //
 // Renders a grouped checkbox matrix into the `permissions_html` field, bound to

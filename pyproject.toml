@@ -1,7 +1,7 @@
 [project]
 name = "xpos"
 authors = [
-    { name = "Ali Raza", email = "ar.frappe.dev@gmail.com"}
+    { name = "Kodlyft", email = "hello@kodlyft.com"}
 ]
 description = "A modern, offline-capable Point of Sale application for Frappe and ERPNext"
 requires-python = ">=3.10"
