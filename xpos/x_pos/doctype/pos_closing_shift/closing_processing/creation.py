@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import flt, json
 
+from xpos.api.utilities import get_invoice_type
 from xpos.x_pos.doctype.pos_closing_shift.closing_processing.data import (
 	get_payments_entries,
 	get_pos_invoices,
@@ -16,12 +17,7 @@ from xpos.x_pos.doctype.pos_closing_shift.closing_processing.utils import (
 @frappe.whitelist()
 def make_closing_shift_from_opening(opening_shift: dict):
 	opening_shift = json.loads(opening_shift)
-	use_pos_invoice = frappe.db.get_value(
-		"POS Profile",
-		opening_shift.get("pos_profile"),
-		"create_pos_invoice_instead_of_sales_invoice",
-	)
-	doctype = "POS Invoice" if use_pos_invoice else "Sales Invoice"
+	doctype = get_invoice_type()
 	submit_printed_invoices(opening_shift.get("name"), doctype)
 	closing_shift = frappe.new_doc("POS Closing Shift")
 	closing_shift.pos_opening_shift = opening_shift.get("name")

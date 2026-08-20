@@ -11,8 +11,8 @@ import __ from "@/lib/translate";
 import {
 	getReportDefinitions,
 	isReportAccessible,
+	type ReportCategory,
 	type ReportDefinition,
-	type ReportTone,
 } from "@/services/reports";
 
 const router = useRouter();
@@ -26,7 +26,6 @@ const filteredReports = computed(() => {
 
 	return reportDefinitions.value.filter((report) => {
 		const textParts = [report.title, report.reportName, report.description, report.category, report.slug]
-			.concat(report.filters.map((filter) => filter.label))
 			.join(" ")
 			.toLowerCase();
 		return textParts.includes(query);
@@ -45,36 +44,26 @@ const sectionReports = computed(() => {
 	}));
 });
 
-const toneClasses: Record<ReportTone, { accent: string; chip: string; glow: string; icon: string }> = {
-	emerald: {
+const categoryAccent: Record<ReportCategory, { accent: string; chip: string; icon: string }> = {
+	Inventory: {
 		accent: "from-emerald-500/20 via-emerald-500/10 to-transparent",
 		chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
-		glow: "shadow-emerald-500/10",
 		icon: "text-emerald-500",
 	},
-	blue: {
+	Sales: {
 		accent: "from-sky-500/20 via-sky-500/10 to-transparent",
 		chip: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20",
-		glow: "shadow-sky-500/10",
 		icon: "text-sky-500",
 	},
-	amber: {
+	Purchasing: {
 		accent: "from-amber-500/20 via-amber-500/10 to-transparent",
 		chip: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
-		glow: "shadow-amber-500/10",
 		icon: "text-amber-500",
 	},
-	violet: {
+	Operations: {
 		accent: "from-violet-500/20 via-violet-500/10 to-transparent",
 		chip: "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
-		glow: "shadow-violet-500/10",
 		icon: "text-violet-500",
-	},
-	cyan: {
-		accent: "from-cyan-500/20 via-cyan-500/10 to-transparent",
-		chip: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/20",
-		glow: "shadow-cyan-500/10",
-		icon: "text-cyan-500",
 	},
 };
 
@@ -119,8 +108,9 @@ function clearSearch() {
 							</h1>
 							<p class="text-sm sm:text-base text-muted-foreground max-w-2xl">
 								{{
+									// prettier-ignore
 									__(
-										"Browse the reports library, open any report in a dedicated viewer, and export or copy the data directly from the app.",
+										"Browse the reports library, open any report in a dedicated viewer, and export or copy the data directly from the app."
 									)
 								}}
 							</p>
@@ -133,7 +123,7 @@ function clearSearch() {
 								/>
 								<Input
 									v-model="searchTerm"
-									:placeholder="__('Search reports, filters, or categories...')"
+									:placeholder="__('Search reports or categories...')"
 									class="ps-9 h-10 bg-background/95"
 								/>
 							</div>
@@ -188,18 +178,20 @@ function clearSearch() {
 							v-for="report in section.reports"
 							:key="report.slug"
 							class="group relative overflow-hidden border-border/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-							:class="toneClasses[report.tone].glow"
 						>
 							<div
 								:class="[
 									'absolute inset-x-0 top-0 h-1 bg-gradient-to-r',
-									toneClasses[report.tone].accent,
+									categoryAccent[report.category].accent,
 								]"
 							/>
 							<div class="p-5 space-y-4">
 								<div class="flex items-start justify-between gap-3">
 									<div class="min-w-0 flex-1 space-y-2">
-										<Badge :class="toneClasses[report.tone].chip" variant="outline">
+										<Badge
+											:class="categoryAccent[report.category].chip"
+											variant="outline"
+										>
 											{{ report.category }}
 										</Badge>
 										<h3 class="text-lg font-semibold text-foreground leading-tight">
@@ -211,54 +203,31 @@ function clearSearch() {
 									</div>
 									<div
 										class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border bg-background/80"
-										:class="toneClasses[report.tone].icon"
+										:class="categoryAccent[report.category].icon"
 									>
 										<BarChart3 class="h-5 w-5" />
 									</div>
 								</div>
 
-								<div class="flex flex-wrap gap-1.5">
+								<div class="flex items-center justify-end gap-2 pt-1">
 									<Badge
-										v-for="filter in report.filters.slice(0, 4)"
-										:key="`${report.slug}-${filter.fieldname}`"
-										variant="secondary"
-										class="text-[10px] uppercase tracking-wide"
+										v-if="!isReportAccessible(report)"
+										variant="destructive"
+										class="gap-1.5"
 									>
-										{{ filter.label }}
+										<Lock class="h-3 w-3" />
+										{{ __("Locked") }}
 									</Badge>
-									<Badge
-										v-if="report.filters.length > 4"
+									<Button
 										variant="outline"
-										class="text-[10px] uppercase tracking-wide"
+										size="sm"
+										class="gap-1.5"
+										:disabled="!isReportAccessible(report)"
+										@click="openReport(report)"
 									>
-										+{{ report.filters.length - 4 }}
-									</Badge>
-								</div>
-
-								<div class="flex items-center justify-between gap-2 pt-1">
-									<div class="text-xs text-muted-foreground">
-										{{ report.filters.length }} {{ __("filters") }}
-									</div>
-									<div class="flex items-center gap-2">
-										<Badge
-											v-if="!isReportAccessible(report)"
-											variant="destructive"
-											class="gap-1.5"
-										>
-											<Lock class="h-3 w-3" />
-											{{ __("Locked") }}
-										</Badge>
-										<Button
-											variant="outline"
-											size="sm"
-											class="gap-1.5"
-											:disabled="!isReportAccessible(report)"
-											@click="openReport(report)"
-										>
-											{{ __("Open") }}
-											<ArrowRight class="h-4 w-4" />
-										</Button>
-									</div>
+										{{ __("Open") }}
+										<ArrowRight class="h-4 w-4" />
+									</Button>
 								</div>
 							</div>
 						</Card>

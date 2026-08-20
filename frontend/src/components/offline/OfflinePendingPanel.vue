@@ -67,7 +67,7 @@
 					{{ __("Deleting offline invoices is disabled for this POS Profile.") }}
 				</p>
 				<div
-					v-if="offlineStore.pendingCount === 0"
+					v-if="offlineStore.pendingInvoices.length === 0"
 					class="flex flex-col items-center justify-center py-10 text-muted-foreground"
 				>
 					<CheckCircle2 class="w-12 h-12 mb-3 text-emerald-400" />
@@ -95,7 +95,7 @@
 								{{ formatAmount(inv.grand_total) }}
 							</p>
 							<Badge :variant="statusVariant(inv.status)" class="text-[10px]">
-								{{ inv.status }}
+								{{ statusLabel(inv.status) }}
 							</Badge>
 							<Badge
 								v-if="isDraft(inv)"
@@ -124,6 +124,17 @@
 						>
 							<ShoppingCart class="w-3.5 h-3.5" />
 							{{ __("Load to Cart") }}
+						</Button>
+						<Button
+							v-else-if="inv.status === 'dead_letter'"
+							variant="outline"
+							size="sm"
+							class="flex-1 gap-1 text-xs border-destructive text-destructive"
+							:disabled="!offlineStore.isOnline || offlineStore.isSyncing"
+							@click="inv.id && requeue(inv.id)"
+						>
+							<RefreshCw class="w-3.5 h-3.5" />
+							{{ __("Requeue") }}
 						</Button>
 						<Button
 							v-else
@@ -190,6 +201,15 @@ onMounted(() => {
 	offlineStore.loadPendingInvoices();
 });
 
+async function requeue(id: number) {
+	const ok = await offlineStore.retryDeadLetterInvoice(id);
+	if (ok) {
+		showSuccess(__("Invoice requeued for sync"));
+	} else {
+		showError(__("Failed to requeue invoice"));
+	}
+}
+
 function isDraft(inv: (typeof offlineStore.pendingInvoices)[number]): boolean {
 	const d = inv.data as Record<string, unknown> | null | undefined;
 	return !!(d && d.is_draft);
@@ -230,8 +250,13 @@ async function loadToCart(inv: (typeof offlineStore.pendingInvoices)[number]) {
 function statusVariant(status: string) {
 	if (status === "pending") return "secondary" as const;
 	if (status === "syncing") return "default" as const;
-	if (status === "failed") return "destructive" as const;
+	if (status === "failed" || status === "dead_letter") return "destructive" as const;
 	return "secondary" as const;
+}
+
+function statusLabel(status: string): string {
+	if (status === "dead_letter") return __("Needs attention");
+	return status;
 }
 
 function formatTime(isoString: string) {

@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "autoname": "field:role_name",
+ "creation": "2026-06-04 15:07:55.706446",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "role_name",
+  "section_break_vgze",
+  "permissions_html",
+  "section_break_chcf",
+  "permissions"
+ ],
+ "fields": [
+  {
+   "fieldname": "role_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Role Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "section_break_vgze",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "permissions_html",
+   "fieldtype": "HTML",
+   "label": "Permissions HTML"
+  },
+  {
+   "fieldname": "section_break_chcf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "permissions",
+   "fieldtype": "Table",
+   "label": "Permissions",
+   "options": "POS Role Permission"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-04 15:30:11.437117",
+ "modified_by": "Administrator",
+ "module": "X POS",
+ "name": "POS Role",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "role_name",
+ "track_changes": 1
+}

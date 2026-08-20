@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { isElectron } from "@/services/electronBridge";
 import routes from "./routes";
+import { usePosStore } from "@/stores/posStore";
 
 // Electron uses hash-based routing (file:// protocol, no server for SPA fallback).
 // Browser/PWA uses history-based routing with /xpos base path.
@@ -18,7 +19,6 @@ export const router: Router = createRouter({
 	routes,
 });
 
-// Track first-run status (only checked once)
 let _firstRunChecked = false;
 let _isFirstRun = false;
 
@@ -39,7 +39,6 @@ async function checkFirstRun(): Promise<boolean> {
 	return _isFirstRun;
 }
 
-/** Call after setup wizard completes to skip future redirects. */
 export function markSetupComplete(): void {
 	_isFirstRun = false;
 	_firstRunChecked = true;
@@ -62,6 +61,7 @@ router.beforeEach(async (to, _from, next) => {
 	}
 
 	const authStore = useAuthStore();
+	const posStore = usePosStore();
 
 	if (!authStore.isAuthenticated && !authStore.isLoading) {
 		await authStore.checkAuth();
@@ -84,6 +84,14 @@ router.beforeEach(async (to, _from, next) => {
 	}
 
 	if (to.name === "settings" && !isElectron()) {
+		next({ name: "pos" });
+		return;
+	}
+	if (to.name === "cashier" && (!posStore.enableCashierSettlement || !posStore.isCashier)) {
+		next({ name: "pos" });
+		return;
+	}
+	if (to.meta.requiresAdmin === true && (isElectron() || !authStore.canManagePermissions)) {
 		next({ name: "pos" });
 		return;
 	}

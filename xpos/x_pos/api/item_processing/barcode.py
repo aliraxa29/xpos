@@ -13,7 +13,7 @@ def _get_scale_barcode_settings():
 	except frappe.DoesNotExistError:
 		return None
 	except Exception:
-		frappe.log_error("Unable to load Scale Barcode Settings", "POS Awesome")
+		frappe.log_error("Unable to load Scale Barcode Settings", "X POS")
 		return None
 
 

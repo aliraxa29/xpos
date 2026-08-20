@@ -3,6 +3,8 @@ from erpnext.accounts.doctype.pos_invoice_merge_log.pos_invoice_merge_log import
 	consolidate_pos_invoices,
 )
 
+from xpos.api.utilities import get_invoice_type
+
 
 def _set_closing_entry_invoices(closing_shift_doc):
 	"""Set `pos_closing_entry` on linked invoices."""
@@ -79,13 +81,7 @@ def delete_draft_invoices(pos_opening_shift, pos_profile):
 	if not frappe.db.get_value("POS Profile", pos_profile, "allow_delete_draft_invoices"):
 		return
 
-	create_pos_invoice = frappe.db.get_value(
-		"POS Profile",
-		pos_profile,
-		"create_pos_invoice_instead_of_sales_invoice",
-	)
-
-	doctype = "POS Invoice" if create_pos_invoice else "Sales Invoice"
+	doctype = get_invoice_type()
 
 	invoice_names = frappe.get_all(
 		doctype,
@@ -120,11 +116,7 @@ def submit_printed_invoices(pos_opening_shift, doctype):
 
 
 def consolidate_closing_shift_invoices(closing_shift_doc):
-	if frappe.db.get_value(
-		"POS Profile",
-		closing_shift_doc.pos_profile,
-		"create_pos_invoice_instead_of_sales_invoice",
-	):
+	if get_invoice_type() == "POS Invoice":
 		pos_invoices = []
 		for d in closing_shift_doc.pos_transactions:
 			invoice_details = frappe._dict(

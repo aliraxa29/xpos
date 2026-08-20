@@ -47,10 +47,10 @@ This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, 
 
 | Dependency       | Version  |
 | ---------------- | -------- |
-| Python           | >= 3.10  |
-| Node.js          | >= 18    |
-| Frappe Framework  | v15      |
-| ERPNext          | v15      |
+| Python           | >= 3.14  |
+| Node.js          | >= 24    |
+| Frappe Framework  | v16      |
+| ERPNext          | v16      |
 
 ### Pre-commit Hooks
 

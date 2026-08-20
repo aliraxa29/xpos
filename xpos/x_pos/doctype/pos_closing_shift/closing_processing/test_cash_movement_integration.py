@@ -78,7 +78,7 @@ class TestClosingShiftCashMovementIntegration(unittest.TestCase):
 		mock_get_payments_entries.return_value = []
 		mock_frappe.get_cached_value.return_value = "USD"
 		mock_frappe.db.get_value.side_effect = lambda dt, name, field: (
-			0 if field == "create_pos_invoice_instead_of_sales_invoice" else "Cash"
+			0 if field == "invoice_type" else "Cash"
 		)
 		mock_frappe.get_doc.return_value = SimpleNamespace(
 			doctype="POS Opening Shift",

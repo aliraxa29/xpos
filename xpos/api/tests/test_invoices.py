@@ -49,7 +49,7 @@ class TestCreateInvoice(unittest.TestCase):
 		mock_pos.company = "Test Company"
 		mock_pos.warehouse = "Store - TC"
 		mock_pos.currency = "USD"
-		mock_pos.get.return_value = 0  # create_pos_invoice_instead_of_sales_invoice = 0
+		mock_pos.get.return_value = 0
 		mock_frappe.get_cached_doc.return_value = mock_pos
 		mock_frappe.db.get_value.return_value = "Debtors - TC"
 

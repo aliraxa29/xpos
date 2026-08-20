@@ -5,11 +5,11 @@ import json
 from collections import defaultdict
 
 import frappe
-from frappe import _
+from frappe import _, cstr
 from frappe.utils import cint, flt, getdate, now_datetime, nowdate
 from frappe.utils.background_jobs import enqueue
 
-from xpos.api.utilities import get_profile_setting
+from xpos.api.utilities import get_invoice_type, is_pos_cashier
 
 
 def enforce_stock_availability(invoice_doc):
@@ -45,21 +45,6 @@ def _get_item_rate_precision():
 		return p if p >= 0 else 3
 	except Exception:
 		return 3
-
-
-def _resolve_invoice_doctype(pos_profile: str):
-	"""Return 'POS Invoice' or 'Sales Invoice' based on POS Profile setting."""
-	if pos_profile:
-		use_pos = cint(
-			frappe.db.get_value(
-				"POS Profile",
-				pos_profile,
-				"create_pos_invoice_instead_of_sales_invoice",
-			)
-		)
-		if use_pos:
-			return "POS Invoice"
-	return "Sales Invoice"
 
 
 def _resolve_invoice_posting_date(pos, requested_posting_date=None, current_posting_date=None):
@@ -221,10 +206,43 @@ def _ensure_pos_invoice_payment_row(invoice_doc, pos_profile_doc, require_paymen
 	)
 
 
+def find_invoice_by_local_id(local_id: str | None, warehouse: str | None = None) -> tuple[str, str] | None:
+	"""Return (doctype, name) of an invoice already created for this client local_id.
+
+	The desktop/offline client assigns every cart a stable ``local_id`` and may
+	re-push it after a dropped response. Looking it up here makes invoice creation
+	idempotent so a retry returns the original invoice instead of creating a second
+	real Sales Invoice (double stock depletion + double revenue).
+	"""
+	if not local_id:
+		return None
+	for dt in ("Sales Invoice", "POS Invoice"):
+		name = frappe.db.get_value(
+			dt, {"xpos_local_id": local_id, "set_warehouse": warehouse, "docstatus": 1}, "name"
+		)
+		if name:
+			return dt, name
+	return None
+
+
 @frappe.whitelist()
-def create_invoice(data: str | dict):
-	"""Create a POS Sales Invoice from cart data."""
+def create_invoice(data: str | dict, local_id: str | None = None):
+	"""Create a POS Sales Invoice from cart data.
+
+	Args:
+	    data: JSON string (or dict) containing the cart payload.
+	    local_id: Stable client-side id used to deduplicate sync retries so the
+	        same cart is never committed twice (exactly-once invoice creation).
+	"""
 	data = json.loads(data) if isinstance(data, str) else data
+
+	local_id = local_id or data.get("local_id")
+
+	warehouse = data.get("warehouse")
+	existing = find_invoice_by_local_id(local_id, warehouse)
+	if existing:
+		dt, name = existing
+		return {**_build_invoice_response(frappe.get_doc(dt, name)), "duplicate": True}
 
 	pos_profile = data.get("pos_profile")
 	customer = data.get("customer")
@@ -246,8 +264,7 @@ def create_invoice(data: str | dict):
 
 	pos = frappe.get_cached_doc("POS Profile", pos_profile)
 
-	use_pos_invoice = cint(pos.get("create_pos_invoice_instead_of_sales_invoice"))
-	doctype = "POS Invoice" if use_pos_invoice else "Sales Invoice"
+	doctype = get_invoice_type()
 
 	debit_to = None
 	if hasattr(pos, "debit_to") and pos.get("debit_to"):
@@ -263,6 +280,11 @@ def create_invoice(data: str | dict):
 		if invoice_doc.docstatus != 0:
 			frappe.throw(_("Only draft invoices can be updated and submitted"))
 
+		if invoice_doc.get("pos_awaiting_settlement") and not is_pos_cashier(
+			frappe.session.user, pos_profile
+		):
+			frappe.throw(_("Only a cashier can settle this invoice."), frappe.PermissionError)
+
 		is_existing_draft = True
 		invoice_doc.set("items", [])
 		invoice_doc.set("payments", [])
@@ -277,6 +299,8 @@ def create_invoice(data: str | dict):
 		invoice_doc = frappe.new_doc(doctype)
 
 	invoice_doc.is_pos = 1
+	if local_id:
+		invoice_doc.xpos_local_id = local_id
 	invoice_doc.pos_profile = pos_profile
 	invoice_doc.customer = customer
 	invoice_doc.company = pos.company
@@ -350,11 +374,15 @@ def create_invoice(data: str | dict):
 
 	rate_precision = _get_item_rate_precision()
 
+	from xpos.api.auth import user_has_pos_permission
+
+	allow_rate_change = user_has_pos_permission("allow_change_price", pos_profile=pos.name)
+
 	for item_data in items:
 		item_rate = flt(item_data.get("rate", 0), rate_precision)
 		item_qty = flt(item_data.get("qty", 1), 3)
 
-		if not cint(pos.get("allow_rate_change")):
+		if not allow_rate_change:
 			price_list = pos.get("selling_price_list")
 			if price_list:
 				price_list_rate = frappe.db.get_value(
@@ -561,14 +589,45 @@ def create_invoice(data: str | dict):
 	except Exception:
 		pass
 
-	if is_existing_draft:
-		invoice_doc.save(ignore_permissions=True)
-	else:
-		invoice_doc.insert(ignore_permissions=True)
+	try:
+		if is_existing_draft:
+			invoice_doc.save(ignore_permissions=True)
+		else:
+			invoice_doc.insert(ignore_permissions=True)
+	except frappe.exceptions.UniqueValidationError:
+		frappe.db.rollback()
+		existing = find_invoice_by_local_id(local_id, warehouse)
+		if existing:
+			dt, name = existing
+			return {**_build_invoice_response(frappe.get_doc(dt, name)), "duplicate": True}
+		raise
 
 	enforce_stock_availability(invoice_doc)
 
 	_validate_unpaid_balance_permissions(invoice_doc, pos, data)
+
+	from xpos.x_pos.integrations import fbr
+
+	client_fbr_number = cstr(data.get("fbr_invoice_number") or "").strip()
+	if client_fbr_number:
+		fbr.apply_fiscal_number(invoice_doc, client_fbr_number)
+		invoice_doc.save(ignore_permissions=True)
+	else:
+		outcome = fbr.prepare_fiscalization(invoice_doc)
+		if outcome.status == "local_required":
+			return {
+				"status": "fbr_local_required",
+				"name": invoice_doc.name,
+				"doctype": doctype,
+				"fbr_payload": outcome.payload,
+				"fbr_local_service_url": outcome.local_service_url,
+				"grand_total": invoice_doc.grand_total,
+				"customer": invoice_doc.customer,
+				"customer_name": invoice_doc.customer_name,
+			}
+		if outcome.status == "cloud":
+			fbr.apply_fiscal_number(invoice_doc, outcome.fbr_invoice_number, outcome.posted_on)
+			invoice_doc.save(ignore_permissions=True)
 
 	if submit_in_background:
 		enqueue(
@@ -610,6 +669,55 @@ def submit_invoice_job(invoice_name: str, doctype: str = "Sales Invoice"):
 
 
 @frappe.whitelist()
+def finalize_fiscal_invoice(name: str, fbr_invoice_number: str, doctype: str | None = None):
+	"""Stamp a locally-obtained FBR number on a pending draft and submit it.
+
+	Completes the offline-fiscalization handshake started by ``create_invoice`` when
+	it returned ``fbr_local_required``: the client fetched the number from the local
+	fiscalization service and passes it here to finalize the sale.
+	"""
+	from xpos.x_pos.integrations import fbr
+
+	doctype = doctype or get_invoice_type()
+	fbr_invoice_number = cstr(fbr_invoice_number or "").strip()
+	if not fbr_invoice_number:
+		frappe.throw(_("FBR invoice number is required to finalize this invoice."))
+
+	invoice_doc = frappe.get_doc(doctype, name)
+	if invoice_doc.docstatus != 0:
+		return _build_invoice_response(invoice_doc)
+
+	if invoice_doc.get("pos_profile") and not is_pos_cashier(frappe.session.user, invoice_doc.pos_profile):
+		frappe.throw(_("Only a cashier can finalize this invoice."), frappe.PermissionError)
+
+	fbr.apply_fiscal_number(invoice_doc, fbr_invoice_number)
+	invoice_doc.save(ignore_permissions=True)
+	invoice_doc.submit()
+	return _build_invoice_response(invoice_doc)
+
+
+@frappe.whitelist()
+def discard_draft_invoice(name: str, doctype: str | None = None) -> dict:
+	"""Delete a draft invoice left pending when fiscalization could not complete.
+
+	Used when both the FBR cloud and the local service are unreachable, so the sale
+	could not be finalized and the draft should not linger.
+	"""
+	doctype = doctype or get_invoice_type()
+	if not frappe.db.exists(doctype, name):
+		return {"deleted": False}
+
+	invoice_doc = frappe.get_doc(doctype, name)
+	if invoice_doc.docstatus != 0:
+		frappe.throw(_("Only a draft invoice can be discarded."))
+	if invoice_doc.get("pos_profile") and not is_pos_cashier(frappe.session.user, invoice_doc.pos_profile):
+		frappe.throw(_("Only a cashier can discard this invoice."), frappe.PermissionError)
+
+	frappe.delete_doc(doctype, name, ignore_permissions=True, force=True)
+	return {"deleted": True}
+
+
+@frappe.whitelist()
 def save_draft_invoice(data: str | dict):
 	"""Save invoice as draft without submitting.
 
@@ -629,8 +737,7 @@ def save_draft_invoice(data: str | dict):
 
 	pos = frappe.get_cached_doc("POS Profile", pos_profile)
 
-	use_pos_invoice = cint(pos.get("create_pos_invoice_instead_of_sales_invoice"))
-	doctype = "POS Invoice" if use_pos_invoice else "Sales Invoice"
+	doctype = get_invoice_type()
 
 	debit_to = None
 	if hasattr(pos, "debit_to") and pos.get("debit_to"):
@@ -722,13 +829,16 @@ def save_draft_invoice(data: str | dict):
 				},
 			)
 
-		_ensure_pos_invoice_payment_row(invoice_doc, pos, use_pos_invoice)
+	_ensure_pos_invoice_payment_row(invoice_doc, pos, doctype == "POS Invoice")
 
 	if pos_opening_shift:
 		try:
 			invoice_doc.pos_opening_shift = pos_opening_shift
 		except Exception:
 			pass
+
+	if data.get("pos_awaiting_settlement") and frappe.db.has_column(doctype, "pos_awaiting_settlement"):
+		invoice_doc.pos_awaiting_settlement = 1
 
 	_apply_invoice_delivery_charge_fields(invoice_doc, data)
 
@@ -753,15 +863,7 @@ def get_draft_invoices(pos_opening_shift: str):
 	if pos_opening_shift:
 		filters["pos_opening_shift"] = pos_opening_shift
 
-	doctype = (
-		"POS Invoice"
-		if get_profile_setting(
-			pos_opening_shift,
-			"create_pos_invoice_instead_of_sales_invoice",
-			"POS Invoice",
-		)
-		else "Sales Invoice"
-	)
+	doctype = get_invoice_type()
 
 	invoices = frappe.get_list(
 		doctype,
@@ -782,6 +884,47 @@ def get_draft_invoices(pos_opening_shift: str):
 	)
 
 	return invoices
+
+
+@frappe.whitelist()
+def get_unsettled_invoices(pos_profile: str | None = None):
+	"""Get draft invoices awaiting cashier settlement for a POS profile.
+
+	These are unsubmitted invoices created by a terminal in cashier-settlement
+	mode (``pos_awaiting_settlement = 1``). They are listed on the Cashier screen
+	regardless of which terminal, operator or shift created them. Once settled
+	(submitted), they drop out of this list via the ``docstatus = 0`` filter.
+	"""
+	doctype = get_invoice_type()
+
+	if not frappe.db.has_column(doctype, "pos_awaiting_settlement"):
+		return []
+
+	if not is_pos_cashier(frappe.session.user, pos_profile):
+		frappe.throw(_("You are not permitted to settle invoices."), frappe.PermissionError)
+
+	filters = {"docstatus": 0, "is_pos": 1, "pos_awaiting_settlement": 1}
+	if pos_profile:
+		filters["pos_profile"] = pos_profile
+
+	return frappe.get_list(
+		doctype,
+		filters=filters,
+		fields=[
+			"name",
+			"customer",
+			"customer_name",
+			"posting_date",
+			"posting_time",
+			"grand_total",
+			"total_qty",
+			"currency",
+			"creation",
+			"modified",
+		],
+		limit_page_length=0,
+		order_by="modified desc",
+	)
 
 
 @frappe.whitelist()
@@ -950,7 +1093,7 @@ def get_past_orders(
 
 	order_clause = ", ".join(order_parts) if order_parts else "si.posting_date DESC, si.posting_time DESC"
 
-	doctype = _resolve_invoice_doctype(pos_profile)
+	doctype = get_invoice_type()
 	table = f"`tab{doctype}`"
 
 	total = frappe.db.sql(
@@ -1000,7 +1143,7 @@ def get_invoices(
 	pos_profile: str = "",
 ):
 	"""Return POS invoices filtered by opening shift and optional return flag."""
-	doctype = _resolve_invoice_doctype(pos_profile)
+	doctype = get_invoice_type()
 	filters = {"docstatus": 1, "is_pos": 1}
 	if pos_opening_shift:
 		filters["pos_opening_shift"] = pos_opening_shift

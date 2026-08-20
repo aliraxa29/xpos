@@ -1,7 +1,7 @@
 import frappe
 from frappe.sessions import get
 
-RTL_LANGUAGES = {"ar", "he", "fa", "ps", "ur", "sd", "ku", "yi"}
+from xpos.constants import RTL_LANGUAGES
 
 
 def get_context(context):

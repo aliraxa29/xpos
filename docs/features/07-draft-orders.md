@@ -92,3 +92,4 @@ The dialog shows all held orders for the current shift:
 - Draft invoices are automatically cleaned up based on your profile settings
 - Use draft orders to manage busy periods efficiently
 - Each draft shows the customer name, item count, and total for quick identification
+- Held orders and [Cashier Settlement](26-cashier-settlement.md) bills are kept separate — bills sent to a cashier do not appear in the held-orders list, and vice versa

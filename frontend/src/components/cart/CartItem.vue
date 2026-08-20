@@ -29,7 +29,7 @@
 			</p>
 
 			<div class="flex items-center gap-1 mt-0.5 flex-wrap">
-				<template v-if="posStore.allowEditRate">
+				<template v-if="hasPermission('allow_change_price')">
 					<span class="text-[11px] text-muted-foreground">{{ currencySymbol }}</span>
 					<input
 						ref="rateInput"
@@ -127,7 +127,7 @@
 					<Plus class="w-2.5 h-2.5" />
 				</Button>
 
-				<template v-if="posStore.allowEditItemDiscount">
+				<template v-if="hasPermission('show_edit_discount_field')">
 					<button
 						@click="showDiscountInput = !showDiscountInput"
 						class="ms-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-all"
@@ -144,7 +144,7 @@
 			</div>
 
 			<div
-				v-if="showDiscountInput && posStore.allowEditItemDiscount"
+				v-if="showDiscountInput && hasPermission('show_edit_discount_field')"
 				class="mt-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800"
 			>
 				<div class="flex items-center gap-2">
@@ -208,6 +208,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { hasPermission } from "@/services/userRights";
 import { useCartStore } from "@/stores/cartStore";
 import { useItemStore } from "@/stores/itemStore";
 import { Button } from "@/components/ui/button";

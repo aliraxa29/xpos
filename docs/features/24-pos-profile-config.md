@@ -73,6 +73,8 @@ The POS Profile is the central configuration hub for X POS. It controls every as
 | Use POS Invoice | Use POS Invoice instead of Sales Invoice |
 | Allow Multi Currency | Enable multi-currency transactions |
 | Block Sale Beyond Available Qty | Prevent selling beyond available stock |
+| Enable Cashier Settlement | Create unsettled bills at the terminal for a cashier to settle later (see [Cashier Settlement](26-cashier-settlement.md)) |
+| Print Backup Receipt | Print a non-genuine backup receipt at the terminal when a bill is sent to the cashier |
 
 ---
 
@@ -177,6 +179,16 @@ In addition to the X POS settings, the standard POS Profile provides:
 | Item Groups | Restrict to specific item groups |
 | Print Format | Default print format |
 | Letter Head | Company letter head for printing |
+
+---
+
+## User Access (Applicable for Users)
+
+The **Applicable for Users** table assigns users to the POS Profile. X POS adds one field to each row:
+
+| Field | Description |
+|---|---|
+| Is Cashier | Allows this user to open the Cashier screen and settle bills. See [Cashier Settlement](26-cashier-settlement.md). |
 
 ---
 

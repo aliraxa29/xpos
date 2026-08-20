@@ -8,7 +8,9 @@
 			isRtl ? 'rtl' : 'ltr',
 		]"
 	>
-		<template v-if="isAuthPage">
+		<SplashScreen :show="showSplash" />
+
+		<template v-if="isAuthPage || isFullScreen">
 			<router-view v-slot="{ Component }">
 				<transition name="fade" mode="out-in">
 					<component :is="Component" />
@@ -67,27 +69,44 @@
 			close-button
 			:dir="isRtl ? 'rtl' : 'ltr'"
 		/>
+		<ErrorInspector v-model:open="showErrorInspector" />
+		<Transition name="fade">
+			<button
+				v-if="!isAuthPage && errorCount > 0 && !showErrorInspector"
+				type="button"
+				class="fixed bottom-3 end-3 z-50 flex items-center gap-1.5 rounded-full bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground shadow-md select-none cursor-pointer"
+				:title="__('Open Error Inspector')"
+				@click="showErrorInspector = true"
+			>
+				<AlertTriangle class="w-3.5 h-3.5" />
+				<span>{{ errorCount }}</span>
+			</button>
+		</Transition>
 
 		<Transition name="fade">
 			<TooltipWrapper
 				v-if="!isAuthPage && isElectronEnv"
 				:content="
-					syncStatus.lastError.value ||
-					(syncStatus.lastSyncTime.value
-						? 'Last sync: ' + syncStatus.lastSyncTime.value
-						: 'Not synced yet')
+					offlineStore.deadLetterCount > 0
+						? offlineStore.deadLetterCount + ' invoice(s) failed to sync. Click to review'
+						: syncStatus.lastError.value ||
+							(syncStatus.lastSyncTime.value
+								? 'Last sync: ' + syncStatus.lastSyncTime.value
+								: 'Not synced yet')
 				"
 				side="right"
 			>
-				<div
-					class="fixed bottom-3 start-3 z-50 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium shadow-md select-none"
+				<button
+					type="button"
+					class="fixed bottom-3 start-3 z-50 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium shadow-md select-none cursor-pointer"
 					:class="
 						syncStatus.isSyncing.value
 							? 'bg-blue-600 text-white'
-							: syncStatus.lastError.value
+							: offlineStore.deadLetterCount > 0 || syncStatus.lastError.value
 								? 'bg-destructive text-destructive-foreground'
 								: 'bg-muted text-muted-foreground'
 					"
+					@click="handleOpenOfflinePanel"
 				>
 					<span
 						v-if="syncStatus.isSyncing.value"
@@ -96,7 +115,11 @@
 					<span
 						v-else
 						class="w-2 h-2 rounded-full"
-						:class="syncStatus.lastError.value ? 'bg-white' : 'bg-green-400'"
+						:class="
+							offlineStore.deadLetterCount > 0 || syncStatus.lastError.value
+								? 'bg-white'
+								: 'bg-green-400'
+						"
 					/>
 					<span>
 						<template v-if="syncStatus.isSyncing.value">
@@ -104,13 +127,16 @@
 								syncStatus.syncTable.value ? ": " + syncStatus.syncTable.value : "..."
 							}}
 						</template>
+						<template v-else-if="offlineStore.deadLetterCount > 0"
+							>{{ offlineStore.deadLetterCount }} need attention</template
+						>
 						<template v-else-if="syncStatus.lastError.value">Sync error</template>
 						<template v-else-if="syncStatus.lastSyncTime.value"
 							>Synced {{ syncStatus.lastSyncTime.value }}</template
 						>
 						<template v-else>Sync pending</template>
 					</span>
-				</div>
+				</button>
 			</TooltipWrapper>
 		</Transition>
 	</div>
@@ -137,12 +163,19 @@ import CashMovementDialog from "@/components/dialogs/CashMovementDialog.vue";
 import DraftInvoiceDialog from "@/components/dialogs/DraftInvoiceDialog.vue";
 import KeyboardShortcutsDialog from "@/components/dialogs/KeyboardShortcutsDialog.vue";
 import AboutDialog from "@/components/dialogs/AboutDialog.vue";
+import SplashScreen from "@/components/SplashScreen.vue";
+import { useBranding } from "@/composables/useBranding";
 import { TooltipWrapper } from "@/components/ui/tooltip";
+import { AlertTriangle } from "lucide-vue-next";
 import { useOfflineStore } from "@/stores/offlineStore";
 import { initSyncListeners } from "@/services/syncIpcHandler";
+import { showError } from "@/services/api";
+import __ from "@/lib/translate";
 import { useSyncStatus } from "@/composables/useSyncStatus";
 import { useKeyboardShortcuts } from "@/composables/useKeyboardShortcuts";
 import { isElectron } from "@/services/electronBridge";
+import ErrorInspector from "@/components/errors/ErrorInspector.vue";
+import { unseenCount as errorUnseenCount } from "@/services/errorLog";
 import { get_full_url } from "@/utils";
 import { getCustomer } from "./utils";
 
@@ -156,6 +189,8 @@ const authStore = useAuthStore();
 const offlineStore = useOfflineStore();
 const syncStatus = useSyncStatus();
 const isElectronEnv = isElectron();
+const showErrorInspector = ref(false);
+const errorCount = errorUnseenCount;
 const isRtl = computed(() => document.documentElement.dir === "rtl");
 
 const keyboardShortcuts = useKeyboardShortcuts();
@@ -167,6 +202,7 @@ const {
 } = keyboardShortcuts;
 
 const isAuthPage = computed(() => route.meta.isAuthPage === true || route.meta.isSetupPage === true);
+const isFullScreen = computed(() => route.meta.fullScreen === true);
 
 async function handleClearCart() {
 	cartStore.clearCart();
@@ -261,6 +297,10 @@ function handleShowAboutDialog() {
 	showAboutDialog.value = true;
 }
 
+function handleToggleErrorInspector() {
+	showErrorInspector.value = !showErrorInspector.value;
+}
+
 const theme = ref<"light" | "dark" | "system">("system");
 const systemPrefersDark = ref(window.matchMedia("(prefers-color-scheme: dark)").matches);
 
@@ -305,6 +345,9 @@ provide("isDark", isDark);
 provide("theme", theme);
 provide("toggleDarkMode", toggleDarkMode);
 
+const { initBranding, enableSplash } = useBranding();
+const showSplash = ref(false);
+
 let mediaQuery: MediaQueryList | null = null;
 let cleanupSyncListeners: (() => void) | null = null;
 function handleSystemThemeChange(e: MediaQueryListEvent) {
@@ -326,6 +369,14 @@ onMounted(() => {
 	}
 
 	applyThemeToDocument(isDark.value);
+
+	const brandingReady = initBranding();
+	showSplash.value = enableSplash.value;
+	brandingReady.finally(() => {
+		window.setTimeout(() => {
+			showSplash.value = false;
+		}, 700);
+	});
 
 	mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 	mediaQuery.addEventListener("change", handleSystemThemeChange);
@@ -350,7 +401,28 @@ onMounted(() => {
 	window.addEventListener("xpos:print-last", handlePrintLast as EventListener);
 	window.addEventListener("xpos:show-shortcuts-dialog", handleShowShortcutsDialog as EventListener);
 	window.addEventListener("xpos:show-about-dialog", handleShowAboutDialog as EventListener);
+	window.addEventListener("xpos:toggle-error-inspector", handleToggleErrorInspector as EventListener);
 });
+
+watch(
+	() => syncStatus.deadLetters.value.length,
+	(count, prev) => {
+		if (count > (prev ?? 0)) {
+			offlineStore.refreshDeadLetterCount();
+			const latest = syncStatus.deadLetters.value[0];
+			showError(
+				__(
+					"Invoice {0} failed to sync and needs attention. Open the offline invoices panel to review.",
+					[latest?.localId ?? ""],
+				),
+			);
+		}
+	},
+);
+
+function handleOpenOfflinePanel() {
+	window.dispatchEvent(new CustomEvent("xpos:open-offline-panel"));
+}
 
 watch(isAuthPage, (isAuth, wasAuth) => {
 	if (wasAuth && !isAuth && authStore.isAuthenticated) {
@@ -395,5 +467,6 @@ onUnmounted(() => {
 	window.removeEventListener("xpos:print-last", handlePrintLast as EventListener);
 	window.removeEventListener("xpos:show-shortcuts-dialog", handleShowShortcutsDialog as EventListener);
 	window.removeEventListener("xpos:show-about-dialog", handleShowAboutDialog as EventListener);
+	window.removeEventListener("xpos:toggle-error-inspector", handleToggleErrorInspector as EventListener);
 });
 </script>

@@ -10,7 +10,7 @@
 		<DialogContent class="max-w-md">
 			<DialogHeader>
 				<DialogTitle class="flex items-center gap-3">
-					<img :src="isDark ? LogoDark : LogoLight" alt="X POS Logo" class="w-10 h-10" />
+					<img :src="isDark ? logoDark : logoLight" alt="X POS Logo" class="w-10 h-10" />
 					<span>{{ __("X POS") }}</span>
 				</DialogTitle>
 			</DialogHeader>
@@ -98,8 +98,7 @@ import { call } from "@/services/api";
 import { __ } from "@/lib/translate";
 import { Loader2 } from "lucide-vue-next";
 
-import LogoDark from "@/assets/images/xpos-logo-dark.svg";
-import LogoLight from "@/assets/images/xpos-logo-light.svg";
+import { useBranding } from "@/composables/useBranding";
 
 const props = defineProps<{
 	open: boolean;
@@ -110,6 +109,7 @@ defineEmits<{
 }>();
 
 const isDark = inject<Ref<boolean>>("isDark")!;
+const { logoLight, logoDark } = useBranding();
 const posStore = usePosStore();
 const isElectronEnv = isElectron();
 

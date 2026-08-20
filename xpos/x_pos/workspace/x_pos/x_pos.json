@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"xpos_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">X POS</span>\",\"col\":12}},{\"id\":\"xpos_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"X POS App\",\"col\":3}},{\"id\":\"bExEIm8hyI\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"trazJ5ah1v\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Invoice\",\"col\":3}},{\"id\":\"xpos_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"1adNPVupDN\",\"type\":\"card\",\"data\":{\"card_name\":\"Setup\",\"col\":4}},{\"id\":\"kCl3eJ9h7e\",\"type\":\"card\",\"data\":{\"card_name\":\"Offers & Coupons\",\"col\":4}},{\"id\":\"UgL618YZqd\",\"type\":\"card\",\"data\":{\"card_name\":\"Cash Movement\",\"col\":4}}]",
+ "content": "[{\"id\":\"xpos_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">X POS</span>\",\"col\":12}},{\"id\":\"xpos_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"X POS App\",\"col\":3}},{\"id\":\"bExEIm8hyI\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Invoice\",\"col\":3}},{\"id\":\"trazJ5ah1v\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Invoice\",\"col\":3}},{\"id\":\"xpos_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"1adNPVupDN\",\"type\":\"card\",\"data\":{\"card_name\":\"Setup\",\"col\":4}},{\"id\":\"kCl3eJ9h7e\",\"type\":\"card\",\"data\":{\"card_name\":\"Offers & Coupons\",\"col\":4}},{\"id\":\"UgL618YZqd\",\"type\":\"card\",\"data\":{\"card_name\":\"Cash Movement\",\"col\":4}},{\"id\":\"3-RdUJ4vti\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2026-02-27 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -83,8 +83,191 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 16,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "POS Shift Reconciliation",
+   "link_count": 0,
+   "link_to": "POS Shift Reconciliation",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Branch Item Summary",
+   "link_count": 0,
+   "link_to": "Branch Item Summary",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Branch Set Summary",
+   "link_count": 0,
+   "link_to": "Branch Set Summary",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Stock Entry",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Current Stock By Brand",
+   "link_count": 0,
+   "link_to": "Current Stock By Brand",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Item",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Current Stock Report",
+   "link_count": 0,
+   "link_to": "Current Stock Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Item",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Current Stock Summary",
+   "link_count": 0,
+   "link_to": "Current Stock Summary",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Item",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Current Stock with Levels",
+   "link_count": 0,
+   "link_to": "Current Stock with Levels",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Bin",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dead Stock Report",
+   "link_count": 0,
+   "link_to": "Dead Stock Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Stock Ledger Entry",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Low Qty Sales Report",
+   "link_count": 0,
+   "link_to": "Low Qty Sales Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Sales Invoice",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Purchase Order Report",
+   "link_count": 0,
+   "link_to": "Purchase Order Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Bin",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Slow Fast Moving Items",
+   "link_count": 0,
+   "link_to": "Slow Fast Moving Items",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Sales Invoice",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Audit Report",
+   "link_count": 0,
+   "link_to": "Stock Audit Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Item",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Value by Warehouse",
+   "link_count": 0,
+   "link_to": "Stock Value by Warehouse",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Bin",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Value Summary by Date",
+   "link_count": 0,
+   "link_to": "Stock Value Summary by Date",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Stock Ledger Entry",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Warehouse Stock Movement",
+   "link_count": 0,
+   "link_to": "Warehouse Stock Movement",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Stock Ledger Entry",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Zero Qty Sales Report",
+   "link_count": 0,
+   "link_to": "Zero Qty Sales Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Sales Invoice",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Setup",
-   "link_count": 5,
+   "link_count": 6,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -92,29 +275,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "POS Profile",
+   "label": "Delivery Charges",
    "link_count": 0,
-   "link_to": "POS Profile",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Scale Barcode Settings",
-   "link_count": 0,
-   "link_to": "Scale Barcode Settings",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "POS Opening Shift",
-   "link_count": 0,
-   "link_to": "POS Opening Shift",
+   "link_to": "Delivery Charges",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -132,15 +295,45 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Delivery Charges",
+   "label": "POS Opening Shift",
    "link_count": 0,
-   "link_to": "Delivery Charges",
+   "link_to": "POS Opening Shift",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Profile",
+   "link_count": 0,
+   "link_to": "POS Profile",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Role",
+   "link_count": 0,
+   "link_to": "POS Role",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Scale Barcode Settings",
+   "link_count": 0,
+   "link_to": "Scale Barcode Settings",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
   }
  ],
- "modified": "2026-04-08 17:25:36.344674",
+ "modified": "2026-06-06 12:12:41.123126",
  "modified_by": "Administrator",
  "module": "X POS",
  "name": "X POS",

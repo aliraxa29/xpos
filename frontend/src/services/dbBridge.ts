@@ -680,12 +680,7 @@ export async function deleteExpense(id: number | string) {
 
 export async function getModesOfPayment() {
 	if (isElectron()) return getDb().getModesOfPayment();
-	const { getList } = await import("./api");
-	return getList("Mode of Payment", {
-		fields: ["name"],
-		filters: [["enabled", "=", 1]],
-		order_by: "name",
-	});
+	return [];
 }
 
 export async function createBankDrop(drop: Record<string, unknown>) {
@@ -1003,6 +998,29 @@ export async function getCachedOffers(posProfile: string): Promise<unknown[] | n
 	return idb.getCachedOffers(posProfile);
 }
 
+export async function cacheReceiptContext(
+	posProfile: string,
+	context: import("@/types/pos.types").ReceiptContext,
+): Promise<void> {
+	if (isElectron()) {
+		await getDb().setMeta(`receipt_context::${posProfile}`, JSON.stringify(context));
+		return;
+	}
+	const idb = await import("./idbService");
+	await idb.cacheReceiptContext(posProfile, context);
+}
+
+export async function getCachedReceiptContext(
+	posProfile: string,
+): Promise<import("@/types/pos.types").ReceiptContext | null> {
+	if (isElectron()) {
+		const val = await getDb().getMeta(`receipt_context::${posProfile}`);
+		return val ? JSON.parse(val) : null;
+	}
+	const idb = await import("./idbService");
+	return idb.getCachedReceiptContext(posProfile);
+}
+
 export async function cacheItemTax(
 	itemCode: string,
 	company: string,
@@ -1120,6 +1138,47 @@ export async function getCachedLanguages(): Promise<string[]> {
 
 export async function getAllPendingInvoices() {
 	return getPendingInvoices();
+}
+
+export async function getDeadLetters(): Promise<{
+	invoices: Record<string, unknown>[];
+	purchases: Record<string, unknown>[];
+}> {
+	if (isElectron()) {
+		return getDb().getDeadLetters();
+	}
+	const idb = await import("./idbService");
+	const invoices = await idb.getPendingInvoicesByStatus("dead_letter" as never);
+	const purchases = (await idb.getAllPendingPurchases()).filter(
+		(p) => (p as { status?: string }).status === "dead_letter",
+	);
+	return {
+		invoices: invoices as unknown as Record<string, unknown>[],
+		purchases: purchases as unknown as Record<string, unknown>[],
+	};
+}
+
+export async function countDeadLetters(): Promise<number> {
+	if (isElectron()) {
+		return getDb().countDeadLetters();
+	}
+	const { invoices, purchases } = await getDeadLetters();
+	return invoices.length + purchases.length;
+}
+
+export async function retryDeadLetter(table: string, id: number): Promise<boolean> {
+	if (isElectron()) {
+		return getDb().retryDeadLetter(table, id);
+	}
+	const idb = await import("./idbService");
+	if (table === "pending_invoices") {
+		const all = await idb.getAllPendingInvoices();
+		const rec = all.find((r) => r.id === id);
+		if (!rec) return false;
+		await idb.updatePendingInvoice({ ...rec, status: "pending", retry_count: 0, error: undefined, id });
+		return true;
+	}
+	return false;
 }
 
 export async function getAllPendingPurchases(): Promise<PendingPurchase[]> {

@@ -18,6 +18,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { app } from "electron";
+import { encryptSecret, decryptSecret, isEncrypted } from "./secureStore";
 import { createLogger } from "../logger";
 
 const log = createLogger("DB");
@@ -59,7 +60,13 @@ export function saveDbConfig(cfg: DbConfig): void {
 		pathsToWrite.push(path.join(process.env.APPDATA, "X POS", "db-config.json"));
 		pathsToWrite.push(path.join(process.env.APPDATA, "xpos-frontend", "db-config.json"));
 	}
-	const data = JSON.stringify(cfg, null, 2);
+	let toWrite: DbConfig = cfg;
+	try {
+		toWrite = { ...cfg, password: cfg.password ? encryptSecret(cfg.password) : cfg.password };
+	} catch (err) {
+		log.warn("Could not encrypt db-config password, writing as-is", err);
+	}
+	const data = JSON.stringify(toWrite, null, 2);
 	for (const p of pathsToWrite) {
 		try {
 			fs.mkdirSync(path.dirname(p), { recursive: true });
@@ -85,6 +92,13 @@ export function loadDbConfig(): DbConfig {
 			const raw = fs.readFileSync(candidate, "utf-8");
 			const parsed = JSON.parse(raw) as Partial<DbConfig>;
 			log.info(`Loaded DB config from: ${candidate}`);
+			if (parsed.password) {
+				try {
+					parsed.password = decryptSecret(parsed.password) ?? parsed.password;
+				} catch {
+					/* use stored value as-is */
+				}
+			}
 			return { ...DEFAULT_CONFIG, ...parsed };
 		} catch {
 			// try next candidate
@@ -245,6 +259,104 @@ async function runMigrations(): Promise<void> {
 			log.warn(`Migration for pos_profiles.${col} failed`, err);
 		}
 	}
+
+	const posUserMigrations: [string, string][] = [
+		["close_bill", "TINYINT(1) DEFAULT 1"],
+		["close_shift", "TINYINT(1) DEFAULT 0"],
+		["allow_reprint_invoice", "TINYINT(1) DEFAULT 0"],
+		["shift_report", "TINYINT(1) DEFAULT 0"],
+		["allow_cancel_invoice", "TINYINT(1) DEFAULT 0"],
+		["unsettled_invoices", "TINYINT(1) DEFAULT 0"],
+		["apply_additional_discount", "TINYINT(1) DEFAULT 0"],
+		["apply_standard_discount", "TINYINT(1) DEFAULT 0"],
+		["show_edit_discount_field", "TINYINT(1) DEFAULT 0"],
+		["edit_tax_template", "TINYINT(1) DEFAULT 0"],
+		["allow_change_price", "TINYINT(1) DEFAULT 0"],
+		["quotation", "TINYINT(1) DEFAULT 0"],
+		["sale_return", "TINYINT(1) DEFAULT 0"],
+		["local_purchase", "TINYINT(1) DEFAULT 0"],
+		["purchase_order", "TINYINT(1) DEFAULT 0"],
+		["purchase_invoice", "TINYINT(1) DEFAULT 0"],
+		["stock_adjustment", "TINYINT(1) DEFAULT 0"],
+		["stock_entry", "TINYINT(1) DEFAULT 0"],
+		["near_expiry_items", "TINYINT(1) DEFAULT 0"],
+		["expense", "TINYINT(1) DEFAULT 0"],
+		["bank_drop", "TINYINT(1) DEFAULT 0"],
+		["list_of_invoices", "TINYINT(1) DEFAULT 1"],
+		["list_of_cancelled_invoices", "TINYINT(1) DEFAULT 0"],
+		["list_of_errors", "TINYINT(1) DEFAULT 0"],
+		["list_of_purchase_invoices", "TINYINT(1) DEFAULT 0"],
+		["list_of_quotations", "TINYINT(1) DEFAULT 0"],
+		["list_of_stock_entries", "TINYINT(1) DEFAULT 0"],
+		["list_of_local_purchases", "TINYINT(1) DEFAULT 0"],
+		["list_of_stock_adjustments", "TINYINT(1) DEFAULT 0"],
+		["list_of_expense", "TINYINT(1) DEFAULT 0"],
+		["list_of_bank_drops", "TINYINT(1) DEFAULT 0"],
+		["password_salt", "VARCHAR(64) DEFAULT NULL"],
+		["invoice_settlement_report", "TINYINT(1) DEFAULT 0"],
+		["sales_report_by_time", "TINYINT(1) DEFAULT 0"],
+		["sales_summary_by_hour", "TINYINT(1) DEFAULT 0"],
+		["current_stock_by_brand", "TINYINT(1) DEFAULT 0"],
+		["stock_register", "TINYINT(1) DEFAULT 0"],
+		["current_stock_report", "TINYINT(1) DEFAULT 0"],
+		["discount_limit", "DECIMAL(18,6) DEFAULT 100"],
+	];
+
+	const posUserColumnExists = async (col: string): Promise<boolean> => {
+		const [existing] = await db.execute<RowDataPacket[]>(
+			"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pos_users' AND COLUMN_NAME = ?",
+			[col],
+		);
+		return (existing as RowDataPacket[]).length > 0;
+	};
+
+	for (const [col, typedef] of posUserMigrations) {
+		try {
+			if (!(await posUserColumnExists(col))) {
+				await db.execute(`ALTER TABLE \`pos_users\` ADD COLUMN \`${col}\` ${typedef}`);
+				log.info(`Migration: added pos_users.${col}`);
+			}
+		} catch (err) {
+			log.warn(`Migration for pos_users.${col} failed`, err);
+		}
+	}
+
+	const posUserRenames: [string, string][] = [
+		["allow_return", "sale_return"],
+		["allow_expense", "expense"],
+		["allow_bank_drop", "bank_drop"],
+		["show_edit_item_tax_template", "edit_tax_template"],
+	];
+	for (const [oldCol, newCol] of posUserRenames) {
+		try {
+			if (await posUserColumnExists(oldCol)) {
+				await db.execute(`UPDATE \`pos_users\` SET \`${newCol}\` = \`${oldCol}\``);
+				await db.execute(`ALTER TABLE \`pos_users\` DROP COLUMN \`${oldCol}\``);
+				log.info(`Migration: renamed pos_users.${oldCol} -> ${newCol}`);
+			}
+		} catch (err) {
+			log.warn(`Migration for pos_users rename ${oldCol} -> ${newCol} failed`, err);
+		}
+	}
+
+	for (const tbl of ["pending_invoices", "pending_purchases"]) {
+		try {
+			const [cols] = await db.execute<RowDataPacket[]>(
+				"SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'status'",
+				[tbl],
+			);
+			const colType = (cols as RowDataPacket[])[0]?.COLUMN_TYPE as string | undefined;
+			if (colType && !colType.includes("dead_letter")) {
+				await db.execute(
+					`ALTER TABLE \`${tbl}\` MODIFY COLUMN \`status\` ` +
+						"ENUM('pending','syncing','synced','failed','dead_letter') DEFAULT 'pending'",
+				);
+				log.info(`Migration: added 'dead_letter' status to ${tbl}`);
+			}
+		} catch (err) {
+			log.warn(`Migration for ${tbl} dead_letter status failed`, err);
+		}
+	}
 }
 
 async function executeSchemaFile(filePath: string): Promise<void> {
@@ -347,18 +459,37 @@ export async function upsertBatch(
 	return affected;
 }
 
-export async function getMeta(key: string): Promise<string | null> {
-	const row = await queryOne<{ value: string }>("SELECT `value` FROM `sync_meta` WHERE `key` = ?", [key]);
-	return row?.value ?? null;
-}
+const SENSITIVE_META_KEYS = new Set(["api_key", "api_secret", "hub_api_secret"]);
 
-export async function setMeta(key: string, value: string): Promise<void> {
+async function writeMetaRow(key: string, value: string): Promise<void> {
 	await execute(
 		`INSERT INTO \`sync_meta\` (\`key\`, \`value\`, \`updated_at\`)
      VALUES (?, ?, NOW())
      ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`), \`updated_at\` = NOW()`,
 		[key, value],
 	);
+}
+
+export async function getMeta(key: string): Promise<string | null> {
+	const row = await queryOne<{ value: string }>("SELECT `value` FROM `sync_meta` WHERE `key` = ?", [key]);
+	const stored = row?.value ?? null;
+	if (stored == null || !SENSITIVE_META_KEYS.has(key)) return stored;
+
+	if (!isEncrypted(stored)) {
+		const reEncrypted = encryptSecret(stored);
+		if (isEncrypted(reEncrypted)) {
+			await writeMetaRow(key, reEncrypted).catch(() => {
+				/* best-effort migration */
+			});
+		}
+		return stored;
+	}
+	return decryptSecret(stored);
+}
+
+export async function setMeta(key: string, value: string): Promise<void> {
+	const toStore = SENSITIVE_META_KEYS.has(key) && value ? encryptSecret(value) : value;
+	await writeMetaRow(key, toStore);
 }
 
 export async function testConnection(

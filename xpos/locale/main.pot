@@ -7,14 +7,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: X POS VERSION\n"
 "Report-Msgid-Bugs-To: ar.frappe.dev@gmail.com\n"
-"POT-Creation-Date: 2026-04-19 22:32+0428\n"
-"PO-Revision-Date: 2026-04-19 22:32+0428\n"
+"POT-Creation-Date: 2026-07-03 23:12+0428\n"
+"PO-Revision-Date: 2026-07-03 23:12+0428\n"
 "Last-Translator: ar.frappe.dev@gmail.com\n"
 "Language-Team: ar.frappe.dev@gmail.com\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.13.1\n"
+"Generated-By: Babel 2.16.0\n"
 
 #. Description of the 'Item code starting position' (Int) field in DocType
 #. 'Scale Barcode Settings'
@@ -33,24 +33,24 @@ msgstr ""
 msgid "<span class=\"h4\">X POS</span>"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:190
+#: frontend/src/components/Navbar.vue:203
 #: frontend/src/components/items/CommandSearch.vue:501
 msgid "About X POS"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:705
+#: frontend/src/views/ReportViewerView.vue:392
 msgid "Access restricted"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Allowed Expense Account'
-#. Label of a Link field in DocType 'POS Allowed Source Account'
+#. Label of the account (Link) field in DocType 'POS Allowed Expense Account'
+#. Label of the account (Link) field in DocType 'POS Allowed Source Account'
 #: xpos/x_pos/doctype/pos_allowed_expense_account/pos_allowed_expense_account.json
 #: xpos/x_pos/doctype/pos_allowed_source_account/pos_allowed_source_account.json
 #: xpos/x_pos/doctype/pos_closing_shift/closing_shift_details.html:95
 msgid "Account"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Closing Shift Taxes'
+#. Label of the account_head (Link) field in DocType 'POS Closing Shift Taxes'
 #: xpos/x_pos/doctype/pos_closing_shift_taxes/pos_closing_shift_taxes.json
 msgid "Account Head"
 msgstr ""
@@ -67,6 +67,7 @@ msgstr ""
 msgid "Accounts User"
 msgstr ""
 
+#: xpos/x_pos/report/current_stock_summary/current_stock_summary.py:55
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.py:77
 msgid "Actual Qty"
 msgstr ""
@@ -88,10 +89,6 @@ msgstr ""
 msgid "Add Selected Item to Cart"
 msgstr ""
 
-#: frontend/src/views/ExpenseView.vue:46
-msgid "Add a new expense to get started"
-msgstr ""
-
 #: frontend/src/components/dialogs/CreateItemDialog.vue:86
 msgid "Add a new item to inventory"
 msgstr ""
@@ -100,7 +97,7 @@ msgstr ""
 msgid "Add a new supplier"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:433
+#: frontend/src/components/cart/CartSummary.vue:436
 msgid "Add items to pay"
 msgstr ""
 
@@ -117,6 +114,18 @@ msgstr ""
 msgid "Additional Discount"
 msgstr ""
 
+#. Label of the additional_notes (Small Text) field in DocType 'POS Invoice
+#. Item'
+#. Label of the additional_notes (Small Text) field in DocType 'Sales Invoice
+#. Item'
+#. Label of the pos_additional_notes (Small Text) field in DocType 'Sales Order
+#. Item'
+#: xpos/x_pos/custom/pos_invoice_item.json
+#: xpos/x_pos/custom/sales_invoice_item.json
+#: xpos/x_pos/custom/sales_order_item.json
+msgid "Additional Notes"
+msgstr ""
+
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:262
 #: frontend/src/views/PurchaseInvoiceView.vue:1198
 msgid "Addl. Discount"
@@ -128,10 +137,6 @@ msgstr ""
 
 #: frontend/src/components/customer/CustomerSelect.vue:186
 msgid "Address line 1"
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:830
-msgid "Adjust filters and refresh the report to load live data."
 msgstr ""
 
 #. Name of a role
@@ -155,7 +160,7 @@ msgstr ""
 msgid "All caught up"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:968
+#: frontend/src/components/dialogs/PaymentDialog.vue:970
 msgid "All items must have positive quantities"
 msgstr ""
 
@@ -163,36 +168,189 @@ msgstr ""
 msgid "Allocated {0} across {1} payment(s)."
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:242
+#: xpos/x_pos/api/payment_processing/processor.py:226
 msgid "Allocation amount for payment {0} exceeds outstanding invoices"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Cash Movement'
-#. Label of a Link field in DocType 'POS Closing Shift'
-#. Label of a Link field in DocType 'POS Opening Shift'
+#. Label of the allow_cancel_submitted_cash_movement (Check) field in DocType
+#. 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Cancel Submitted Cash Movement"
+msgstr ""
+
+#. Label of the allow_create_purchase_items (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Create Purchase Items"
+msgstr ""
+
+#. Label of the allow_create_purchase_suppliers (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Create Purchase Suppliers"
+msgstr ""
+
+#. Label of the allow_delete_cancelled_cash_movement (Check) field in DocType
+#. 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Delete Cancelled Cash Movement"
+msgstr ""
+
+#. Label of the allow_duplicate_customer_names (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Duplicate Customer Names"
+msgstr ""
+
+#. Label of the allow_free_batch_return (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Free Batch Return"
+msgstr ""
+
+#. Label of the allow_multi_currency (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Multi Currency"
+msgstr ""
+
+#. Label of the allow_pos_expense (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow POS expense"
+msgstr ""
+
+#. Label of the allow_purchase_order (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Purchase Order"
+msgstr ""
+
+#. Label of the allow_purchase_receipt (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Purchase Receipt"
+msgstr ""
+
+#. Label of the allow_return_without_invoice (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Return Without Invoice"
+msgstr ""
+
+#. Label of the allow_sales_order (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Sales Order"
+msgstr ""
+
+#. Label of the allow_source_account_override (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow Source Account Override"
+msgstr ""
+
+#. Label of the allow_cash_deposit (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow cash deposit"
+msgstr ""
+
+#. Label of the allow_change_posting_date (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow change posting date"
+msgstr ""
+
+#. Label of the allow_credit_sale (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow credit sale"
+msgstr ""
+
+#. Label of the allow_delete_draft_invoices (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow delete draft invoices"
+msgstr ""
+
+#. Label of the allow_delete_offline_invoice (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow delete offline invoice"
+msgstr ""
+
+#. Label of the allow_make_new_payments (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow make new payments"
+msgstr ""
+
+#. Label of the allow_reconcile_payments (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow reconcile payments"
+msgstr ""
+
+#. Label of the allow_return (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow return"
+msgstr ""
+
+#. Label of the allow_submissions_in_background_job (Check) field in DocType
+#. 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow submissions in background job"
+msgstr ""
+
+#. Label of the allow_write_off_change (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow write off change"
+msgstr ""
+
+#. Label of the allow_zero_rated_items (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allow zero rated items"
+msgstr ""
+
+#. Label of the allowed_expense_accounts (Table) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allowed Expense Accounts"
+msgstr ""
+
+#. Label of the allowed_sales_persons (Table) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allowed Sales Persons"
+msgstr ""
+
+#. Label of the allowed_source_accounts (Table) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Allowed Source Accounts"
+msgstr ""
+
+#. Label of the amended_from (Link) field in DocType 'POS Cash Movement'
+#. Label of the amended_from (Link) field in DocType 'POS Closing Shift'
+#. Label of the amended_from (Link) field in DocType 'POS Opening Shift'
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Amended From"
 msgstr ""
 
-#. Label of a Currency field in DocType 'POS Cash Movement'
-#. Label of a Currency field in DocType 'POS Closing Shift Taxes'
-#. Label of a Currency field in DocType 'POS Payment Entry Reference'
-#. Label of a Currency field in DocType 'Sales Invoice Reference'
+#. Label of the amount (Currency) field in DocType 'POS Cash Movement'
+#. Label of the amount (Currency) field in DocType 'POS Closing Shift Taxes'
+#. Label of the paid_amount (Currency) field in DocType 'POS Payment Entry
+#. Reference'
+#. Label of the grand_total (Currency) field in DocType 'Sales Invoice
+#. Reference'
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:37
 #: frontend/src/components/dialogs/CashMovementDialog.vue:64
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:37
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:32
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:149
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:79
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:109
 #: frontend/src/components/dialogs/ReturnDialog.vue:111
-#: frontend/src/views/BankDropView.vue:140
-#: frontend/src/views/ExpenseView.vue:143
+#: frontend/src/views/BankDropView.vue:235
+#: frontend/src/views/BankDropView.vue:399
+#: frontend/src/views/ExpenseView.vue:308
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 #: xpos/x_pos/doctype/pos_closing_shift/closing_shift_details.html:59
 #: xpos/x_pos/doctype/pos_closing_shift/closing_shift_details.html:97
 #: xpos/x_pos/doctype/pos_closing_shift_taxes/pos_closing_shift_taxes.json
 #: xpos/x_pos/doctype/pos_payment_entry_reference/pos_payment_entry_reference.json
 #: xpos/x_pos/doctype/sales_invoice_reference/sales_invoice_reference.json
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.py:145
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.py:186
 msgid "Amount"
 msgstr ""
@@ -215,7 +373,7 @@ msgstr ""
 msgid "Amount must be greater than zero."
 msgstr ""
 
-#: frontend/src/views/ReportsIndexView.vue:118
+#: frontend/src/views/ReportsIndexView.vue:107
 msgid "Analytics Reports"
 msgstr ""
 
@@ -223,7 +381,7 @@ msgstr ""
 msgid "Application settings"
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Coupon Detail'
+#. Label of the applied (Check) field in DocType 'POS Coupon Detail'
 #: frontend/src/components/dialogs/PaymentDialog.vue:148
 #: xpos/x_pos/doctype/pos_coupon_detail/pos_coupon_detail.json
 msgid "Applied"
@@ -235,45 +393,47 @@ msgstr ""
 msgid "Apply"
 msgstr ""
 
+#. Label of the apply_customer_discount (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Apply Customer Discount"
+msgstr ""
+
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:96
 msgid "Apply Discount"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:843
-msgid "Apply Filters"
-msgstr ""
-
-#. Label of a Section Break field in DocType 'POS Offer'
+#. Label of the apply_for_section (Section Break) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Apply For"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'Delivery Charges'
+#. Label of the apply_for_pos_profile_section (Section Break) field in DocType
+#. 'Delivery Charges'
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 msgid "Apply For POS Profiles"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Offer Detail'
+#. Label of the apply_on (Data) field in DocType 'POS Offer Detail'
 #: xpos/x_pos/doctype/pos_offer_detail/pos_offer_detail.json
 msgid "Apply On"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Offer'
+#. Label of the brand (Link) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Apply Rule On Brand"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Offer'
+#. Label of the item (Link) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Apply Rule On Item Code"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Offer'
+#. Label of the item_group (Link) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Apply Rule On Item Group"
 msgstr ""
 
-#. Label of a Select field in DocType 'POS Offer'
+#. Label of the apply_type (Select) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Apply Type"
 msgstr ""
@@ -286,15 +446,11 @@ msgstr ""
 msgid "Arrow keys to navigate"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:524
-msgid "Ascending"
-msgstr ""
-
 #: frontend/src/components/core/SortBy.vue:8
 msgid "Ascending — click to sort descending"
 msgstr ""
 
-#: xpos/api/invoices.py:220
+#: xpos/api/invoices.py:236
 msgid "At least one item is required"
 msgstr ""
 
@@ -302,9 +458,36 @@ msgstr ""
 msgid "At least one item is required."
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Offer'
+#. Label of the auto (Check) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Auto Apply"
+msgstr ""
+
+#. Label of the auto_referral (Check) field in DocType 'Company'
+#: xpos/x_pos/custom/company.json
+msgid "Auto Referral"
+msgstr ""
+
+#. Label of the auto_set_batch (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Auto Set Batch"
+msgstr ""
+
+#. Label of the auto_create_referral_for_new_customers (Check) field in DocType
+#. 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Auto create referral for new customers"
+msgstr ""
+
+#. Label of the auto_fetch_coupons_gifts (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Auto fetch coupons gifts"
+msgstr ""
+
+#. Label of the auto_set_delivery_charges (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Auto set delivery charges"
 msgstr ""
 
 #: frontend/src/components/dialogs/CreateItemDialog.vue:96
@@ -317,6 +500,11 @@ msgstr ""
 
 #: frontend/src/components/dialogs/ReturnDialog.vue:92
 msgid "Back"
+msgstr ""
+
+#. Label of the back_office_cash_account (Link) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Back Office Cash Account"
 msgstr ""
 
 #: xpos/x_pos/api/cash_movement/validation.py:155
@@ -335,29 +523,35 @@ msgstr ""
 msgid "Back to Desk"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:692
-#: frontend/src/views/ReportViewerView.vue:712
+#: frontend/src/views/ReportViewerView.vue:379
+#: frontend/src/views/ReportViewerView.vue:399
 msgid "Back to Reports"
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:200
+#: xpos/x_pos/report/stock_value_summary_by_date/stock_value_summary_by_date.py:42
+msgid "Balance"
+msgstr ""
+
+#: frontend/src/components/Sidebar.vue:209
 #: frontend/src/components/items/CommandSearch.vue:362
 #: frontend/src/views/BankDropView.vue:5
+#: frontend/src/views/BankDropView.vue:113
 msgid "Bank Drops"
 msgstr ""
 
 #: frontend/src/components/dialogs/CreateItemDialog.vue:99
-#: frontend/src/views/BarcodePrintView.vue:173
+#: frontend/src/views/BarcodePrintView.vue:204
 msgid "Barcode"
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:187
+#: frontend/src/components/Sidebar.vue:196
 #: frontend/src/components/items/CommandSearch.vue:371
 #: frontend/src/views/BarcodePrintView.vue:6
 msgid "Barcode Printer"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'Scale Barcode Settings'
+#. Label of the barcode_settings_section (Section Break) field in DocType
+#. 'Scale Barcode Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Barcode Structure"
 msgstr ""
@@ -370,6 +564,14 @@ msgstr ""
 msgid "Barcode lookup failed"
 msgstr ""
 
+#: frontend/src/views/PriceChecker.vue:84
+msgid "Barcode not recognised"
+msgstr ""
+
+#: frontend/src/views/PriceChecker.vue:186
+msgid "Barcode scanner ready · results clear automatically"
+msgstr ""
+
 #: xpos/x_pos/api/purchase_orders.py:336
 msgid "Barcode {0} already exists."
 msgstr ""
@@ -378,14 +580,27 @@ msgstr ""
 msgid "Batch"
 msgstr ""
 
+#. Label of the batch_price (Currency) field in DocType 'Batch'
+#: xpos/x_pos/custom/batch.json
+msgid "Batch Price"
+msgstr ""
+
 #: frontend/src/views/PurchaseInvoiceView.vue:1093
-#: frontend/src/views/PurchaseOrderListView.vue:326
+#: frontend/src/views/PurchaseOrderListView.vue:230
 msgid "Billed"
 msgstr ""
 
+#. Label of the birthday (Date) field in DocType 'Customer'
 #: frontend/src/components/customer/CustomerSelect.vue:251
 #: frontend/src/components/dialogs/CustomerEditDialog.vue:111
+#: xpos/x_pos/custom/customer.json
 msgid "Birthday"
+msgstr ""
+
+#. Label of the block_sale_beyond_available_qty (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Block sale beyond available qty"
 msgstr ""
 
 #: frontend/src/components/dialogs/AboutDialog.vue:38
@@ -393,12 +608,18 @@ msgid "Branch"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:149
 #: xpos/x_pos/report/branch_item_summary/branch_item_summary.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Branch Item Summary"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:156
 #: xpos/x_pos/report/branch_set_summary/branch_set_summary.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Branch Set Summary"
 msgstr ""
 
@@ -410,18 +631,26 @@ msgstr ""
 #: xpos/x_pos/report/current_stock_report/current_stock_report.js:40
 #: xpos/x_pos/report/current_stock_report/current_stock_report.py:76
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.py:63
-#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:95
+#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:103
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.py:67
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.py:123
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.py:81
 #: xpos/x_pos/report/stock_audit_report/stock_audit_report.js:38
-#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:100
+#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:106
 #: xpos/x_pos/report/zero_qty_sales_report/zero_qty_sales_report.py:80
 msgid "Brand"
 msgstr ""
 
+#: frontend/src/services/reports.ts:101
+msgid "Brand-wise stock snapshot with quantities and valuation."
+msgstr ""
+
 #: frontend/src/components/items/CommandSearch.vue:318
 msgid "Browse analytics reports"
+msgstr ""
+
+#: frontend/src/views/ReportsIndexView.vue:112
+msgid "Browse the reports library, open any report in a dedicated viewer, and export or copy the data directly from the app."
 msgstr ""
 
 #: frontend/src/components/dialogs/AboutDialog.vue:77
@@ -453,8 +682,8 @@ msgstr ""
 msgid "Camera permission denied. Please allow camera access."
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Coupon'
-#. Label of a Link field in DocType 'Referral Code'
+#. Label of the campaign (Link) field in DocType 'POS Coupon'
+#. Label of the campaign (Link) field in DocType 'Referral Code'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 #: xpos/x_pos/doctype/referral_code/referral_code.json
 msgid "Campaign"
@@ -467,6 +696,7 @@ msgstr ""
 #: frontend/src/components/dialogs/CreateSupplierDialog.vue:101
 #: frontend/src/components/dialogs/CustomerEditDialog.vue:124
 #: frontend/src/components/dialogs/DraftInvoiceDialog.vue:111
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:56
 #: frontend/src/components/dialogs/PaymentDialog.vue:370
 #: frontend/src/components/dialogs/PaymentDialog.vue:506
 #: frontend/src/components/dialogs/PaymentDialog.vue:509
@@ -474,8 +704,7 @@ msgstr ""
 #: frontend/src/components/dialogs/ReturnDialog.vue:152
 #: frontend/src/components/purchase/StockReceiving.vue:307
 #: frontend/src/components/ui/table/Table.vue:1319
-#: frontend/src/views/BankDropView.vue:164
-#: frontend/src/views/ExpenseView.vue:167
+#: frontend/src/views/BankDropView.vue:259
 msgid "Cancel"
 msgstr ""
 
@@ -496,7 +725,7 @@ msgstr ""
 msgid "Cannot delete a submitted Purchase Order."
 msgstr ""
 
-#: xpos/x_pos/api/purchase_orders.py:1989
+#: xpos/x_pos/api/purchase_orders.py:1987
 msgid "Cannot delete submitted invoice {0}."
 msgstr ""
 
@@ -513,6 +742,11 @@ msgstr ""
 msgid "Cannot update a submitted Purchase Order as draft."
 msgstr ""
 
+#. Option for the 'Default View' (Select) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Card"
+msgstr ""
+
 #: frontend/src/components/cart/Cart.vue:33 frontend/src/views/PosView.vue:26
 msgid "Cart"
 msgstr ""
@@ -522,14 +756,16 @@ msgid "Cart Actions"
 msgstr ""
 
 #: frontend/src/components/cart/Cart.vue:128
-#: frontend/src/components/dialogs/PaymentDialog.vue:945
+#: frontend/src/components/dialogs/PaymentDialog.vue:947
 msgid "Cart is empty"
 msgstr ""
 
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:137
 #: frontend/src/components/dialogs/CashMovementDialog.vue:29
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:153
 #: frontend/src/components/items/CommandSearch.vue:483
-#: frontend/src/views/BankDropView.vue:124
+#: frontend/src/views/BankDropView.vue:219
+#: frontend/src/views/BankDropView.vue:503
 msgid "Cash Deposit"
 msgstr ""
 
@@ -542,9 +778,20 @@ msgstr ""
 msgid "Cash Expense"
 msgstr ""
 
+#. Label of the cash_mode_of_payment (Link) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Cash Mode of Payment"
+msgstr ""
+
 #. Label of a Card Break in the X POS Workspace
 #: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Cash Movement"
+msgstr ""
+
+#. Label of the cash_movement_max_amount (Currency) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Cash Movement Max Amount"
 msgstr ""
 
 #: xpos/x_pos/api/cash_movement/permissions.py:11
@@ -552,18 +799,27 @@ msgid "Cash Movement is disabled for this POS Profile."
 msgstr ""
 
 #: frontend/src/components/dialogs/CashMovementDialog.vue:291
-#: frontend/src/views/BankDropView.vue:368
+#: frontend/src/views/BankDropView.vue:769
 msgid "Cash deposit recorded"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Closing Shift'
-#. Label of a Link field in DocType 'POS Opening Shift'
+#. Label of the user (Link) field in DocType 'POS Closing Shift'
+#. Label of the user (Link) field in DocType 'POS Opening Shift'
+#: frontend/src/components/Sidebar.vue:181
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Cashier"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:440
+#: frontend/src/views/CashierView.vue:31
+msgid "Cashier settlement is disabled"
+msgstr ""
+
+#: frontend/src/views/CashierView.vue:8
+msgid "Cashier — Unsettled Invoices"
+msgstr ""
+
+#: frontend/src/components/dialogs/PaymentDialog.vue:416
 msgid "Change"
 msgstr ""
 
@@ -580,13 +836,11 @@ msgstr ""
 msgid "City"
 msgstr ""
 
+#: frontend/src/components/core/BaseListView.vue:38
 #: frontend/src/components/ui/datetime-picker/DateTimePicker.vue:851
-#: frontend/src/views/OrdersView.vue:35
-#: frontend/src/views/PurchaseInvoiceListView.vue:175
 #: frontend/src/views/PurchaseInvoiceView.vue:904
-#: frontend/src/views/PurchaseOrderListView.vue:217
 #: frontend/src/views/PurchaseOrderView.vue:605
-#: frontend/src/views/ReportsIndexView.vue:147
+#: frontend/src/views/ReportsIndexView.vue:137
 msgid "Clear"
 msgstr ""
 
@@ -598,10 +852,6 @@ msgstr ""
 
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:131
 msgid "Clear All Items from Cart"
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:973
-msgid "Clear Sort"
 msgstr ""
 
 #: frontend/src/components/cart/CartSummary.vue:218
@@ -628,7 +878,7 @@ msgstr ""
 msgid "Click to select customer"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Cash Movement'
+#. Label of the client_request_id (Data) field in DocType 'POS Cash Movement'
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "Client Request ID"
 msgstr ""
@@ -638,7 +888,7 @@ msgstr ""
 #: frontend/src/components/dialogs/LoyaltyDialog.vue:177
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:284
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:127
-#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:302
+#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:307
 msgid "Close"
 msgstr ""
 
@@ -646,8 +896,8 @@ msgstr ""
 msgid "Close Dialog / Cancel"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:204
-#: frontend/src/components/Navbar.vue:215
+#: frontend/src/components/Navbar.vue:217
+#: frontend/src/components/Navbar.vue:228
 #: frontend/src/components/dialogs/ClosingDialog.vue:12
 #: frontend/src/components/dialogs/ClosingDialog.vue:210
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:148
@@ -668,7 +918,8 @@ msgstr ""
 msgid "Closing"
 msgstr ""
 
-#. Label of a Currency field in DocType 'POS Closing Shift Detail'
+#. Label of the closing_amount (Currency) field in DocType 'POS Closing Shift
+#. Detail'
 #: xpos/x_pos/doctype/pos_closing_shift_detail/pos_closing_shift_detail.json
 msgid "Closing Amount"
 msgstr ""
@@ -697,15 +948,21 @@ msgstr ""
 msgid "Commit"
 msgstr ""
 
-#. Label of a Link field in DocType 'Delivery Charges'
-#. Label of a Link field in DocType 'POS Cash Movement'
-#. Label of a Link field in DocType 'POS Closing Shift'
-#. Label of a Link field in DocType 'POS Coupon'
-#. Label of a Link field in DocType 'POS Offer'
-#. Label of a Link field in DocType 'POS Opening Shift'
-#. Label of a Link field in DocType 'Referral Code'
+#: frontend/src/services/reports.ts:109
+msgid "Compact warehouse stock overview with totals and stock movement levels."
+msgstr ""
+
+#. Label of the company (Link) field in DocType 'Delivery Charges'
+#. Label of the company (Link) field in DocType 'POS Cash Movement'
+#. Label of the company (Link) field in DocType 'POS Closing Shift'
+#. Label of the company (Link) field in DocType 'POS Coupon'
+#. Label of the company (Link) field in DocType 'POS Offer'
+#. Label of the company (Link) field in DocType 'POS Opening Shift'
+#. Label of the company (Link) field in DocType 'Referral Code'
 #: frontend/src/components/dialogs/AboutDialog.vue:70
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:67
 #: frontend/src/components/dialogs/CreateSupplierDialog.vue:82
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:67
 #: frontend/src/components/dialogs/OpeningDialog.vue:72
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:47
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:43
@@ -725,6 +982,7 @@ msgstr ""
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.js:8
 #: xpos/x_pos/report/dead_stock_report/dead_stock_report.js:8
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.js:8
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.js:14
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.js:8
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.js:8
 #: xpos/x_pos/report/stock_audit_report/stock_audit_report.js:8
@@ -735,9 +993,9 @@ msgstr ""
 msgid "Company"
 msgstr ""
 
-#: xpos/api/taxes.py:29 xpos/x_pos/api/payment_processing/processor.py:32
+#: xpos/api/taxes.py:29 xpos/x_pos/api/payment_processing/processor.py:31
 #: xpos/x_pos/api/payment_processing/reconciliation.py:26
-#: xpos/x_pos/api/pricing_rules.py:181
+#: xpos/x_pos/api/pricing_rules.py:180
 msgid "Company is required"
 msgstr ""
 
@@ -755,11 +1013,15 @@ msgstr ""
 msgid "Company must match the selected POS Profile company."
 msgstr ""
 
+#: frontend/src/views/RolePermissionsView.vue:7
+msgid "Configure which POS actions each role may perform."
+msgstr ""
+
 #: frontend/src/components/dialogs/LoyaltyDialog.vue:168
 msgid "Contact administrator to set up loyalty programs"
 msgstr ""
 
-#: xpos/x_pos/api/pricing_rules.py:395
+#: xpos/x_pos/api/pricing_rules.py:394
 msgid "Context is required"
 msgstr ""
 
@@ -767,32 +1029,15 @@ msgstr ""
 msgid "Conversion Factor"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:462
-msgid "Copied current page to clipboard."
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:452
+#: frontend/src/views/ReportViewerView.vue:305
 msgid "Copied {0} rows to clipboard."
 msgstr ""
 
-#: frontend/src/components/reports/ReportDataTable.vue:169
+#: frontend/src/views/ReportViewerView.vue:434
 msgid "Copy"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:774
-msgid "Copy Data"
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:793
-#: frontend/src/views/ReportViewerView.vue:993
-msgid "Copy Link"
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:770
-msgid "Copy Page"
-msgstr ""
-
-#. Label of a Link field in DocType 'Delivery Charges'
+#. Label of the cost_center (Link) field in DocType 'Delivery Charges'
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 msgid "Cost Center"
 msgstr ""
@@ -801,7 +1046,7 @@ msgstr ""
 msgid "Cost Center is not set in pos profile {0}"
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/journal_entry.py:87
+#: xpos/x_pos/api/payment_processing/journal_entry.py:88
 msgid "Could not determine bank/cash account for payment. Please set default cash account for company."
 msgstr ""
 
@@ -813,8 +1058,8 @@ msgstr ""
 msgid "Country"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Coupon Detail'
-#. Label of a Link field in DocType 'POS Offer Detail'
+#. Label of the coupon (Link) field in DocType 'POS Coupon Detail'
+#. Label of the coupon (Link) field in DocType 'POS Offer Detail'
 #: frontend/src/components/cart/Cart.vue:191
 #: frontend/src/components/cart/CartSummary.vue:156
 #: frontend/src/components/dialogs/PaymentDialog.vue:143
@@ -824,36 +1069,44 @@ msgstr ""
 msgid "Coupon"
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Offer Detail'
+#. Label of the coupon_based (Check) field in DocType 'POS Offer Detail'
 #: xpos/x_pos/doctype/pos_offer_detail/pos_offer_detail.json
 msgid "Coupon Based"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Coupon'
-#. Label of a Data field in DocType 'POS Coupon Detail'
+#. Label of the coupon_code (Data) field in DocType 'POS Coupon'
+#. Label of the coupon_code (Data) field in DocType 'POS Coupon Detail'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 #: xpos/x_pos/doctype/pos_coupon_detail/pos_coupon_detail.json
 msgid "Coupon Code"
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Offer'
+#. Label of the coupon_based (Check) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Coupon Code Based"
 msgstr ""
 
-#. Label of a Text Editor field in DocType 'POS Coupon'
+#. Label of the description (Text Editor) field in DocType 'POS Coupon'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 msgid "Coupon Description"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Coupon'
+#. Label of the coupon_name (Data) field in DocType 'POS Coupon'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 msgid "Coupon Name"
 msgstr ""
 
-#. Label of a Select field in DocType 'POS Coupon'
+#. Label of the coupon_type (Select) field in DocType 'POS Coupon'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 msgid "Coupon Type"
+msgstr ""
+
+#. Label of the section_break_pos_coupons (Section Break) field in DocType 'POS
+#. Invoice'
+#. Label of the section_break_gcyhc (Section Break) field in DocType 'Sales
+#. Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "Coupon and Offers"
 msgstr ""
 
 #: xpos/api/offers.py:92
@@ -870,6 +1123,12 @@ msgstr ""
 
 #: xpos/api/offers.py:100
 msgid "Coupon is not yet valid"
+msgstr ""
+
+#. Label of the coupons (Table) field in DocType 'POS Invoice'
+#. Label of the coupons (Table) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "Coupons"
 msgstr ""
 
 #: frontend/src/components/dialogs/CreateItemDialog.vue:129
@@ -899,14 +1158,6 @@ msgstr ""
 
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.js:44
 msgid "Create Purchase Order"
-msgstr ""
-
-#: frontend/src/views/PurchaseInvoiceListView.vue:190
-msgid "Create a new invoice or adjust your filters"
-msgstr ""
-
-#: frontend/src/views/PurchaseOrderListView.vue:284
-msgid "Create a new order or adjust your filters"
 msgstr ""
 
 #: xpos/x_pos/api/purchase_orders.py:316
@@ -950,15 +1201,15 @@ msgstr ""
 msgid "Credit Note {0} has no remaining balance to allocate."
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:124
+#: xpos/x_pos/api/payment_processing/processor.py:108
 msgid "Credit note {0} is already fully allocated"
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:207
+#: xpos/x_pos/api/payment_processing/processor.py:191
 msgid "Credit note {0} still has an unapplied balance of {1}"
 msgstr ""
 
-#: xpos/api/invoices.py:155
+#: xpos/api/invoices.py:140
 msgid "Credit sale is not allowed for POS Profile {0}."
 msgstr ""
 
@@ -975,7 +1226,7 @@ msgstr ""
 msgid "Currency is not correct, party account currency is {party_account_currency} and transaction currency is {currency}"
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:34
+#: xpos/x_pos/api/payment_processing/processor.py:33
 msgid "Currency is required"
 msgstr ""
 
@@ -984,22 +1235,37 @@ msgid "Current Stock"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:99
 #: xpos/x_pos/report/current_stock_by_brand/current_stock_by_brand.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Current Stock By Brand"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:91
 #: xpos/x_pos/report/current_stock_report/current_stock_report.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Current Stock Report"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:107
 #: xpos/x_pos/report/current_stock_summary/current_stock_summary.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Current Stock Summary"
 msgstr ""
 
+#: frontend/src/services/reports.ts:114
+msgid "Current Stock With Levels"
+msgstr ""
+
 #. Name of a report
+#. Label of a Link in the X POS Workspace
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Current Stock with Levels"
 msgstr ""
 
@@ -1007,11 +1273,15 @@ msgstr ""
 msgid "Current Tier"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Coupon'
-#. Label of a Link field in DocType 'POS Coupon Detail'
-#. Label of a Link field in DocType 'POS Payment Entry Reference'
-#. Label of a Link field in DocType 'Referral Code'
-#. Label of a Link field in DocType 'Sales Invoice Reference'
+#: frontend/src/views/BarcodePrintView.vue:70
+msgid "Custom"
+msgstr ""
+
+#. Label of the customer (Link) field in DocType 'POS Coupon'
+#. Label of the customer (Link) field in DocType 'POS Coupon Detail'
+#. Label of the customer (Link) field in DocType 'POS Payment Entry Reference'
+#. Label of the customer (Link) field in DocType 'Referral Code'
+#. Label of the customer (Link) field in DocType 'Sales Invoice Reference'
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:29
 #: xpos/x_pos/api/payment_processing/data.py:78
 #: xpos/x_pos/api/payment_processing/data.py:178
@@ -1023,15 +1293,15 @@ msgstr ""
 msgid "Customer"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Print Format Rule'
+#. Label of the customer_group (Link) field in DocType 'POS Print Format Rule'
 #: frontend/src/components/customer/CustomerSelect.vue:214
 #: frontend/src/components/dialogs/CustomerEditDialog.vue:78
 #: xpos/x_pos/doctype/pos_print_format_rule/pos_print_format_rule.json
 msgid "Customer Group"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Coupon'
-#. Label of a Data field in DocType 'Referral Code'
+#. Label of the customer_name (Data) field in DocType 'POS Coupon'
+#. Label of the customer_name (Data) field in DocType 'Referral Code'
 #: frontend/src/components/customer/CustomerSelect.vue:129
 #: frontend/src/components/dialogs/CustomerEditDialog.vue:29
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
@@ -1067,9 +1337,9 @@ msgstr ""
 msgid "Customer is not enrolled in any loyalty program"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:949
-#: xpos/api/customers.py:584 xpos/api/customers.py:636 xpos/api/invoices.py:218
-#: xpos/x_pos/api/payment_processing/processor.py:30
+#: frontend/src/components/dialogs/PaymentDialog.vue:951
+#: xpos/api/customers.py:584 xpos/api/customers.py:636 xpos/api/invoices.py:234
+#: xpos/x_pos/api/payment_processing/processor.py:29
 #: xpos/x_pos/api/payment_processing/reconciliation.py:24
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.py:67
 msgid "Customer is required"
@@ -1083,7 +1353,7 @@ msgstr ""
 msgid "Customer locked for return"
 msgstr ""
 
-#: xpos/api/invoices.py:1380
+#: xpos/api/invoices.py:1450
 msgid "Customer mismatch: Return must be for the same customer ({0}) as the original invoice"
 msgstr ""
 
@@ -1111,8 +1381,9 @@ msgstr ""
 msgid "Data Sync"
 msgstr ""
 
-#. Label of a Date field in DocType 'POS Payment Entry Reference'
-#. Label of a Date field in DocType 'Sales Invoice Reference'
+#. Label of the posting_date (Date) field in DocType 'POS Payment Entry
+#. Reference'
+#. Label of the posting_date (Date) field in DocType 'Sales Invoice Reference'
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:41
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:37
 #: frontend/src/views/PurchaseInvoiceView.vue:960
@@ -1131,16 +1402,35 @@ msgid "Days"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:121
 #: xpos/x_pos/report/dead_stock_report/dead_stock_report.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Dead Stock Report"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Offer'
+#. Label of the loyalty_program (Link) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Default Loyalty Program"
 msgstr ""
 
-#. Label of a Currency field in DocType 'Delivery Charges'
+#. Label of the default_pos_expense_account (Link) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Default POS Expense Account"
+msgstr ""
+
+#. Label of the default_print_format (Link) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Default Print Format"
+msgstr ""
+
+#. Label of the default_purchase_uom (Link) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Default Purchase UOM"
+msgstr ""
+
+#. Label of the default_rate (Currency) field in DocType 'Delivery Charges'
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 msgid "Default Rate"
 msgstr ""
@@ -1149,8 +1439,14 @@ msgstr ""
 msgid "Default Rate is required"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:522
-msgid "Default order"
+#. Label of the default_source_account (Link) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Default Source Account"
+msgstr ""
+
+#. Label of the default_view (Select) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Default View"
 msgstr ""
 
 #: frontend/src/components/ui/table/Table.vue:1095
@@ -1187,9 +1483,14 @@ msgstr ""
 msgid "Deleting offline invoices is disabled for this POS Profile."
 msgstr ""
 
+#. Label of the delivery_charges (Link) field in DocType 'Address'
+#. Label of the pos_delivery_charges (Link) field in DocType 'POS Invoice'
+#. Label of the pos_delivery_charges (Link) field in DocType 'Sales Invoice'
 #. Name of a DocType
 #. Label of a Link in the X POS Workspace
 #: frontend/src/components/cart/CartSummary.vue:238
+#: xpos/x_pos/custom/address.json xpos/x_pos/custom/pos_invoice.json
+#: xpos/x_pos/custom/sales_invoice.json
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 #: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Delivery Charges"
@@ -1200,33 +1501,48 @@ msgstr ""
 msgid "Delivery Charges POS Profile"
 msgstr ""
 
+#. Label of the pos_delivery_charges_rate (Currency) field in DocType 'POS
+#. Invoice'
+#. Label of the pos_delivery_charges_rate (Currency) field in DocType 'Sales
+#. Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "Delivery Charges Rate"
+msgstr ""
+
+#. Label of the delivery_date (Date) field in DocType 'POS Invoice Item'
+#. Label of the delivery_date (Date) field in DocType 'Sales Invoice Item'
+#: xpos/x_pos/custom/pos_invoice_item.json
+#: xpos/x_pos/custom/sales_invoice_item.json
+msgid "Delivery Date"
+msgstr ""
+
 #: frontend/src/components/cart/CartSummary.vue:204
 msgid "Delivery charge"
 msgstr ""
 
 #. Option for the 'Movement Type' (Select) field in DocType 'POS Cash Movement'
+#: frontend/src/views/BankDropView.vue:90
+#: frontend/src/views/BankDropView.vue:189
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "Deposit"
 msgstr ""
 
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:53
 #: frontend/src/components/dialogs/CashMovementDialog.vue:57
-#: frontend/src/views/BankDropView.vue:134
+#: frontend/src/views/BankDropView.vue:229
+#: frontend/src/views/BankDropView.vue:388
 msgid "Deposit To"
 msgstr ""
 
-#: frontend/src/views/BankDropView.vue:388
+#: frontend/src/views/BankDropView.vue:796
 msgid "Deposit cancelled"
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:524
-msgid "Descending"
 msgstr ""
 
 #: frontend/src/components/core/SortBy.vue:7
 msgid "Descending — click to sort ascending"
 msgstr ""
 
-#. Label of a Small Text field in DocType 'POS Offer'
+#. Label of the description (Small Text) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Description"
 msgstr ""
@@ -1239,12 +1555,14 @@ msgstr ""
 msgid "Desktop App"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'POS Closing Shift'
+#. Label of the section_break_13 (Section Break) field in DocType 'POS Closing
+#. Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 msgid "Details"
 msgstr ""
 
-#. Label of a Currency field in DocType 'POS Closing Shift Detail'
+#. Label of the difference (Currency) field in DocType 'POS Closing Shift
+#. Detail'
 #: frontend/src/components/dialogs/ClosingDialog.vue:137
 #: xpos/x_pos/doctype/pos_closing_shift_detail/pos_closing_shift_detail.json
 msgid "Difference"
@@ -1262,9 +1580,9 @@ msgstr ""
 msgid "Digits before decimal. Example: for 1.000, use 1 (or 2 if your scale encodes 01.000)."
 msgstr ""
 
-#. Label of a Check field in DocType 'Delivery Charges'
-#. Label of a Check field in DocType 'POS Offer'
-#. Label of a Check field in DocType 'Referral Code'
+#. Label of the disabled (Check) field in DocType 'Delivery Charges'
+#. Label of the disabled (Check) field in DocType 'POS Offer'
+#. Label of the disabled (Check) field in DocType 'Referral Code'
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 #: xpos/x_pos/doctype/referral_code/referral_code.json
@@ -1281,10 +1599,11 @@ msgstr ""
 msgid "Disc%"
 msgstr ""
 
+#. Label of the discount (Percent) field in DocType 'Customer'
 #: frontend/src/components/dialogs/PaymentDialog.vue:351
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:127
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:173
-#: frontend/src/views/PurchaseOrderView.vue:587
+#: frontend/src/views/PurchaseOrderView.vue:587 xpos/x_pos/custom/customer.json
 msgid "Discount"
 msgstr ""
 
@@ -1293,24 +1612,50 @@ msgid "Discount %"
 msgstr ""
 
 #. Option for the 'Discount Type' (Select) field in DocType 'POS Offer'
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the discount_amount (Float) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Discount Amount"
 msgstr ""
 
+#. Label of the discount_limit (Percent) field in DocType 'POS Profile User'
+#: xpos/x_pos/custom/pos_profile_user.json
+msgid "Discount Limit"
+msgstr ""
+
 #. Option for the 'Discount Type' (Select) field in DocType 'POS Offer'
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the discount_percentage (Float) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Discount Percentage"
 msgstr ""
 
-#. Label of a Select field in DocType 'POS Offer'
+#. Label of the discount_type (Select) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Discount Type"
 msgstr ""
 
 #: frontend/src/components/cart/CartSummary.vue:297
 msgid "Discount amount"
+msgstr ""
+
+#. Label of the display_items_in_stock (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Display Items in Stock"
+msgstr ""
+
+#. Label of the display_additional_notes (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Display additional notes"
+msgstr ""
+
+#. Description of the 'Show customer balance' (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Display customer balance in POS screen"
+msgstr ""
+
+#. Label of the display_item_code (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Display item code"
 msgstr ""
 
 #: xpos/api/sync.py:56
@@ -1329,7 +1674,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'POS Opening Shift'
 #: frontend/src/components/dialogs/DraftInvoiceDialog.vue:59
 #: frontend/src/components/offline/OfflinePendingPanel.vue:105
-#: frontend/src/views/PurchaseOrderListView.vue:243
+#: frontend/src/views/PurchaseOrderListView.vue:164
 #: frontend/src/views/PurchaseOrderView.vue:383
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Draft"
@@ -1359,8 +1704,8 @@ msgstr ""
 msgid "Draft saved successfully"
 msgstr ""
 
-#: xpos/x_pos/api/purchase_orders.py:1905
-#: xpos/x_pos/api/purchase_orders.py:2040
+#: xpos/x_pos/api/purchase_orders.py:1903
+#: xpos/x_pos/api/purchase_orders.py:2038
 msgid "Draft {0} not found."
 msgstr ""
 
@@ -1369,7 +1714,7 @@ msgid "Draft {0} saved"
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:943
-#: frontend/src/views/PurchaseOrderListView.vue:229
+#: frontend/src/views/PurchaseOrderListView.vue:150
 msgid "Drafts"
 msgstr ""
 
@@ -1389,7 +1734,7 @@ msgstr ""
 msgid "Duplicate POS Profile in Delivery Charges"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Purchase Taxes'
+#. Label of the erp_tax_account (Link) field in DocType 'POS Purchase Taxes'
 #: xpos/x_pos/doctype/pos_purchase_taxes/pos_purchase_taxes.json
 msgid "ERP Tax Account"
 msgstr ""
@@ -1399,7 +1744,7 @@ msgid "ERPNext"
 msgstr ""
 
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:124
-#: frontend/src/views/PurchaseOrderListView.vue:257
+#: frontend/src/views/PurchaseOrderListView.vue:178
 msgid "Edit"
 msgstr ""
 
@@ -1423,11 +1768,37 @@ msgstr ""
 msgid "Email"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Coupon'
-#. Label of a Data field in DocType 'Referral Code'
+#. Label of the email_id (Data) field in DocType 'POS Coupon'
+#. Label of the email_id (Data) field in DocType 'Referral Code'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 #: xpos/x_pos/doctype/referral_code/referral_code.json
 msgid "Email ID"
+msgstr ""
+
+#: frontend/src/views/CashierView.vue:33
+msgid "Enable \"Enable cashier settlement\" in the POS Profile to use this screen."
+msgstr ""
+
+#. Label of the enable_fbr_integration (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Enable FBR Integration"
+msgstr ""
+
+#. Description of the 'Enable FBR Integration' (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Enable FBR fiscal invoice submission for invoices created from this POS Profile."
+msgstr ""
+
+#. Label of the enable_cash_movement (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Enable cash movement"
+msgstr ""
+
+#. Label of the enable_cashier_settlement (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Enable cashier settlement"
 msgstr ""
 
 #. Description of the 'Price' (Section Break) field in DocType 'Scale Barcode
@@ -1436,10 +1807,37 @@ msgstr ""
 msgid "Enable only if barcode also contains price segment."
 msgstr ""
 
+#. Description of the 'Skip FBR SSL Verification' (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Enable only if the FBR sandbox certificate chain fails TLS validation in your environment."
+msgstr ""
+
+#. Label of the enable_return_validity (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Enable return validity"
+msgstr ""
+
+#. Description of the 'Enable return validity' (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Enable return validity date enforcement for POS returns."
+msgstr ""
+
+#. Description of the 'FBR Third Schedule' (Check) field in DocType 'Item'
+#: xpos/x_pos/custom/item.json
+msgid "Enable when this item must be posted to FBR as a 3rd Schedule item."
+msgstr ""
+
 #. Description of the 'Prefix included in barcode' (Check) field in DocType
 #. 'Scale Barcode Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Enable when your barcode starts with a fixed prefix value (for example, 331)."
+msgstr ""
+
+#. Label of the enabled (Check) field in DocType 'POS Role Permission'
+#: xpos/x_pos/doctype/pos_role_permission/pos_role_permission.json
+msgid "Enabled"
 msgstr ""
 
 #: frontend/src/components/dialogs/LoyaltyDialog.vue:186
@@ -1468,8 +1866,8 @@ msgid "Enter for next row"
 msgstr ""
 
 #: frontend/src/components/dialogs/CashMovementDialog.vue:83
-#: frontend/src/views/BankDropView.vue:158
-#: frontend/src/views/ExpenseView.vue:161
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:50
+#: frontend/src/views/BankDropView.vue:253
 msgid "Enter reason for this transaction..."
 msgstr ""
 
@@ -1481,19 +1879,25 @@ msgstr ""
 msgid "Expected"
 msgstr ""
 
-#. Label of a Currency field in DocType 'POS Closing Shift Detail'
+#. Label of the expected_amount (Currency) field in DocType 'POS Closing Shift
+#. Detail'
 #: xpos/x_pos/doctype/pos_closing_shift_detail/pos_closing_shift_detail.json
 msgid "Expected Amount"
 msgstr ""
 
 #. Option for the 'Movement Type' (Select) field in DocType 'POS Cash Movement'
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:137
+#: frontend/src/views/ExpenseView.vue:90 frontend/src/views/ExpenseView.vue:184
+#: frontend/src/views/ExpenseView.vue:409
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "Expense"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Cash Movement'
+#. Label of the expense_account (Link) field in DocType 'POS Cash Movement'
 #: frontend/src/components/dialogs/CashMovementDialog.vue:51
-#: frontend/src/views/ExpenseView.vue:133
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:53
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:22
+#: frontend/src/views/ExpenseView.vue:299
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "Expense Account"
 msgstr ""
@@ -1510,7 +1914,7 @@ msgstr ""
 msgid "Expense account is required for POS Expense."
 msgstr ""
 
-#: frontend/src/views/ExpenseView.vue:400
+#: frontend/src/views/ExpenseView.vue:687
 msgid "Expense cancelled"
 msgstr ""
 
@@ -1518,9 +1922,9 @@ msgstr ""
 msgid "Expense target account must match Expense Account."
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:194
+#: frontend/src/components/Sidebar.vue:203
 #: frontend/src/components/items/CommandSearch.vue:353
-#: frontend/src/views/ExpenseView.vue:5
+#: frontend/src/views/ExpenseView.vue:5 frontend/src/views/ExpenseView.vue:111
 msgid "Expenses"
 msgstr ""
 
@@ -1528,20 +1932,61 @@ msgstr ""
 msgid "Expires"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:778
+#: frontend/src/views/ReportViewerView.vue:438
 msgid "Export CSV"
+msgstr ""
+
+#. Label of the fbr_api_url (Data) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "FBR API URL"
 msgstr ""
 
 #: xpos/x_pos/integrations/fbr.py:220
 msgid "FBR API call failed: {0}"
 msgstr ""
 
-#: xpos/x_pos/integrations/fbr.py:91
+#. Label of the fbr_bearer_token (Password) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json xpos/x_pos/integrations/fbr.py:91
 msgid "FBR Bearer Token"
 msgstr ""
 
-#: xpos/x_pos/integrations/fbr.py:89
+#. Label of the fbr_environment (Select) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "FBR Environment"
+msgstr ""
+
+#. Label of the fbr_integration_section (Section Break) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "FBR Integration"
+msgstr ""
+
+#. Label of the fbr_invoice_number (Data) field in DocType 'POS Invoice'
+#. Label of the fbr_invoice_number (Data) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "FBR Invoice Number"
+msgstr ""
+
+#. Label of the fbr_pos_id (Data) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json xpos/x_pos/integrations/fbr.py:89
 msgid "FBR POS ID"
+msgstr ""
+
+#. Label of the fbr_payment_mode_code (Select) field in DocType 'Mode of
+#. Payment'
+#: xpos/x_pos/custom/mode_of_payment.json
+msgid "FBR Payment Mode Code"
+msgstr ""
+
+#. Label of the fbr_posted_on (Datetime) field in DocType 'POS Invoice'
+#. Label of the fbr_posted_on (Datetime) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "FBR Posted On"
+msgstr ""
+
+#. Label of the fbr_third_schedule (Check) field in DocType 'Item'
+#: xpos/x_pos/custom/item.json
+msgid "FBR Third Schedule"
 msgstr ""
 
 #: xpos/x_pos/integrations/fbr.py:61
@@ -1560,11 +2005,11 @@ msgstr ""
 msgid "FBR rejected the request. Check the bearer token and IP whitelist configured on the FBR portal."
 msgstr ""
 
-#: frontend/src/views/BankDropView.vue:391
+#: frontend/src/views/BankDropView.vue:803
 msgid "Failed to cancel deposit"
 msgstr ""
 
-#: frontend/src/views/ExpenseView.vue:403
+#: frontend/src/views/ExpenseView.vue:694
 msgid "Failed to cancel expense"
 msgstr ""
 
@@ -1600,8 +2045,12 @@ msgstr ""
 msgid "Failed to fetch draft invoices"
 msgstr ""
 
-#: frontend/src/views/OrdersView.vue:243
+#: frontend/src/views/OrdersView.vue:128
 msgid "Failed to fetch order details"
+msgstr ""
+
+#: frontend/src/views/BankDropView.vue:735
+msgid "Failed to load bank drops"
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:727
@@ -1621,15 +2070,23 @@ msgstr ""
 msgid "Failed to load drafts"
 msgstr ""
 
+#: frontend/src/views/ExpenseView.vue:632
+msgid "Failed to load expenses"
+msgstr ""
+
 #: frontend/src/views/PurchaseInvoiceView.vue:796
 msgid "Failed to load purchase orders"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1169
+#: frontend/src/views/CashierView.vue:196
+msgid "Failed to open invoice for settlement"
+msgstr ""
+
+#: frontend/src/composables/usePrintInvoice.ts:55
 msgid "Failed to print invoice"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1198
+#: frontend/src/composables/usePrintInvoice.ts:84
 msgid "Failed to print invoice locally"
 msgstr ""
 
@@ -1649,15 +2106,15 @@ msgstr ""
 msgid "Failed to record cash movement"
 msgstr ""
 
-#: frontend/src/views/BankDropView.vue:373
+#: frontend/src/views/BankDropView.vue:777
 msgid "Failed to record deposit"
 msgstr ""
 
-#: frontend/src/views/ExpenseView.vue:385
+#: frontend/src/views/ExpenseView.vue:673
 msgid "Failed to record expense"
 msgstr ""
 
-#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:407
+#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:413
 msgid "Failed to repeat invoice"
 msgstr ""
 
@@ -1665,12 +2122,16 @@ msgstr ""
 msgid "Failed to save draft"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:665
+#: frontend/src/components/cart/CartSummary.vue:691
 msgid "Failed to save draft: {0}"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1089
+#: frontend/src/components/dialogs/PaymentDialog.vue:1091
 msgid "Failed to save invoice offline"
+msgstr ""
+
+#: frontend/src/components/cart/CartSummary.vue:768
+msgid "Failed to send to cashier: {0}"
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:773
@@ -1685,7 +2146,11 @@ msgstr ""
 msgid "Failed to update customer: "
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:564
+#: frontend/src/views/RolePermissionsView.vue:204
+msgid "Failed to update permission"
+msgstr ""
+
+#: frontend/src/components/cart/CartSummary.vue:590
 msgid "Failed to validate coupon"
 msgstr ""
 
@@ -1703,11 +2168,13 @@ msgid "Fill in customer details"
 msgstr ""
 
 #: frontend/src/components/core/QueryFilterPanel.vue:14
-#: frontend/src/views/ReportViewerView.vue:827
+#: frontend/src/components/reports/ReportFilterBar.vue:64
 msgid "Filters"
 msgstr ""
 
-#. Label of a Link field in DocType 'Referral Code'
+#. Label of the final_customer_offer (Link) field in DocType 'Company'
+#. Label of the customer_offer (Link) field in DocType 'Referral Code'
+#: xpos/x_pos/custom/company.json
 #: xpos/x_pos/doctype/referral_code/referral_code.json
 msgid "Final Customer Offer"
 msgstr ""
@@ -1729,6 +2196,29 @@ msgstr ""
 msgid "Focus Search Input"
 msgstr ""
 
+#. Description of the 'Cash Mode of Payment' (Link) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "For POS Closing Shift Payment Reconciliation"
+msgstr ""
+
+#. Label of the force_price_from_customer_price_list (Check) field in DocType
+#. 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Force Price from Customer Price List"
+msgstr ""
+
+#. Label of the force_reload_items (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Force Reload Items"
+msgstr ""
+
+#. Description of the 'Force Price from Customer Price List' (Check) field in
+#. DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Force items to use the customer's price list. Items without a price will show zero."
+msgstr ""
+
 #: frontend/src/components/dialogs/AboutDialog.vue:46
 msgid "Frappe"
 msgstr ""
@@ -1737,10 +2227,10 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: frontend/src/views/ExpenseView.vue:16
 #: frontend/src/views/PurchaseOrderView.vue:428
 #: xpos/x_pos/report/branch_item_summary/branch_item_summary.js:34
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.js:16
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.js:27
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.js:23
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.js:19
 #: xpos/x_pos/report/warehouse_stock_movement/warehouse_stock_movement.js:19
@@ -1788,12 +2278,12 @@ msgstr ""
 msgid "Gift Card"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Offer Detail'
+#. Label of the give_item (Link) field in DocType 'POS Offer Detail'
 #: xpos/x_pos/doctype/pos_offer_detail/pos_offer_detail.json
 msgid "Give Item"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Offer Detail'
+#. Label of the give_item_row_id (Data) field in DocType 'POS Offer Detail'
 #: xpos/x_pos/doctype/pos_offer_detail/pos_offer_detail.json
 msgid "Give Item Row ID"
 msgstr ""
@@ -1803,7 +2293,7 @@ msgstr ""
 msgid "Give Product"
 msgstr ""
 
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the given_qty (Float) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Given Quantity"
 msgstr ""
@@ -1814,6 +2304,10 @@ msgstr ""
 
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:68
 msgid "Go to Bank Drops"
+msgstr ""
+
+#: frontend/src/components/Navbar.vue:10
+msgid "Go to Desk"
 msgstr ""
 
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:67
@@ -1844,7 +2338,7 @@ msgstr ""
 msgid "Go to Stock Receiving"
 msgstr ""
 
-#. Label of a Currency field in DocType 'POS Closing Shift'
+#. Label of the grand_total (Currency) field in DocType 'POS Closing Shift'
 #. Option for the 'Promo Type' (Select) field in DocType 'POS Offer'
 #: frontend/src/components/dialogs/ClosingDialog.vue:36
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:273
@@ -1855,6 +2349,7 @@ msgstr ""
 #: xpos/x_pos/doctype/pos_closing_shift/closing_shift_details.html:15
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.py:105
 msgid "Grand Total"
 msgstr ""
 
@@ -1868,12 +2363,31 @@ msgstr ""
 msgid "Gross Total"
 msgstr ""
 
+#: frontend/src/views/BarcodePrintView.vue:89
+msgid "Height (mm)"
+msgstr ""
+
 #: frontend/src/components/items/CommandSearch.vue:456
 msgid "Held Invoices"
 msgstr ""
 
 #: frontend/src/components/items/CommandSearch.vue:64
 msgid "Help"
+msgstr ""
+
+#. Label of the hide_closing_shift (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Hide closing shift"
+msgstr ""
+
+#. Label of the hide_expected_amount (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Hide expected amount"
+msgstr ""
+
+#. Label of the hide_variants_items (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Hide variants items"
 msgstr ""
 
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:99
@@ -1884,8 +2398,31 @@ msgstr ""
 msgid "Hold Invoice"
 msgstr ""
 
+#: frontend/src/views/PriceChecker.vue:75
+msgid "Hold the item's barcode under the scanner."
+msgstr ""
+
+#. Label of a Workspace Sidebar Item
+#: xpos/workspace_sidebar/x_pos.json
+msgid "Home"
+msgstr ""
+
 #: frontend/src/components/dialogs/AboutDialog.vue:66
 msgid "Hub"
+msgstr ""
+
+#: frontend/src/views/BankDropView.vue:383
+#: frontend/src/views/ExpenseView.vue:297
+msgid "ID"
+msgstr ""
+
+#. Description of the 'Is Cashier' (Check) field in DocType 'POS Profile User'
+#: xpos/x_pos/custom/pos_profile_user.json
+msgid "If checked, this user is a cashier and may open the Cashier screen to settle (close) bills sent from POS terminals."
+msgstr ""
+
+#: frontend/src/views/PriceChecker.vue:169
+msgid "In Stock"
 msgstr ""
 
 #: frontend/src/components/purchase/StockReceiving.vue:219
@@ -1897,7 +2434,7 @@ msgstr ""
 msgid "In-Transit Stock"
 msgstr ""
 
-#: frontend/src/views/BarcodePrintView.vue:89
+#: frontend/src/views/BarcodePrintView.vue:115
 msgid "Include QR Code"
 msgstr ""
 
@@ -1909,6 +2446,11 @@ msgstr ""
 msgid "Individual"
 msgstr ""
 
+#. Label of the input_qty (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Input Qty"
+msgstr ""
+
 #: frontend/src/stores/offlineStore.ts:71
 msgid "Internet connection restored"
 msgstr ""
@@ -1917,19 +2459,19 @@ msgstr ""
 msgid "Invalid Opening Entry"
 msgstr ""
 
-#: xpos/x_pos/doctype/pos_closing_shift/closing_processing/overview.py:43
+#: xpos/x_pos/doctype/pos_closing_shift/closing_processing/overview.py:44
 msgid "Invalid POS Opening Shift data provided."
 msgstr ""
 
-#: xpos/api/invoices.py:1112
+#: xpos/api/invoices.py:1182
 msgid "Invalid doctype for return search"
 msgstr ""
 
-#: xpos/x_pos/api/utilities.py:783
+#: xpos/x_pos/api/utilities.py:790
 msgid "Invalid language code"
 msgstr ""
 
-#: xpos/x_pos/api/utilities.py:786
+#: xpos/x_pos/api/utilities.py:793
 msgid "Invalid language code format: {0}"
 msgstr ""
 
@@ -1945,7 +2487,7 @@ msgstr ""
 msgid "Invalid or already used coupon code"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:561
+#: frontend/src/components/cart/CartSummary.vue:587
 msgid "Invalid or expired coupon code"
 msgstr ""
 
@@ -1957,20 +2499,18 @@ msgstr ""
 msgid "Invalid posting date."
 msgstr ""
 
-#: xpos/x_pos/api/m_pesa.py:41
-msgid "Invalid webhook token"
-msgstr ""
-
 #: xpos/x_pos/api/payment_processing/data.py:19
 msgid "Invalid {0} filter"
 msgstr ""
 
-#. Label of a Currency field in DocType 'Sales Invoice Reference'
+#. Label of the transaction_amount (Currency) field in DocType 'Sales Invoice
+#. Reference'
 #: xpos/x_pos/doctype/sales_invoice_reference/sales_invoice_reference.json
 msgid "Invoice Amount"
 msgstr ""
 
-#. Label of a Link field in DocType 'Sales Invoice Reference'
+#. Label of the transaction_currency (Link) field in DocType 'Sales Invoice
+#. Reference'
 #: xpos/x_pos/doctype/sales_invoice_reference/sales_invoice_reference.json
 msgid "Invoice Currency"
 msgstr ""
@@ -1979,11 +2519,11 @@ msgstr ""
 msgid "Invoice details"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1182
+#: frontend/src/composables/usePrintInvoice.ts:68
 msgid "Invoice not found for printing"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1065
+#: frontend/src/components/dialogs/PaymentDialog.vue:1067
 msgid "Invoice saved locally (#{0}). It will sync to server automatically."
 msgstr ""
 
@@ -1991,11 +2531,11 @@ msgstr ""
 msgid "Invoice synced successfully"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:698
+#: frontend/src/components/dialogs/PaymentDialog.vue:700
 msgid "Invoice will be submitted with a partial payment."
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:696
+#: frontend/src/components/dialogs/PaymentDialog.vue:698
 msgid "Invoice will be submitted with an outstanding credit balance."
 msgstr ""
 
@@ -2007,37 +2547,57 @@ msgstr ""
 msgid "Invoice {0} does not exist"
 msgstr ""
 
-#: xpos/x_pos/api/invoice_processing/creation.py:444
+#: xpos/x_pos/api/invoice_processing/creation.py:436
 msgid "Invoice {0} has been cancelled and cannot be submitted."
 msgstr ""
 
-#: xpos/api/invoices.py:610
+#: xpos/api/invoices.py:644
 msgid "Invoice {0} is not a draft and cannot be updated"
 msgstr ""
 
 #: xpos/x_pos/api/purchase_orders.py:1806
-#: xpos/x_pos/api/purchase_orders.py:1909
-#: xpos/x_pos/api/purchase_orders.py:2044
+#: xpos/x_pos/api/purchase_orders.py:1907
+#: xpos/x_pos/api/purchase_orders.py:2042
 msgid "Invoice {0} is not a draft."
 msgstr ""
 
-#: xpos/api/invoices.py:61 xpos/api/invoices.py:1543
+#: xpos/api/invoices.py:46 xpos/api/invoices.py:1613
 msgid "Invoice {0} not found"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1102
+#: frontend/src/components/dialogs/PaymentDialog.vue:1104
 msgid "Invoice {0} saved successfully!"
 msgstr ""
 
+#. Group in POS Profile's connections
 #: frontend/src/views/PurchaseInvoiceView.vue:951
+#: xpos/x_pos/custom/pos_profile.json
 msgid "Invoices"
+msgstr ""
+
+#. Label of the is_cashier (Check) field in DocType 'POS Profile User'
+#: xpos/x_pos/custom/pos_profile_user.json
+msgid "Is Cashier"
+msgstr ""
+
+#. Label of the is_offer (Check) field in DocType 'POS Invoice Item'
+#. Label of the is_offer (Check) field in DocType 'Sales Invoice Item'
+#: xpos/x_pos/custom/pos_invoice_item.json
+#: xpos/x_pos/custom/sales_invoice_item.json
+msgid "Is Offer"
+msgstr ""
+
+#. Label of the is_printed (Check) field in DocType 'POS Invoice'
+#. Label of the is_printed (Check) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "Is Printed"
 msgstr ""
 
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:99
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:64
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:94
 #: frontend/src/components/dialogs/ReturnDialog.vue:102
-#: frontend/src/views/BarcodePrintView.vue:168
+#: frontend/src/views/BarcodePrintView.vue:199
 #: frontend/src/views/PurchaseInvoiceView.vue:385
 msgid "Item"
 msgstr ""
@@ -2045,17 +2605,21 @@ msgstr ""
 #. Option for the 'Qualifying Transaction / Item' (Select) field in DocType
 #. 'POS Offer'
 #. Option for the 'Apply Type' (Select) field in DocType 'POS Offer'
-#. Label of a Link field in DocType 'POS Offer'
+#. Label of the apply_item_code (Link) field in DocType 'POS Offer'
 #: frontend/src/components/dialogs/CreateItemDialog.vue:95
+#: frontend/src/views/BarcodePrintView.vue:243
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
+#: xpos/x_pos/report/branch_item_summary/branch_item_summary.py:44
 #: xpos/x_pos/report/current_stock_by_brand/current_stock_by_brand.py:40
 #: xpos/x_pos/report/current_stock_report/current_stock_report.py:57
+#: xpos/x_pos/report/current_stock_summary/current_stock_summary.py:35
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.py:43
-#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:74
+#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:82
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.py:47
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.py:119
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.py:110
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.py:61
-#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:87
+#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:93
 #: xpos/x_pos/report/zero_qty_sales_report/zero_qty_sales_report.py:52
 msgid "Item Code"
 msgstr ""
@@ -2079,7 +2643,7 @@ msgstr ""
 #. Option for the 'Qualifying Transaction / Item' (Select) field in DocType
 #. 'POS Offer'
 #. Option for the 'Apply Type' (Select) field in DocType 'POS Offer'
-#. Label of a Link field in DocType 'POS Offer'
+#. Label of the apply_item_group (Link) field in DocType 'POS Offer'
 #: frontend/src/components/dialogs/CreateItemDialog.vue:107
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 #: xpos/x_pos/report/current_stock_report/current_stock_report.js:46
@@ -2090,14 +2654,17 @@ msgid "Item Group"
 msgstr ""
 
 #: frontend/src/components/dialogs/CreateItemDialog.vue:91
+#: xpos/x_pos/report/branch_item_summary/branch_item_summary.py:51
 #: xpos/x_pos/report/current_stock_by_brand/current_stock_by_brand.py:47
 #: xpos/x_pos/report/current_stock_report/current_stock_report.py:64
+#: xpos/x_pos/report/current_stock_summary/current_stock_summary.py:42
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.py:50
-#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:81
+#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:89
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.py:54
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.py:126
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.py:117
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.py:68
-#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:94
+#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:100
 #: xpos/x_pos/report/zero_qty_sales_report/zero_qty_sales_report.py:59
 msgid "Item Name"
 msgstr ""
@@ -2111,16 +2678,22 @@ msgstr ""
 msgid "Item Price has been added or updated"
 msgstr ""
 
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the less_then (Float) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Item Rate Should Less Then"
+msgstr ""
+
+#. Label of the item_search_limit (Int) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Item Search Limit"
 msgstr ""
 
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:107
 msgid "Item Selection"
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#. Label of the item_code_total_digits (Int) field in DocType 'Scale Barcode
+#. Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Item code digits"
 msgstr ""
@@ -2129,12 +2702,17 @@ msgstr ""
 msgid "Item code is required."
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#. Label of the item_code_starting_digit (Int) field in DocType 'Scale Barcode
+#. Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Item code starting position"
 msgstr ""
 
-#: frontend/src/stores/cartStore.ts:467
+#: frontend/src/services/reports.ts:151
+msgid "Item movement and sales summary for a branch and warehouse window."
+msgstr ""
+
+#: frontend/src/stores/cartStore.ts:477
 msgid "Item not found"
 msgstr ""
 
@@ -2147,20 +2725,20 @@ msgstr ""
 msgid "Item {0} is missing Customs Tariff Number, which FBR requires as the PCT Code."
 msgstr ""
 
-#: xpos/api/invoices.py:1416
+#: xpos/api/invoices.py:1486
 msgid "Item {0} was not in the original invoice {1}"
 msgstr ""
 
-#: xpos/api/invoices.py:1456
+#: xpos/api/invoices.py:1526
 msgid "Item {0}: Cannot return {1} units. Only {2} units remaining for return (Original: {3}, Already returned: {4})"
 msgstr ""
 
-#: xpos/api/invoices.py:381
+#: xpos/api/invoices.py:408
 #, python-format
 msgid "Item {0}: Discount {1}% exceeds maximum allowed {2}%"
 msgstr ""
 
-#. Label of a Small Text field in DocType 'POS Offer Detail'
+#. Label of the items (Small Text) field in DocType 'POS Offer Detail'
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:89
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:54
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:84
@@ -2175,7 +2753,7 @@ msgstr ""
 msgid "Items loaded from PO {0}"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Cash Movement'
+#. Label of the journal_entry (Link) field in DocType 'POS Cash Movement'
 #: xpos/x_pos/api/payment_processing/data.py:274
 #: xpos/x_pos/api/payment_processing/data.py:356
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
@@ -2186,13 +2764,13 @@ msgstr ""
 msgid "Journal Entry {0} has no unallocated amount remaining."
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:181
+#: frontend/src/components/Navbar.vue:194
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:14
 #: frontend/src/components/items/CommandSearch.vue:492
 msgid "Keyboard Shortcuts"
 msgstr ""
 
-#. Label of a Data field in DocType 'Delivery Charges'
+#. Label of the label (Data) field in DocType 'Delivery Charges'
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 msgid "Label"
 msgstr ""
@@ -2202,16 +2780,26 @@ msgid "Label Size"
 msgstr ""
 
 #: frontend/src/views/BarcodePrintView.vue:69
-msgid "Large (60×40mm)"
+msgid "Large (60x40mm)"
 msgstr ""
 
 #: frontend/src/components/offline/OfflinePendingPanel.vue:153
 msgid "Last sync"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'POS Closing Shift'
+#. Label of the section_break_12 (Section Break) field in DocType 'POS Closing
+#. Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 msgid "Linked Invoices"
+msgstr ""
+
+#. Option for the 'Default View' (Select) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "List"
+msgstr ""
+
+#: frontend/src/services/reports.ts:93
+msgid "Live stock valuation by item, warehouse, supplier, brand, and group."
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:1043
@@ -2243,16 +2831,31 @@ msgstr ""
 msgid "Loading..."
 msgstr ""
 
-#: frontend/src/views/ReportsIndexView.vue:249
+#. Description of the 'X POS Local ID' (Data) field in DocType 'POS Invoice'
+#. Description of the 'X POS Local ID' (Data) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "Local ID from the desktop/offline POS client. Used to deduplicate invoice sync and guarantee exactly-once creation."
+msgstr ""
+
+#. Label of the local_item_name (Data) field in DocType 'Item'
+#. Label of the local_item_name (Data) field in DocType 'Sales Invoice Item'
+#: xpos/x_pos/custom/item.json xpos/x_pos/custom/sales_invoice_item.json
+msgid "Local Item Name"
+msgstr ""
+
+#: frontend/src/views/ReportsIndexView.vue:219
 msgid "Locked"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:421
+#: frontend/src/components/dialogs/PaymentDialog.vue:454
 msgid "Locked by POS Profile"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:163
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Low Qty Sales Report"
 msgstr ""
 
@@ -2269,12 +2872,13 @@ msgstr ""
 msgid "Loyalty Point"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'POS Offer'
+#. Label of the loyalty_point_scheme_section (Section Break) field in DocType
+#. 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Loyalty Point Scheme"
 msgstr ""
 
-#. Label of a Int field in DocType 'POS Offer'
+#. Label of the loyalty_points (Int) field in DocType 'POS Offer'
 #: frontend/src/components/dialogs/PaymentDialog.vue:307
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Loyalty Points"
@@ -2326,23 +2930,35 @@ msgstr ""
 msgid "Material transfers awaiting receipt at your warehouse"
 msgstr ""
 
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the max_amt (Float) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Max Amount"
 msgstr ""
 
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the max_discount_percentage_allowed (Percent) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Max Discount Percentage Allowed"
+msgstr ""
+
+#. Label of the max_qty (Float) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Max Quantity"
 msgstr ""
 
-#. Label of a Int field in DocType 'POS Coupon'
+#. Label of the maximum_use (Int) field in DocType 'POS Coupon'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 msgid "Maximum Use"
 msgstr ""
 
+#. Description of the 'Discount Limit' (Percent) field in DocType 'POS Profile
+#. User'
+#: xpos/x_pos/custom/pos_profile_user.json
+msgid "Maximum discount percentage this user may apply at POS. Defaults to 100 (no cap)."
+msgstr ""
+
 #: frontend/src/views/BarcodePrintView.vue:68
-msgid "Medium (50×30mm)"
+msgid "Medium (50x30mm)"
 msgstr ""
 
 #: frontend/src/layouts/DefaultLayout.vue:58
@@ -2354,7 +2970,7 @@ msgstr ""
 msgid "Method"
 msgstr ""
 
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the min_amt (Float) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Min Amount"
 msgstr ""
@@ -2367,7 +2983,7 @@ msgstr ""
 msgid "Min Qty"
 msgstr ""
 
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the min_qty (Float) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Min Quantity"
 msgstr ""
@@ -2384,8 +3000,8 @@ msgstr ""
 msgid "Mobile"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Coupon'
-#. Label of a Data field in DocType 'Referral Code'
+#. Label of the mobile_no (Data) field in DocType 'POS Coupon'
+#. Label of the mobile_no (Data) field in DocType 'Referral Code'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 #: xpos/x_pos/doctype/referral_code/referral_code.json
 msgid "Mobile NO"
@@ -2402,13 +3018,16 @@ msgstr ""
 msgid "Mode"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Payment Entry Reference'
+#. Label of the mode_of_payment (Data) field in DocType 'POS Payment Entry
+#. Reference'
 #: xpos/x_pos/doctype/pos_payment_entry_reference/pos_payment_entry_reference.json
 msgid "Mode Of Payment"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Closing Shift Detail'
-#. Label of a Link field in DocType 'POS Opening Shift Detail'
+#. Label of the mode_of_payment (Link) field in DocType 'POS Closing Shift
+#. Detail'
+#. Label of the mode_of_payment (Link) field in DocType 'POS Opening Shift
+#. Detail'
 #: xpos/x_pos/api/payment_processing/data.py:181
 #: xpos/x_pos/doctype/pos_closing_shift/closing_shift_details.html:58
 #: xpos/x_pos/doctype/pos_closing_shift_detail/pos_closing_shift_detail.json
@@ -2424,7 +3043,8 @@ msgstr ""
 msgid "Mode of Payments"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'POS Closing Shift'
+#. Label of the section_break_11 (Section Break) field in DocType 'POS Closing
+#. Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 msgid "Modes of Payment"
 msgstr ""
@@ -2443,13 +3063,21 @@ msgstr ""
 msgid "Move up"
 msgstr ""
 
-#. Label of a Select field in DocType 'POS Cash Movement'
+#. Label of the movement_type (Select) field in DocType 'POS Cash Movement'
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "Movement Type"
 msgstr ""
 
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.py:94
 msgid "Movement Type must be Expense or Deposit."
+msgstr ""
+
+#: frontend/src/services/reports.ts:144
+msgid "Movement summary by warehouse and voucher type over time."
+msgstr ""
+
+#: frontend/src/services/reports.ts:179
+msgid "Movement velocity overview to identify fast and slow sellers."
 msgstr ""
 
 #: frontend/src/components/items/CommandSearch.vue:46
@@ -2473,7 +3101,7 @@ msgstr ""
 msgid "Net"
 msgstr ""
 
-#. Label of a Currency field in DocType 'POS Closing Shift'
+#. Label of the net_total (Currency) field in DocType 'POS Closing Shift'
 #: frontend/src/components/dialogs/ClosingDialog.vue:46
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:244
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:156
@@ -2483,7 +3111,8 @@ msgstr ""
 msgid "Net Total"
 msgstr ""
 
-#: frontend/src/views/BankDropView.vue:8
+#: frontend/src/views/BankDropView.vue:31
+#: frontend/src/views/BankDropView.vue:127
 msgid "New Bank Drop"
 msgstr ""
 
@@ -2491,11 +3120,11 @@ msgstr ""
 msgid "New Customer"
 msgstr ""
 
-#: frontend/src/views/ExpenseView.vue:8
+#: frontend/src/views/ExpenseView.vue:31 frontend/src/views/ExpenseView.vue:125
 msgid "New Expense"
 msgstr ""
 
-#: frontend/src/views/PurchaseInvoiceListView.vue:142
+#: frontend/src/views/PurchaseInvoiceListView.vue:98
 msgid "New Invoice"
 msgstr ""
 
@@ -2504,8 +3133,8 @@ msgstr ""
 msgid "New Item"
 msgstr ""
 
-#: frontend/src/views/PurchaseOrderListView.vue:184
-msgid "New Order"
+#: frontend/src/views/PurchaseOrderListView.vue:139
+msgid "New Purchase Order"
 msgstr ""
 
 #: frontend/src/components/items/CommandSearch.vue:391
@@ -2516,25 +3145,33 @@ msgstr ""
 msgid "New Sale / Clear Cart"
 msgstr ""
 
+#: frontend/src/views/CashierView.vue:57
+msgid "New invoices from terminals will appear here automatically."
+msgstr ""
+
 #: frontend/src/components/core/ListFilterBar.vue:39
-#: frontend/src/services/reports.ts:829
+#: frontend/src/services/reports.ts:525
 #: frontend/src/views/PurchaseOrderView.vue:494
 msgid "No"
+msgstr ""
+
+#: frontend/src/views/RolePermissionsView.vue:27
+msgid "No POS roles found. Create a POS Role first."
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:1232
 msgid "No Payment"
 msgstr ""
 
-#: frontend/src/views/PurchaseOrderListView.vue:241
+#: frontend/src/views/PurchaseOrderListView.vue:162
 msgid "No Supplier"
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:192
+#: xpos/x_pos/api/payment_processing/processor.py:176
 msgid "No allocation made for credit note {0}"
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:288
+#: xpos/x_pos/api/payment_processing/processor.py:272
 msgid "No allocation made for payment {0}"
 msgstr ""
 
@@ -2554,10 +3191,6 @@ msgstr ""
 msgid "No allocations were made."
 msgstr ""
 
-#: frontend/src/views/BankDropView.vue:45
-msgid "No bank drops found"
-msgstr ""
-
 #: xpos/x_pos/api/invoice_processing/stock.py:186
 msgid "No batches available in {0} for {1}."
 msgstr ""
@@ -2566,15 +3199,19 @@ msgstr ""
 msgid "No camera found on this device."
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:661
+#: frontend/src/components/cart/CartSummary.vue:687
 msgid "No connection – draft saved offline"
+msgstr ""
+
+#: frontend/src/components/cart/CartSummary.vue:764
+msgid "No connection – will sync to cashier when back online"
 msgstr ""
 
 #: frontend/src/components/customer/CustomerSelect.vue:96
 msgid "No customers found"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:651
+#: frontend/src/views/ReportViewerView.vue:337
 msgid "No data to print."
 msgstr ""
 
@@ -2588,10 +3225,6 @@ msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:1019
 msgid "No drafts found"
-msgstr ""
-
-#: frontend/src/views/ExpenseView.vue:45
-msgid "No expenses found"
 msgstr ""
 
 #: frontend/src/components/core/QueryFilterPanel.vue:50
@@ -2616,7 +3249,7 @@ msgid "No invoices found"
 msgstr ""
 
 #: frontend/src/components/items/ItemGrid.vue:19
-#: frontend/src/views/BarcodePrintView.vue:104
+#: frontend/src/views/BarcodePrintView.vue:130
 msgid "No items found"
 msgstr ""
 
@@ -2624,7 +3257,7 @@ msgstr ""
 msgid "No items found for this category and supplier"
 msgstr ""
 
-#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:393
+#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:399
 msgid "No items found in this invoice"
 msgstr ""
 
@@ -2632,11 +3265,15 @@ msgstr ""
 msgid "No items found to create Purchase Order"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:631
+#: frontend/src/components/cart/CartSummary.vue:657
 msgid "No items in cart to save."
 msgstr ""
 
-#: frontend/src/views/BarcodePrintView.vue:149
+#: frontend/src/components/cart/CartSummary.vue:728
+msgid "No items in cart to send."
+msgstr ""
+
+#: frontend/src/views/BarcodePrintView.vue:180
 msgid "No items selected"
 msgstr ""
 
@@ -2644,7 +3281,7 @@ msgstr ""
 msgid "No items to invoice. Please ensure there are items on the Purchase Order."
 msgstr ""
 
-#: xpos/x_pos/api/purchase_orders.py:1149 xpos/x_pos/api/stock_transfer.py:267
+#: xpos/x_pos/api/purchase_orders.py:1149 xpos/x_pos/api/stock_transfer.py:248
 msgid "No items to receive."
 msgstr ""
 
@@ -2652,7 +3289,7 @@ msgstr ""
 msgid "No items to receive. Please enter received quantities."
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:388
+#: xpos/x_pos/api/stock_transfer.py:364
 msgid "No items to return."
 msgstr ""
 
@@ -2664,19 +3301,16 @@ msgstr ""
 msgid "No material transfers pending receipt"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:612
+#: frontend/src/components/cart/CartSummary.vue:638
+#: frontend/src/components/cart/CartSummary.vue:707
 msgid "No open shift found. Please open a shift first."
 msgstr ""
 
-#: frontend/src/views/OrdersView.vue:49
-msgid "No orders found"
-msgstr ""
-
-#: xpos/x_pos/api/payment_processing/processor.py:130
+#: xpos/x_pos/api/payment_processing/processor.py:114
 msgid "No outstanding invoices available for allocation of credit note {0}"
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:234
+#: xpos/x_pos/api/payment_processing/processor.py:218
 msgid "No outstanding invoices available for allocation of payment {0}"
 msgstr ""
 
@@ -2708,23 +3342,15 @@ msgstr ""
 msgid "No profiles found. Check server connection or click Refresh."
 msgstr ""
 
-#: frontend/src/views/PurchaseInvoiceListView.vue:189
-msgid "No purchase invoices found"
-msgstr ""
-
-#: frontend/src/views/PurchaseOrderListView.vue:283
-msgid "No purchase orders found"
-msgstr ""
-
 #: frontend/src/components/core/QueryFilterPanel.vue:134
 msgid "No query filters. Click \"Add Filter\" to add one."
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:892
+#: frontend/src/components/dialogs/PaymentDialog.vue:894
 msgid "No redeemable loyalty points for this invoice total"
 msgstr ""
 
-#: frontend/src/views/ReportsIndexView.vue:161
+#: frontend/src/views/ReportsIndexView.vue:151
 msgid "No reports match your search"
 msgstr ""
 
@@ -2736,20 +3362,15 @@ msgstr ""
 msgid "No results found"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:1029
-msgid "No rows available after filtering."
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:483
+#: frontend/src/views/ReportViewerView.vue:317
 msgid "No rows available to export."
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:1010
+#: frontend/src/views/ReportViewerView.vue:540
 msgid "No rows found"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:447
-#: frontend/src/views/ReportViewerView.vue:457
+#: frontend/src/views/ReportViewerView.vue:300
 msgid "No rows to copy."
 msgstr ""
 
@@ -2757,15 +3378,19 @@ msgstr ""
 msgid "No unallocated payments were available for reconciliation."
 msgstr ""
 
+#: frontend/src/views/CashierView.vue:55
+msgid "No unsettled invoices"
+msgstr ""
+
 #: xpos/x_pos/api/invoice_processing/stock.py:210
 msgid "No valid batches available in {0} for {1}."
 msgstr ""
 
-#: xpos/x_pos/api/purchase_orders.py:1207 xpos/x_pos/api/stock_transfer.py:333
+#: xpos/x_pos/api/purchase_orders.py:1207 xpos/x_pos/api/stock_transfer.py:309
 msgid "No valid items to receive."
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:448
+#: xpos/x_pos/api/stock_transfer.py:421
 msgid "No valid items to return."
 msgstr ""
 
@@ -2783,6 +3408,10 @@ msgstr ""
 
 #: frontend/src/components/core/QueryFilterPanel.vue:107
 msgid "Not Set (empty)"
+msgstr ""
+
+#: xpos/api/reports.py:213
+msgid "Not permitted to view reports"
 msgstr ""
 
 #: frontend/src/components/ui/datetime-picker/DateTimePicker.vue:873
@@ -2805,14 +3434,18 @@ msgstr ""
 msgid "Numpad"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Offer Detail'
+#. Label of the offer (Data) field in DocType 'POS Offer Detail'
 #: frontend/src/components/cart/CartSummary.vue:66
 #: frontend/src/components/dialogs/PaymentDialog.vue:132
 #: xpos/x_pos/doctype/pos_offer_detail/pos_offer_detail.json
 msgid "Offer"
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Offer Detail'
+#. Label of the offer_applied (Check) field in DocType 'POS Invoice Item'
+#. Label of the offer_applied (Check) field in DocType 'Sales Invoice Item'
+#. Label of the offer_applied (Check) field in DocType 'POS Offer Detail'
+#: xpos/x_pos/custom/pos_invoice_item.json
+#: xpos/x_pos/custom/sales_invoice_item.json
 #: xpos/x_pos/doctype/pos_offer_detail/pos_offer_detail.json
 msgid "Offer Applied"
 msgstr ""
@@ -2822,9 +3455,19 @@ msgstr ""
 msgid "Offer Discount"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Offer Detail'
+#. Label of the offer_name (Link) field in DocType 'POS Offer Detail'
 #: xpos/x_pos/doctype/pos_offer_detail/pos_offer_detail.json
 msgid "Offer Name"
+msgstr ""
+
+#. Label of the offers (Table) field in DocType 'POS Invoice'
+#. Label of the offers (Small Text) field in DocType 'POS Invoice Item'
+#. Label of the offers (Table) field in DocType 'Sales Invoice'
+#. Label of the offers (Small Text) field in DocType 'Sales Invoice Item'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/pos_invoice_item.json
+#: xpos/x_pos/custom/sales_invoice.json
+#: xpos/x_pos/custom/sales_invoice_item.json
+msgid "Offers"
 msgstr ""
 
 #. Label of a Card Break in the X POS Workspace
@@ -2844,9 +3487,18 @@ msgstr ""
 msgid "Online"
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Coupon'
+#. Label of the one_use (Check) field in DocType 'POS Coupon'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 msgid "Only One Use Per Customer"
+msgstr ""
+
+#: frontend/src/components/dialogs/ClosingDialog.vue:324 xpos/api/shifts.py:147
+#: xpos/api/shifts.py:527
+msgid "Only a Supervisor can close a shift."
+msgstr ""
+
+#: xpos/api/invoices.py:259
+msgid "Only a cashier can settle this invoice."
 msgstr ""
 
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.py:49
@@ -2865,11 +3517,11 @@ msgstr ""
 msgid "Only draft Sales Orders can be updated"
 msgstr ""
 
-#: xpos/api/invoices.py:1083
+#: xpos/api/invoices.py:1153
 msgid "Only draft invoices can be deleted"
 msgstr ""
 
-#: xpos/api/invoices.py:239
+#: xpos/api/invoices.py:254
 msgid "Only draft invoices can be updated and submitted"
 msgstr ""
 
@@ -2881,8 +3533,12 @@ msgstr ""
 msgid "Only the shift owner can create cash movement entries."
 msgstr ""
 
+#: frontend/src/views/CashierView.vue:45
+msgid "Only users marked as cashier in the POS Profile can settle bills. Ask a manager to enable it for you."
+msgstr ""
+
 #. Option for the 'Status' (Select) field in DocType 'POS Opening Shift'
-#: frontend/src/views/ReportsIndexView.vue:258
+#: frontend/src/views/ReportsIndexView.vue:228
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Open"
 msgstr ""
@@ -2899,6 +3555,14 @@ msgstr ""
 msgid "Open Shift"
 msgstr ""
 
+#: frontend/src/views/BankDropView.vue:365
+msgid "Open a shift to view bank drops"
+msgstr ""
+
+#: frontend/src/views/ExpenseView.vue:285
+msgid "Open a shift to view expenses"
+msgstr ""
+
 #: frontend/src/components/dialogs/OpeningDialog.vue:13
 msgid "Open your shift to get started"
 msgstr ""
@@ -2907,14 +3571,20 @@ msgstr ""
 msgid "Opening"
 msgstr ""
 
-#. Label of a Currency field in DocType 'POS Closing Shift Detail'
-#. Label of a Currency field in DocType 'POS Opening Shift Detail'
+#. Group in POS Profile's connections
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Opening & Closing"
+msgstr ""
+
+#. Label of the opening_amount (Currency) field in DocType 'POS Closing Shift
+#. Detail'
+#. Label of the amount (Currency) field in DocType 'POS Opening Shift Detail'
 #: xpos/x_pos/doctype/pos_closing_shift_detail/pos_closing_shift_detail.json
 #: xpos/x_pos/doctype/pos_opening_shift_detail/pos_opening_shift_detail.json
 msgid "Opening Amount"
 msgstr ""
 
-#. Label of a Table field in DocType 'POS Opening Shift'
+#. Label of the balance_details (Table) field in DocType 'POS Opening Shift'
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Opening Balance Details"
 msgstr ""
@@ -2923,7 +3593,11 @@ msgstr ""
 msgid "Opening Cash Balance"
 msgstr ""
 
-#: xpos/api/shifts.py:534
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.js:8
+msgid "Opening Shift"
+msgstr ""
+
+#: xpos/api/shifts.py:538
 msgid "Opening Shift is required"
 msgstr ""
 
@@ -2931,30 +3605,47 @@ msgstr ""
 msgid "Opening Shift..."
 msgstr ""
 
+#. Description of the 'Return Validity Days' (Int) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Optional default number of days after posting date when returns remain valid."
+msgstr ""
+
 #: frontend/src/views/PurchaseInvoiceView.vue:1000
 msgid "Optional notes..."
 msgstr ""
 
-#: frontend/src/views/OrdersView.vue:5
+#. Description of the 'FBR Payment Mode Code' (Select) field in DocType 'Mode
+#. of Payment'
+#: xpos/x_pos/custom/mode_of_payment.json
+msgid "Optional override for FBR posting. Leave blank to auto-detect from the mode name. 1 Cash, 2 Card, 3 Gift Voucher, 4 Loyalty Card, 5 Mixed, 6 Cheque."
+msgstr ""
+
+#. Description of the 'FBR API URL' (Data) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Optional override. Leave blank to use the default FBR URL for the selected environment."
+msgstr ""
+
+#: frontend/src/views/OrdersView.vue:4
 msgid "Order History"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:653
+#: frontend/src/components/cart/CartSummary.vue:679
 msgid "Order saved as draft"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:642
+#: frontend/src/components/cart/CartSummary.vue:668
 msgid "Order saved as draft locally"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:41
-#: frontend/src/components/Sidebar.vue:176
+#: frontend/src/components/Navbar.vue:51
+#: frontend/src/components/Sidebar.vue:178
 #: frontend/src/components/items/CommandSearch.vue:308
 #: frontend/src/layouts/DefaultLayout.vue:39
 msgid "Orders"
 msgstr ""
 
-#: xpos/api/invoices.py:1374
+#: xpos/api/invoices.py:1444
 msgid "Original invoice {0} not found"
 msgstr ""
 
@@ -2969,17 +3660,21 @@ msgstr ""
 msgid "Out of Stock"
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:244 xpos/x_pos/api/stock_transfer.py:377
+#: frontend/src/views/PriceChecker.vue:175
+msgid "Out of stock"
+msgstr ""
+
+#: xpos/x_pos/api/stock_transfer.py:225 xpos/x_pos/api/stock_transfer.py:353
 msgid "Outgoing Stock Entry is required."
 msgstr ""
 
 #: frontend/src/components/dialogs/PaymentDialog.vue:36
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:268
-#: frontend/src/views/PurchaseInvoiceListView.vue:233
+#: frontend/src/views/PurchaseInvoiceListView.vue:140
 msgid "Outstanding"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:690
+#: frontend/src/components/dialogs/PaymentDialog.vue:692
 msgid "Outstanding After Save"
 msgstr ""
 
@@ -2987,9 +3682,11 @@ msgstr ""
 msgid "P/O Category"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:25
-#: frontend/src/components/Sidebar.vue:175
+#. Label of the pos (Tab Break) field in DocType 'Sales Invoice'
+#: frontend/src/components/Navbar.vue:35
+#: frontend/src/components/Sidebar.vue:177
 #: frontend/src/layouts/DefaultLayout.vue:27
+#: xpos/x_pos/custom/sales_invoice.json
 msgid "POS"
 msgstr ""
 
@@ -3007,6 +3704,13 @@ msgstr ""
 msgid "POS Allowed Source Account"
 msgstr ""
 
+#. Label of the pos_awaiting_settlement (Check) field in DocType 'POS Invoice'
+#. Label of the pos_awaiting_settlement (Check) field in DocType 'Sales
+#. Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "POS Awaiting Settlement"
+msgstr ""
+
 #. Name of a DocType
 #. Label of a Link in the X POS Workspace
 #: xpos/x_pos/api/cash_movement/posting.py:30
@@ -3016,7 +3720,7 @@ msgid "POS Cash Movement"
 msgstr ""
 
 #. Name of a DocType
-#. Label of a Data field in DocType 'POS Opening Shift'
+#. Label of the pos_closing_shift (Data) field in DocType 'POS Opening Shift'
 #. Label of a Link in the X POS Workspace
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
@@ -3038,6 +3742,11 @@ msgstr ""
 msgid "POS Closing Shift {0} against {1} between selected period"
 msgstr ""
 
+#. Label of the pos_configurations (Tab Break) field in DocType 'Company'
+#: xpos/x_pos/custom/company.json
+msgid "POS Configurations"
+msgstr ""
+
 #. Name of a DocType
 #. Label of a Link in the X POS Workspace
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
@@ -3050,8 +3759,14 @@ msgstr ""
 msgid "POS Coupon Detail"
 msgstr ""
 
+#. Label of the pos_delivery_date (Data) field in DocType 'POS Invoice'
+#. Label of the pos_delivery_date (Date) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "POS Delivery Date"
+msgstr ""
+
 #: frontend/src/components/dialogs/CashMovementDialog.vue:28
-#: frontend/src/views/ExpenseView.vue:123
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:12
 msgid "POS Expense"
 msgstr ""
 
@@ -3059,13 +3774,21 @@ msgstr ""
 msgid "POS Expense is disabled for this POS Profile."
 msgstr ""
 
-#. Label of a Link field in DocType 'Sales Invoice Reference'
+#. Label of a Workspace Sidebar Item
+#. Label of the pos_invoice (Link) field in DocType 'Sales Invoice Reference'
+#: xpos/workspace_sidebar/x_pos.json
 #: xpos/x_pos/doctype/sales_invoice_reference/sales_invoice_reference.json
 msgid "POS Invoice"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Coupon'
-#. Label of a Link field in DocType 'POS Coupon Detail'
+#. Label of the pos_notes (Small Text) field in DocType 'POS Invoice'
+#. Label of the pos_notes (Small Text) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "POS Notes"
+msgstr ""
+
+#. Label of the pos_offer (Link) field in DocType 'POS Coupon'
+#. Label of the pos_offer (Link) field in DocType 'POS Coupon Detail'
 #. Name of a DocType
 #. Label of a Link in the X POS Workspace
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
@@ -3084,10 +3807,13 @@ msgstr ""
 msgid "POS Offer is disabled."
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Cash Movement'
-#. Label of a Link field in DocType 'POS Closing Shift'
+#. Label of the pos_opening_shift (Link) field in DocType 'POS Invoice'
+#. Label of the pos_opening_shift (Link) field in DocType 'Sales Invoice'
+#. Label of the pos_opening_shift (Link) field in DocType 'POS Cash Movement'
+#. Label of the pos_opening_shift (Link) field in DocType 'POS Closing Shift'
 #. Name of a DocType
 #. Label of a Link in the X POS Workspace
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
@@ -3101,11 +3827,11 @@ msgid "POS Opening Shift Detail"
 msgstr ""
 
 #: xpos/api/cash_movements.py:78 xpos/api/cash_movements.py:163
-#: xpos/x_pos/api/payment_processing/processor.py:38
+#: xpos/x_pos/api/payment_processing/processor.py:37
 msgid "POS Opening Shift is required"
 msgstr ""
 
-#: xpos/x_pos/doctype/pos_closing_shift/closing_processing/overview.py:19
+#: xpos/x_pos/doctype/pos_closing_shift/closing_processing/overview.py:20
 msgid "POS Opening Shift is required to compute the overview."
 msgstr ""
 
@@ -3130,7 +3856,7 @@ msgstr ""
 msgid "POS Opening Shift {0} is not for the same company"
 msgstr ""
 
-#: xpos/api/shifts.py:539
+#: xpos/api/shifts.py:543
 msgid "POS Opening Shift {0} not found"
 msgstr ""
 
@@ -3139,9 +3865,14 @@ msgstr ""
 msgid "POS Payment Entry Reference"
 msgstr ""
 
-#. Label of a Table field in DocType 'POS Closing Shift'
+#. Label of the pos_payments (Table) field in DocType 'POS Closing Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 msgid "POS Payments"
+msgstr ""
+
+#. Name of a DocType
+#: xpos/x_pos/doctype/pos_permission/pos_permission.json
+msgid "POS Permission"
 msgstr ""
 
 #. Name of a DocType
@@ -3149,12 +3880,15 @@ msgstr ""
 msgid "POS Print Format Rule"
 msgstr ""
 
-#. Label of a Link field in DocType 'Delivery Charges POS Profile'
-#. Label of a Link field in DocType 'POS Cash Movement'
-#. Label of a Link field in DocType 'POS Closing Shift'
-#. Label of a Link field in DocType 'POS Offer'
-#. Label of a Link field in DocType 'POS Opening Shift'
+#. Label of the pos_profile (Link) field in DocType 'Delivery Charges POS
+#. Profile'
+#. Label of the pos_profile (Link) field in DocType 'POS Cash Movement'
+#. Label of the pos_profile (Link) field in DocType 'POS Closing Shift'
+#. Label of the pos_profile (Link) field in DocType 'POS Offer'
+#. Label of the pos_profile (Link) field in DocType 'POS Opening Shift'
 #. Label of a Link in the X POS Workspace
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:73
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:73
 #: frontend/src/components/dialogs/OpeningDialog.vue:25
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:50
 #: xpos/x_pos/api/payment_processing/data.py:81
@@ -3163,6 +3897,7 @@ msgstr ""
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.js:21
 #: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "POS Profile"
 msgstr ""
@@ -3171,11 +3906,12 @@ msgstr ""
 msgid "POS Profile company must match active POS Opening Shift company."
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:607
+#: frontend/src/components/cart/CartSummary.vue:633
+#: frontend/src/components/cart/CartSummary.vue:702
 msgid "POS Profile is not set. Please close and reopen the shift."
 msgstr ""
 
-#: xpos/api/invoices.py:216 xpos/x_pos/api/payment_processing/processor.py:36
+#: xpos/api/invoices.py:232 xpos/x_pos/api/payment_processing/processor.py:35
 msgid "POS Profile is required"
 msgstr ""
 
@@ -3196,12 +3932,12 @@ msgstr ""
 msgid "POS Profile must match the selected POS Opening Shift profile."
 msgstr ""
 
-#: xpos/api/invoices.py:593 xpos/api/sales_orders.py:69
+#: xpos/api/invoices.py:628 xpos/api/sales_orders.py:69
 #: xpos/api/sales_orders.py:170
 msgid "POS Profile, Customer, and Items are required"
 msgstr ""
 
-#. Label of a Table field in DocType 'Delivery Charges'
+#. Label of the profiles (Table) field in DocType 'Delivery Charges'
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 msgid "POS Profiles"
 msgstr ""
@@ -3211,16 +3947,46 @@ msgstr ""
 msgid "POS Purchase Taxes"
 msgstr ""
 
+#. Label of the pos_role (Link) field in DocType 'POS Profile User'
+#. Name of a DocType
+#. Label of a Link in the X POS Workspace
+#: xpos/x_pos/custom/pos_profile_user.json
+#: xpos/x_pos/doctype/pos_role/pos_role.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
+msgid "POS Role"
+msgstr ""
+
+#. Name of a DocType
+#: xpos/x_pos/doctype/pos_role_permission/pos_role_permission.json
+msgid "POS Role Permission"
+msgstr ""
+
+#: xpos/api/auth.py:332
+msgid "POS Role {0} not found"
+msgstr ""
+
 #. Name of a DocType
 #: xpos/x_pos/doctype/pos_sales_person_filter/pos_sales_person_filter.json
 msgid "POS Sales Person Filter"
+msgstr ""
+
+#. Label of the pos_settings (Tab Break) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "POS Settings"
+msgstr ""
+
+#. Name of a report
+#. Label of a Link in the X POS Workspace
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
+msgid "POS Shift Reconciliation"
 msgstr ""
 
 #: xpos/x_pos/api/invoice.py:328
 msgid "POS Shift {0} is not open"
 msgstr ""
 
-#. Label of a Table field in DocType 'POS Closing Shift'
+#. Label of the pos_transactions (Table) field in DocType 'POS Closing Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 msgid "POS Transactions"
 msgstr ""
@@ -3230,12 +3996,17 @@ msgid "POS credit redemption for Sales Invoice {0}"
 msgstr ""
 
 #: frontend/src/components/dialogs/CashMovementDialog.vue:281
-#: frontend/src/views/ExpenseView.vue:380
+#: frontend/src/views/ExpenseView.vue:665
 msgid "POS expense recorded"
 msgstr ""
 
-#: xpos/x_pos/api/utils.py:103
+#: xpos/x_pos/api/utils.py:99
 msgid "POS profile data is missing or invalid."
+msgstr ""
+
+#. Description of the 'FBR POS ID' (Data) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "POS registration number issued by FBR."
 msgstr ""
 
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:73
@@ -3246,11 +4017,11 @@ msgstr ""
 msgid "Park current invoice as draft"
 msgstr ""
 
-#: xpos/api/invoices.py:159
+#: xpos/api/invoices.py:144
 msgid "Partial payment is not allowed for POS Profile {0}."
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:436
+#: frontend/src/components/cart/CartSummary.vue:440
 msgid "Pay {0}"
 msgstr ""
 
@@ -3259,7 +4030,8 @@ msgstr ""
 msgid "Payment"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Payment Entry Reference'
+#. Label of the payment_entry (Link) field in DocType 'POS Payment Entry
+#. Reference'
 #: xpos/x_pos/doctype/pos_payment_entry_reference/pos_payment_entry_reference.json
 msgid "Payment Entry"
 msgstr ""
@@ -3276,7 +4048,8 @@ msgstr ""
 msgid "Payment Gateway Account not found"
 msgstr ""
 
-#. Label of a Table field in DocType 'POS Closing Shift'
+#. Label of the payment_reconciliation (Table) field in DocType 'POS Closing
+#. Shift'
 #: frontend/src/components/dialogs/ClosingDialog.vue:107
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 msgid "Payment Reconciliation"
@@ -3294,15 +4067,18 @@ msgstr ""
 msgid "Payment amount cannot be less than or equal to 0"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1134
+#: frontend/src/components/dialogs/PaymentDialog.vue:1136
 msgid "Payment failed: {0}"
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:228
+#: xpos/x_pos/api/payment_processing/processor.py:212
 msgid "Payment {0} is already fully allocated"
 msgstr ""
 
+#. Label of the pos_payments_section (Section Break) field in DocType 'POS
+#. Profile'
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:221
+#: xpos/x_pos/custom/pos_profile.json
 msgid "Payments"
 msgstr ""
 
@@ -3310,18 +4086,49 @@ msgstr ""
 msgid "Per page:"
 msgstr ""
 
-#. Label of a Datetime field in DocType 'POS Closing Shift'
-#. Label of a Date field in DocType 'POS Opening Shift'
+#. Label of the period_end_date (Datetime) field in DocType 'POS Closing Shift'
+#. Label of the period_end_date (Date) field in DocType 'POS Opening Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Period End Date"
 msgstr ""
 
-#. Label of a Datetime field in DocType 'POS Closing Shift'
-#. Label of a Datetime field in DocType 'POS Opening Shift'
+#. Label of the period_start_date (Datetime) field in DocType 'POS Closing
+#. Shift'
+#. Label of the period_start_date (Datetime) field in DocType 'POS Opening
+#. Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Period Start Date"
+msgstr ""
+
+#. Label of the permission (Link) field in DocType 'POS Role Permission'
+#: xpos/x_pos/doctype/pos_role_permission/pos_role_permission.json
+msgid "Permission"
+msgstr ""
+
+#. Label of the permission_label (Data) field in DocType 'POS Permission'
+#: xpos/x_pos/doctype/pos_permission/pos_permission.json
+msgid "Permission Label"
+msgstr ""
+
+#. Label of the permission_name (Data) field in DocType 'POS Permission'
+#: xpos/x_pos/doctype/pos_permission/pos_permission.json
+msgid "Permission Name"
+msgstr ""
+
+#: frontend/src/views/RolePermissionsView.vue:202
+msgid "Permission updated"
+msgstr ""
+
+#. Label of the permissions (Table) field in DocType 'POS Role'
+#: xpos/x_pos/doctype/pos_role/pos_role.json
+msgid "Permissions"
+msgstr ""
+
+#. Label of the permissions_html (HTML) field in DocType 'POS Role'
+#: xpos/x_pos/doctype/pos_role/pos_role.json
+msgid "Permissions HTML"
 msgstr ""
 
 #: frontend/src/components/dialogs/AboutDialog.vue:54
@@ -3340,7 +4147,7 @@ msgstr ""
 msgid "Please enter the phone number first"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:310
+#: frontend/src/views/ReportViewerView.vue:209
 msgid "Please fill the required filters: {0}"
 msgstr ""
 
@@ -3352,8 +4159,12 @@ msgstr ""
 msgid "Please select a customer before adding items to the cart"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:626
+#: frontend/src/components/cart/CartSummary.vue:652
 msgid "Please select a customer before holding the order."
+msgstr ""
+
+#: frontend/src/components/cart/CartSummary.vue:723
+msgid "Please select a customer before sending to cashier."
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:546
@@ -3441,17 +4252,22 @@ msgstr ""
 msgid "Positions are 1-indexed and counted on the full barcode. Example: 3310100010009 => prefix 331, item code 3310100, weight 1.000, check digit 9."
 msgstr ""
 
-#. Label of a Date field in DocType 'POS Cash Movement'
-#. Label of a Date field in DocType 'POS Closing Shift'
-#. Label of a Date field in DocType 'POS Opening Shift'
-#: frontend/src/components/dialogs/PaymentDialog.vue:415
+#. Label of the posting_date (Date) field in DocType 'POS Cash Movement'
+#. Label of the posting_date (Date) field in DocType 'POS Closing Shift'
+#. Label of the posting_date (Date) field in DocType 'POS Opening Shift'
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:47
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:47
+#: frontend/src/components/dialogs/PaymentDialog.vue:448
+#: frontend/src/views/BankDropView.vue:384
+#: frontend/src/views/ExpenseView.vue:298
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
+#: xpos/x_pos/report/branch_set_summary/branch_set_summary.py:55
 msgid "Posting Date"
 msgstr ""
 
-#: xpos/api/invoices.py:52
+#: xpos/api/invoices.py:37
 msgid "Posting Date must be a valid date"
 msgstr ""
 
@@ -3460,17 +4276,19 @@ msgstr ""
 msgid "Prefer not to say"
 msgstr ""
 
-#. Label of a Data field in DocType 'Scale Barcode Settings'
+#. Label of the prefix (Data) field in DocType 'Scale Barcode Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Prefix"
 msgstr ""
 
-#. Label of a Check field in DocType 'Scale Barcode Settings'
+#. Label of the prefix_included_or_not (Check) field in DocType 'Scale Barcode
+#. Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Prefix included in barcode"
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#. Label of the no_of_prefix_characters (Int) field in DocType 'Scale Barcode
+#. Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Prefix length"
 msgstr ""
@@ -3485,60 +4303,88 @@ msgstr ""
 msgid "Press Enter to copy result"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'Scale Barcode Settings'
+#. Label of the section_break_price (Section Break) field in DocType 'Scale
+#. Barcode Settings'
 #: frontend/src/components/dialogs/ItemDetailDialog.vue:65
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Price"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'POS Offer'
+#: frontend/src/components/Sidebar.vue:195
+#: frontend/src/views/PriceChecker.vue:27
+msgid "Price Checker"
+msgstr ""
+
+#. Label of the price_discount_scheme_section (Section Break) field in DocType
+#. 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Price Discount Scheme "
 msgstr ""
 
-#: xpos/x_pos/api/pricing_rules.py:183
+#: xpos/x_pos/api/pricing_rules.py:182
 msgid "Price List is required"
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#. Label of the price_decimals (Int) field in DocType 'Scale Barcode Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Price decimals"
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#. Label of the price_total_digit (Int) field in DocType 'Scale Barcode
+#. Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Price digits"
 msgstr ""
 
-#. Label of a Check field in DocType 'Scale Barcode Settings'
+#. Label of the price_included_in_barcode_or_not (Check) field in DocType
+#. 'Scale Barcode Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Price included in barcode"
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#: frontend/src/views/PriceChecker.vue:157
+msgid "Price on request"
+msgstr ""
+
+#. Label of the price_starting_digit (Int) field in DocType 'Scale Barcode
+#. Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Price starting position"
 msgstr ""
 
-#. Label of a Link field in DocType 'Referral Code'
+#. Label of the primary_customer_offer (Link) field in DocType 'Company'
+#. Label of the primary_offer (Link) field in DocType 'Referral Code'
+#: xpos/x_pos/custom/company.json
 #: xpos/x_pos/doctype/referral_code/referral_code.json
 msgid "Primary Customer Offer"
 msgstr ""
 
-#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:277
+#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:282
+#: frontend/src/views/ReportViewerView.vue:449
 msgid "Print"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Print Format Rule'
+#. Label of the print_count (Int) field in DocType 'POS Invoice'
+#. Label of the print_count (Int) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "Print Count"
+msgstr ""
+
+#. Label of the print_format (Link) field in DocType 'POS Print Format Rule'
 #: xpos/x_pos/doctype/pos_print_format_rule/pos_print_format_rule.json
 msgid "Print Format"
+msgstr ""
+
+#. Label of the print_format_rules (Table) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Print Format Rules"
 msgstr ""
 
 #: frontend/src/views/BarcodePrintView.vue:18
 msgid "Print Labels"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:102
+#: frontend/src/components/Navbar.vue:115
 msgid "Print Last Invoice"
 msgstr ""
 
@@ -3551,24 +4397,48 @@ msgstr ""
 msgid "Print Summary"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:789
-msgid "Print Thermal"
+#. Description of the 'Print backup receipt' (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Print a non-genuine backup receipt for the customer at the terminal. No payment is collected; the genuine invoice is printed by the cashier after settlement."
+msgstr ""
+
+#. Label of the print_backup_receipt (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Print backup receipt"
 msgstr ""
 
 #: frontend/src/components/items/CommandSearch.vue:372
 msgid "Print barcode labels"
 msgstr ""
 
+#. Label of the print_discount_amount (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Print discount amount"
+msgstr ""
+
+#. Description of the 'Print discount amount' (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Print discount amount instead of percentage"
+msgstr ""
+
 #: frontend/src/components/items/CommandSearch.vue:439
 msgid "Print last invoice"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1176
+#: frontend/src/composables/usePrintInvoice.ts:62
 msgid "Print not available"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:657
+#: frontend/src/views/ReportViewerView.vue:347
 msgid "Print window blocked. Please allow popups and try again."
+msgstr ""
+
+#. Label of the section_break_tjwtr (Section Break) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Printing Settings"
 msgstr ""
 
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:80
@@ -3576,12 +4446,12 @@ msgstr ""
 msgid "Process Payment"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:88
+#: frontend/src/components/Navbar.vue:100
 #: frontend/src/components/dialogs/ReturnDialog.vue:160
 msgid "Process Return"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:436
+#: frontend/src/components/cart/CartSummary.vue:440
 msgid "Process Return {0}"
 msgstr ""
 
@@ -3595,12 +4465,18 @@ msgstr ""
 msgid "Processing..."
 msgstr ""
 
-#. Label of a Section Break field in DocType 'POS Offer'
+#. Label of the product_discount_scheme_section (Section Break) field in
+#. DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Product Discount Scheme"
 msgstr ""
 
-#. Label of a Code field in DocType 'Delivery Charges'
+#. Option for the 'FBR Environment' (Select) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Production"
+msgstr ""
+
+#. Label of the profiles_list (Code) field in DocType 'Delivery Charges'
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 msgid "Profiles List"
 msgstr ""
@@ -3609,7 +4485,7 @@ msgstr ""
 msgid "Program"
 msgstr ""
 
-#. Label of a Select field in DocType 'POS Offer'
+#. Label of the offer (Select) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Promo Type"
 msgstr ""
@@ -3624,7 +4500,7 @@ msgstr ""
 msgid "Promotional Scheme"
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:182
+#: frontend/src/components/Sidebar.vue:190
 #: frontend/src/components/items/CommandSearch.vue:335
 #: frontend/src/views/PurchaseInvoiceView.vue:892
 msgid "Purchase Invoice"
@@ -3642,11 +4518,11 @@ msgstr ""
 msgid "Purchase Invoice {0} submitted"
 msgstr ""
 
-#: frontend/src/views/PurchaseInvoiceListView.vue:139
+#: frontend/src/views/PurchaseInvoiceListView.vue:70
 msgid "Purchase Invoices"
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:181
+#: frontend/src/components/Sidebar.vue:189
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:59
 #: frontend/src/components/items/CommandSearch.vue:326
 #: frontend/src/views/PurchaseOrderView.vue:380
@@ -3670,7 +4546,10 @@ msgid "Purchase Order Details"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:195
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Purchase Order Report"
 msgstr ""
 
@@ -3695,12 +4574,17 @@ msgid "Purchase Order {0} processing failed: {1}"
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:1063
-#: frontend/src/views/PurchaseOrderListView.vue:181
+#: frontend/src/views/PurchaseOrderListView.vue:112
 msgid "Purchase Orders"
 msgstr ""
 
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:65
 msgid "Purchase Receipt"
+msgstr ""
+
+#. Label of the purchase_taxes (Table) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Purchase Taxes"
 msgstr ""
 
 #: xpos/x_pos/api/purchase_orders.py:754
@@ -3727,6 +4611,10 @@ msgstr ""
 msgid "Purchase order saved offline. Will sync when online."
 msgstr ""
 
+#: frontend/src/services/reports.ts:197
+msgid "Purchase order summary with supplier, date range, and type filters."
+msgstr ""
+
 #: frontend/src/stores/purchaseStore.ts:679
 msgid "Purchase order synced successfully"
 msgstr ""
@@ -3735,7 +4623,8 @@ msgstr ""
 msgid "Purchase orders"
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:48
+#. Label of the purchasing (Section Break) field in DocType 'POS Profile'
+#: frontend/src/components/Sidebar.vue:48 xpos/x_pos/custom/pos_profile.json
 msgid "Purchasing"
 msgstr ""
 
@@ -3770,25 +4659,31 @@ msgstr ""
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:104
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:69
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:99
-#: frontend/src/views/BarcodePrintView.vue:178
+#: frontend/src/views/BarcodePrintView.vue:209
 #: frontend/src/views/PurchaseInvoiceView.vue:400
 msgid "Qty"
 msgstr ""
 
-#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:113
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.py:139
+msgid "Qty Sold"
+msgstr ""
+
+#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:119
 msgid "Qty in Hand"
 msgstr ""
 
-#. Label of a Select field in DocType 'POS Offer'
+#. Label of the apply_on (Select) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Qualifying Transaction / Item"
 msgstr ""
 
-#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:93
+#: xpos/x_pos/report/branch_item_summary/branch_item_summary.py:56
+#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:101
 msgid "Quantity"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'POS Offer'
+#. Label of the quantity_and_amount_section (Section Break) field in DocType
+#. 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Quantity and Amount Conditions"
 msgstr ""
@@ -3805,10 +4700,10 @@ msgstr ""
 msgid "Quotation name is required"
 msgstr ""
 
-#. Label of a Currency field in DocType 'Delivery Charges POS Profile'
-#. Label of a Percent field in DocType 'POS Closing Shift Taxes'
+#. Label of the rate (Currency) field in DocType 'Delivery Charges POS Profile'
+#. Label of the rate (Percent) field in DocType 'POS Closing Shift Taxes'
 #. Option for the 'Discount Type' (Select) field in DocType 'POS Offer'
-#. Label of a Float field in DocType 'POS Offer'
+#. Label of the rate (Float) field in DocType 'POS Offer'
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:119
 #: frontend/src/components/dialogs/PurchaseOrderDetailDialog.vue:74
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:104
@@ -3822,10 +4717,22 @@ msgstr ""
 msgid "Rate"
 msgstr ""
 
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:87
 #: frontend/src/components/dialogs/CashMovementDialog.vue:77
-#: frontend/src/views/BankDropView.vue:152
-#: frontend/src/views/ExpenseView.vue:155
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:87
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:44
+#: frontend/src/views/BankDropView.vue:247
 msgid "Reason / Notes"
+msgstr ""
+
+#. Label of the receipt_footer (Text Editor) field in DocType 'Company'
+#: xpos/x_pos/custom/company.json
+msgid "Receipt Footer"
+msgstr ""
+
+#. Label of the receipt_header (Text Editor) field in DocType 'Company'
+#: xpos/x_pos/custom/company.json
+msgid "Receipt Header"
 msgstr ""
 
 #: frontend/src/components/purchase/StockReceiving.vue:315
@@ -3845,7 +4752,7 @@ msgstr ""
 msgid "Received"
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:281
+#: xpos/x_pos/api/stock_transfer.py:260
 msgid "Received at {0}"
 msgstr ""
 
@@ -3858,12 +4765,12 @@ msgid "Recent Movements"
 msgstr ""
 
 #: frontend/src/components/dialogs/CashMovementDialog.vue:137
-#: frontend/src/views/BankDropView.vue:174
+#: frontend/src/views/BankDropView.vue:269
 msgid "Record Deposit"
 msgstr ""
 
 #: frontend/src/components/dialogs/CashMovementDialog.vue:136
-#: frontend/src/views/ExpenseView.vue:177
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:66
 msgid "Record Expense"
 msgstr ""
 
@@ -3873,16 +4780,12 @@ msgstr ""
 
 #: frontend/src/components/dialogs/CashMovementDialog.vue:36
 #: frontend/src/components/items/CommandSearch.vue:484
-#: frontend/src/views/BankDropView.vue:126
+#: frontend/src/views/BankDropView.vue:221
 msgid "Record a cash deposit"
 msgstr ""
 
-#: frontend/src/views/BankDropView.vue:46
-msgid "Record a cash drop to the bank"
-msgstr ""
-
 #: frontend/src/components/dialogs/CashMovementDialog.vue:35
-#: frontend/src/views/ExpenseView.vue:125
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:14
 msgid "Record a cash withdrawal"
 msgstr ""
 
@@ -3890,7 +4793,7 @@ msgstr ""
 msgid "Record bank drops"
 msgstr ""
 
-#: frontend/src/views/PurchaseOrderListView.vue:325
+#: frontend/src/views/PurchaseOrderListView.vue:229
 msgid "Recv"
 msgstr ""
 
@@ -3902,12 +4805,26 @@ msgstr ""
 msgid "Redeeming"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Coupon'
+#. Group in Sales Invoice's connections
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:61
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:61
+#: xpos/x_pos/custom/sales_invoice.json
+msgid "Reference"
+msgstr ""
+
+#. Label of the referral_campaign (Link) field in DocType 'Company'
+#: xpos/x_pos/custom/company.json
+msgid "Referral Campaign"
+msgstr ""
+
+#. Label of the referral_code (Data) field in DocType 'Customer'
+#. Label of the referral_code (Link) field in DocType 'POS Coupon'
 #. Name of a DocType
-#. Label of a Data field in DocType 'Referral Code'
+#. Label of the referral_code (Data) field in DocType 'Referral Code'
 #. Label of a Link in the X POS Workspace
 #: frontend/src/components/customer/CustomerSelect.vue:241
 #: frontend/src/components/dialogs/CustomerEditDialog.vue:105
+#: xpos/x_pos/custom/customer.json
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 #: xpos/x_pos/doctype/referral_code/referral_code.json
 #: xpos/x_pos/workspace/x_pos/x_pos.json
@@ -3926,9 +4843,20 @@ msgstr ""
 msgid "Referral Code {0} is disabled"
 msgstr ""
 
-#. Label of a Data field in DocType 'Referral Code'
+#. Label of the referral_company (Link) field in DocType 'Customer'
+#: xpos/x_pos/custom/customer.json
+msgid "Referral Company"
+msgstr ""
+
+#. Label of the referral_name (Data) field in DocType 'Referral Code'
 #: xpos/x_pos/doctype/referral_code/referral_code.json
 msgid "Referral Name"
+msgstr ""
+
+#. Label of the referral_settings (Section Break) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Referral Settings"
 msgstr ""
 
 #: frontend/src/components/customer/CustomerSelect.vue:246
@@ -3939,7 +4867,9 @@ msgstr ""
 #: frontend/src/components/dialogs/DraftInvoiceDialog.vue:115
 #: frontend/src/components/dialogs/OpeningDialog.vue:43
 #: frontend/src/components/purchase/StockReceiving.vue:337
-#: frontend/src/views/ReportViewerView.vue:766
+#: frontend/src/views/CashierView.vue:20
+#: frontend/src/views/ReportViewerView.vue:430
+#: frontend/src/views/RolePermissionsView.vue:12
 msgid "Refresh"
 msgstr ""
 
@@ -3947,23 +4877,15 @@ msgstr ""
 msgid "Refresh Stock"
 msgstr ""
 
-#: xpos/x_pos/api/purchase_order.js:39
-msgid "Refresh Stock Data"
-msgstr ""
-
 #: frontend/src/components/dialogs/OpeningDialog.vue:29
 msgid "Refresh profiles"
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:766
-msgid "Refreshing"
 msgstr ""
 
 #: frontend/src/components/dialogs/PaymentDialog.vue:75
 msgid "Refund Amount"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:690
+#: frontend/src/components/dialogs/PaymentDialog.vue:692
 msgid "Remaining"
 msgstr ""
 
@@ -3971,9 +4893,11 @@ msgstr ""
 msgid "Remaining outstanding: {0} across {1} invoice(s)."
 msgstr ""
 
-#. Label of a Small Text field in DocType 'POS Cash Movement'
+#. Label of the remarks (Small Text) field in DocType 'POS Cash Movement'
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:79
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:267
+#: frontend/src/views/BankDropView.vue:391
+#: frontend/src/views/ExpenseView.vue:300
 #: frontend/src/views/PurchaseInvoiceView.vue:996
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "Remarks"
@@ -4006,8 +4930,8 @@ msgstr ""
 msgid "Reorder Qty"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:84
-#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:289
+#: frontend/src/components/Navbar.vue:94
+#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:294
 msgid "Repeat"
 msgstr ""
 
@@ -4016,7 +4940,7 @@ msgstr ""
 msgid "Repeat Invoice"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:76
+#: frontend/src/components/Navbar.vue:86
 msgid "Repeat Invoice (Ctrl+G)"
 msgstr ""
 
@@ -4028,51 +4952,51 @@ msgstr ""
 msgid "Repeat a previous invoice"
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Offer'
+#. Label of the replace_cheapest_item (Check) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Replace Cheapest Item"
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Offer'
+#. Label of the replace_item (Check) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Replace Same Item"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:498
+#: frontend/src/views/ReportViewerView.vue:341
+msgid "Report"
+msgstr ""
+
+#: frontend/src/views/ReportViewerView.vue:332
 msgid "Report exported as CSV."
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:478
-msgid "Report link copied to clipboard."
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:685
+#: frontend/src/views/ReportViewerView.vue:372
 msgid "Report not found"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:208
-msgid "Report not found."
-msgstr ""
-
-#: frontend/src/components/Navbar.vue:58
-#: frontend/src/components/Sidebar.vue:177
+#. Label of a Card Break in the X POS Workspace
+#: frontend/src/components/Navbar.vue:68
+#: frontend/src/components/Sidebar.vue:185
 #: frontend/src/components/items/CommandSearch.vue:317
 #: frontend/src/layouts/DefaultLayout.vue:51
-#: frontend/src/views/ReportViewerView.vue:209
-#: frontend/src/views/ReportsIndexView.vue:106
+#: frontend/src/views/ReportViewerView.vue:152
+#: frontend/src/views/ReportsIndexView.vue:95
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Reports"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:864
-msgid "Required"
+#. Label of the require_cash_movement_remarks (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Require Cash Movement Remarks"
 msgstr ""
 
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.py:155
 msgid "Required Qty"
 msgstr ""
 
+#: frontend/src/components/reports/ReportFilterBar.vue:72
 #: frontend/src/components/ui/table/Table.vue:1152
-#: frontend/src/views/ReportViewerView.vue:839
 msgid "Reset"
 msgstr ""
 
@@ -4088,9 +5012,9 @@ msgstr ""
 msgid "Retry"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:96
+#: frontend/src/components/Navbar.vue:109
 #: frontend/src/components/dialogs/PaymentDialog.vue:48
-#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:299
+#: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:304
 msgid "Return"
 msgstr ""
 
@@ -4098,7 +5022,7 @@ msgstr ""
 msgid "Return & Print"
 msgstr ""
 
-#: xpos/api/invoices.py:295
+#: xpos/api/invoices.py:317
 msgid "Return Against invoice is required for returns"
 msgstr ""
 
@@ -4121,27 +5045,39 @@ msgstr ""
 msgid "Return Qty"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:954
+#. Label of the return_validity_days (Int) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Return Validity Days"
+msgstr ""
+
+#: frontend/src/components/dialogs/PaymentDialog.vue:956
 msgid "Return against invoice is required for returns"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:959
+#: frontend/src/components/dialogs/PaymentDialog.vue:961
 msgid "Return items must have negative quantities"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1061
+#: frontend/src/components/dialogs/PaymentDialog.vue:1063
 msgid "Return saved locally (#{0}). It will sync to server automatically."
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:963
+#: frontend/src/components/dialogs/PaymentDialog.vue:965
 msgid "Return total must be negative (refund amount)"
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1100
+#. Label of the return_valid_upto (Date) field in DocType 'POS Invoice'
+#. Label of the return_valid_upto (Date) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "Return valid upto"
+msgstr ""
+
+#: frontend/src/components/dialogs/PaymentDialog.vue:1102
 msgid "Return {0} saved successfully!"
 msgstr ""
 
 #: frontend/src/components/dialogs/ClosingDialog.vue:62
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.py:103
 msgid "Returns"
 msgstr ""
 
@@ -4153,6 +5089,19 @@ msgstr ""
 msgid "Review and reconcile your shift"
 msgstr ""
 
+#: frontend/src/views/RolePermissionsView.vue:33
+msgid "Role"
+msgstr ""
+
+#. Label of the role_name (Data) field in DocType 'POS Role'
+#: xpos/x_pos/doctype/pos_role/pos_role.json
+msgid "Role Name"
+msgstr ""
+
+#: frontend/src/views/RolePermissionsView.vue:5
+msgid "Role Permissions"
+msgstr ""
+
 #: frontend/src/components/ui/table/Table.vue:1223
 msgid "Row"
 msgstr ""
@@ -4161,21 +5110,29 @@ msgstr ""
 msgid "Row #{0}: The batch {1} has only {2} qty. Please select another batch which has {3} qty available or split the row into multiple rows, to deliver/issue from multiple batches"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Offer Detail'
+#. Label of the row_id (Data) field in DocType 'POS Invoice Item'
+#. Label of the row_id (Data) field in DocType 'Sales Invoice Item'
+#. Label of the row_id (Data) field in DocType 'Sales Order Item'
+#. Label of the row_id (Data) field in DocType 'POS Offer Detail'
+#: xpos/x_pos/custom/pos_invoice_item.json
+#: xpos/x_pos/custom/sales_invoice_item.json
+#: xpos/x_pos/custom/sales_order_item.json
 #: xpos/x_pos/doctype/pos_offer_detail/pos_offer_detail.json
 msgid "Row ID"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:473
-msgid "Row copied to clipboard."
+#: frontend/src/components/reports/ReportFilterBar.vue:76
+msgid "Run"
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:522
 msgid "Sale Price"
 msgstr ""
 
-#. Label of a Link field in DocType 'Sales Invoice Reference'
+#. Label of a Workspace Sidebar Item
+#. Label of the sales_invoice (Link) field in DocType 'Sales Invoice Reference'
 #. Label of a shortcut in the X POS Workspace
+#: xpos/workspace_sidebar/x_pos.json
 #: xpos/x_pos/doctype/sales_invoice_reference/sales_invoice_reference.json
 #: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Sales Invoice"
@@ -4221,7 +5178,7 @@ msgstr ""
 msgid "Sales Partner"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Sales Person Filter'
+#. Label of the sales_person (Link) field in DocType 'POS Sales Person Filter'
 #: xpos/x_pos/doctype/pos_sales_person_filter/pos_sales_person_filter.json
 msgid "Sales Person"
 msgstr ""
@@ -4234,6 +5191,15 @@ msgstr ""
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Sales User"
+msgstr ""
+
+#: frontend/src/services/reports.ts:172
+msgid "Sales lines where no quantity was fulfilled during the period."
+msgstr ""
+
+#. Option for the 'FBR Environment' (Select) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Sandbox"
 msgstr ""
 
 #: frontend/src/components/ui/table/Table.vue:1323
@@ -4288,21 +5254,35 @@ msgstr ""
 msgid "Scale Barcode Settings are incomplete. Please configure item and weight segments."
 msgstr ""
 
+#: frontend/src/views/PriceChecker.vue:73
+msgid "Scan a barcode to see its price"
+msgstr ""
+
 #: frontend/src/components/items/BarcodeScanner.vue:12
 #: frontend/src/views/PurchaseInvoiceView.vue:1147
 #: frontend/src/views/PurchaseOrderView.vue:543
 msgid "Scan barcode..."
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:72
+#: frontend/src/components/Navbar.vue:82
 msgid "Search"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:64
+#. Label of the search_batch_no (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Search Batch No"
+msgstr ""
+
+#: frontend/src/components/Navbar.vue:74
 msgid "Search Items (Ctrl+K)"
 msgstr ""
 
-#: frontend/src/views/BarcodePrintView.vue:151
+#. Label of the search_serial_no (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Search Serial No"
+msgstr ""
+
+#: frontend/src/views/BarcodePrintView.vue:182
 msgid "Search and add items from the left panel"
 msgstr ""
 
@@ -4334,7 +5314,7 @@ msgstr ""
 msgid "Search for a customer or create a new one"
 msgstr ""
 
-#: frontend/src/views/BarcodePrintView.vue:110
+#: frontend/src/views/BarcodePrintView.vue:136
 msgid "Search for items to add barcode labels"
 msgstr ""
 
@@ -4362,11 +5342,11 @@ msgstr ""
 msgid "Search items, scan barcode..."
 msgstr ""
 
-#: frontend/src/views/ReportsIndexView.vue:136
-msgid "Search reports, filters, or categories..."
+#: frontend/src/views/ReportsIndexView.vue:126
+msgid "Search reports or categories..."
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:941
+#: frontend/src/views/ReportViewerView.vue:488
 msgid "Search rows..."
 msgstr ""
 
@@ -4384,6 +5364,14 @@ msgstr ""
 msgid "Select a loyalty program to enroll this customer"
 msgstr ""
 
+#: frontend/src/views/RolePermissionsView.vue:38
+msgid "Select a role"
+msgstr ""
+
+#: frontend/src/views/RolePermissionsView.vue:77
+msgid "Select a role to view its permissions."
+msgstr ""
+
 #: frontend/src/components/customer/CustomerSelect.vue:255
 #: frontend/src/components/dialogs/CustomerEditDialog.vue:115
 msgid "Select birthday"
@@ -4393,11 +5381,11 @@ msgstr ""
 msgid "Select country"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:434
+#: frontend/src/components/cart/CartSummary.vue:437
 msgid "Select customer first"
 msgstr ""
 
-#: frontend/src/views/ExpenseView.vue:138
+#: frontend/src/components/dialogs/ExpenseFormDialog.vue:27
 msgid "Select expense account"
 msgstr ""
 
@@ -4437,22 +5425,53 @@ msgstr ""
 msgid "Selected source account is not allowed for this POS Profile."
 msgstr ""
 
+#. Label of the selling (Section Break) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Selling"
+msgstr ""
+
 #: frontend/src/components/dialogs/CreateItemDialog.vue:120
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.py:81
 msgid "Selling Price"
+msgstr ""
+
+#: frontend/src/components/cart/CartSummary.vue:438
+msgid "Send to Cashier"
+msgstr ""
+
+#: frontend/src/components/cart/CartSummary.vue:742
+#: frontend/src/components/cart/CartSummary.vue:756
+msgid "Sent to cashier"
+msgstr ""
+
+#. Label of the server_cache_duration (Int) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Server Cache Duration (Minutes)"
 msgstr ""
 
 #: frontend/src/components/core/QueryFilterPanel.vue:106
 msgid "Set (has value)"
 msgstr ""
 
-#. Label of a Check field in DocType 'POS Opening Shift'
+#. Label of the set_posting_date (Check) field in DocType 'POS Opening Shift'
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Set Posting Date"
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:188
+#. Description of the 'POS Awaiting Settlement' (Check) field in DocType 'POS
+#. Invoice'
+#: xpos/x_pos/custom/pos_invoice.json
+msgid "Set by X POS when the terminal sends an order to the cashier for settlement. The cashier collects payment and submits the invoice from the Cashier screen."
+msgstr ""
+
+#: frontend/src/services/reports.ts:158
+msgid "Set-level summary for branch stock and movement tracking."
+msgstr ""
+
+#. Label of the settings_section (Section Break) field in DocType 'POS Profile'
+#: frontend/src/components/Sidebar.vue:197
 #: frontend/src/components/items/CommandSearch.vue:379
+#: xpos/x_pos/custom/pos_profile.json
 msgid "Settings"
 msgstr ""
 
@@ -4465,16 +5484,20 @@ msgstr ""
 msgid "Shift Management"
 msgstr ""
 
-#: frontend/src/components/dialogs/ClosingDialog.vue:328
+#: frontend/src/services/reports.ts:203
+msgid "Shift Reconciliation"
+msgstr ""
+
+#: frontend/src/components/dialogs/ClosingDialog.vue:333
 msgid "Shift closed successfully!"
 msgstr ""
 
-#. Label of a Link field in DocType 'Delivery Charges'
+#. Label of the shipping_account (Link) field in DocType 'Delivery Charges'
 #: xpos/x_pos/doctype/delivery_charges/delivery_charges.json
 msgid "Shipping Account"
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:401
+#: xpos/x_pos/api/stock_transfer.py:376
 msgid "Shortage return from transit to source"
 msgstr ""
 
@@ -4482,29 +5505,52 @@ msgstr ""
 msgid "Show Keyboard Shortcuts"
 msgstr ""
 
-#: frontend/src/views/BarcodePrintView.vue:81
+#: frontend/src/views/BarcodePrintView.vue:107
 msgid "Show Price"
+msgstr ""
+
+#. Label of the show_template_items (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Show Template Items"
+msgstr ""
+
+#. Label of the show_customer_balance (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Show customer balance"
 msgstr ""
 
 #: frontend/src/components/items/CommandSearch.vue:175
 msgid "Show this help"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:199
+#: frontend/src/components/Navbar.vue:212
 msgid "Sign Out"
 msgstr ""
 
+#. Label of the fbr_skip_ssl_verification (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Skip FBR SSL Verification"
+msgstr ""
+
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:177
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Slow Fast Moving Items"
 msgstr ""
 
 #: frontend/src/views/BarcodePrintView.vue:67
-msgid "Small (38×25mm)"
+msgid "Small (38x25mm)"
 msgstr ""
 
 #: frontend/src/components/dialogs/PaymentDialog.vue:397
 msgid "Small remaining amounts"
+msgstr ""
+
+#: frontend/src/services/reports.ts:137
+msgid "Snapshot stock balance by posting date for trend review."
 msgstr ""
 
 #: frontend/src/components/dialogs/ReturnDialog.vue:105
@@ -4516,10 +5562,6 @@ msgstr ""
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.py:74
 #: xpos/x_pos/report/zero_qty_sales_report/zero_qty_sales_report.py:65
 msgid "Sold Qty"
-msgstr ""
-
-#: xpos/x_pos/api/purchase_order.js:67
-msgid "Some items have zero quantity. Set 'Zero Qty' to 'Yes' to keep them, or remove them."
 msgstr ""
 
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.py:140
@@ -4553,13 +5595,17 @@ msgstr ""
 msgid "Sorry, {0} have used this coupon before"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:947
+#: frontend/src/views/ReportViewerView.vue:494
 msgid "Sort by"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Cash Movement'
+#. Label of the source_account (Link) field in DocType 'POS Cash Movement'
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "Source Account"
+msgstr ""
+
+#: xpos/x_pos/report/branch_set_summary/branch_set_summary.py:68
+msgid "Source Warehouse"
 msgstr ""
 
 #: xpos/x_pos/api/cash_movement/service.py:61
@@ -4609,7 +5655,9 @@ msgstr ""
 msgid "Starting position (1-indexed) of the price segment."
 msgstr ""
 
-#. Label of a Select field in DocType 'POS Opening Shift'
+#. Label of the status (Select) field in DocType 'POS Opening Shift'
+#: frontend/src/views/BankDropView.vue:395
+#: frontend/src/views/ExpenseView.vue:304
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "Status"
 msgstr ""
@@ -4625,27 +5673,34 @@ msgid "Stock"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:185
 #: xpos/x_pos/report/stock_audit_report/stock_audit_report.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Stock Audit Report"
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:170
+#: xpos/x_pos/report/branch_set_summary/branch_set_summary.py:48
+msgid "Stock Entry ID"
+msgstr ""
+
+#: xpos/x_pos/api/stock_transfer.py:151
 msgid "Stock Entry {0} does not exist."
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:255
+#: xpos/x_pos/api/stock_transfer.py:236
 msgid "Stock Entry {0} has already been fully received."
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:175
+#: xpos/x_pos/api/stock_transfer.py:156
 msgid "Stock Entry {0} is not a Material Transfer with in-transit."
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:252
+#: xpos/x_pos/api/stock_transfer.py:233
 msgid "Stock Entry {0} is not a valid in-transit transfer."
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:249 xpos/x_pos/api/stock_transfer.py:382
+#: xpos/x_pos/api/stock_transfer.py:230 xpos/x_pos/api/stock_transfer.py:358
 msgid "Stock Entry {0} is not submitted."
 msgstr ""
 
@@ -4654,7 +5709,7 @@ msgstr ""
 msgid "Stock Qty"
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:183
+#: frontend/src/components/Sidebar.vue:191
 #: frontend/src/components/items/CommandSearch.vue:344
 #: frontend/src/views/StockReceivingView.vue:23
 msgid "Stock Receiving"
@@ -4666,19 +5721,54 @@ msgstr ""
 
 #: xpos/x_pos/report/current_stock_by_brand/current_stock_by_brand.py:86
 #: xpos/x_pos/report/current_stock_report/current_stock_report.py:90
+#: xpos/x_pos/report/current_stock_summary/current_stock_summary.py:67
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.py:89
 #: xpos/x_pos/report/stock_value_by_warehouse/stock_value_by_warehouse.py:41
 msgid "Stock Value"
 msgstr ""
 
+#: frontend/src/services/reports.ts:128
+msgid "Stock Value By Warehouse"
+msgstr ""
+
+#: xpos/x_pos/report/warehouse_stock_movement/warehouse_stock_movement.py:53
+msgid "Stock Value Difference"
+msgstr ""
+
+#: frontend/src/services/reports.ts:135
+msgid "Stock Value Summary By Date"
+msgstr ""
+
 #. Name of a report
+#. Label of a Link in the X POS Workspace
 #: xpos/x_pos/report/stock_value_summary_by_date/stock_value_summary_by_date.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Stock Value Summary by Date"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
 #: xpos/x_pos/report/stock_value_by_warehouse/stock_value_by_warehouse.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Stock Value by Warehouse"
+msgstr ""
+
+#: frontend/src/services/reports.ts:116
+msgid "Stock snapshot grouped with reorder and alert levels."
+msgstr ""
+
+#: frontend/src/services/reports.ts:123
+msgid "Stock that has been sitting too long with low value movement."
+msgstr ""
+
+#: frontend/src/views/PriceChecker.vue:35
+msgid "Store / Register"
+msgstr ""
+
+#. Description of the 'FBR Bearer Token' (Password) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Stored securely and sent as an Authorization Bearer token to FBR."
 msgstr ""
 
 #: frontend/src/views/PurchaseInvoiceView.vue:926
@@ -4712,7 +5802,7 @@ msgid "Successfully unenrolled {0} from {1}"
 msgstr ""
 
 #: frontend/src/components/dialogs/ReceiptPreviewDialog.vue:153
-#: frontend/src/views/ReportViewerView.vue:809
+#: frontend/src/views/ReportViewerView.vue:471
 msgid "Summary"
 msgstr ""
 
@@ -4732,7 +5822,7 @@ msgstr ""
 #: xpos/x_pos/report/current_stock_report/current_stock_report.js:34
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.py:56
 #: xpos/x_pos/report/dead_stock_report/dead_stock_report.js:47
-#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:102
+#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:110
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.py:74
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.js:16
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.js:33
@@ -4801,6 +5891,8 @@ msgstr ""
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
+#: xpos/x_pos/doctype/pos_permission/pos_permission.json
+#: xpos/x_pos/doctype/pos_role/pos_role.json
 #: xpos/x_pos/doctype/referral_code/referral_code.json
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "System Manager"
@@ -4810,9 +5902,13 @@ msgstr ""
 msgid "Tab on last cell adds row"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Cash Movement'
+#. Label of the target_account (Link) field in DocType 'POS Cash Movement'
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "Target Account"
+msgstr ""
+
+#: xpos/x_pos/report/branch_set_summary/branch_set_summary.py:61
+msgid "Target Warehouse"
 msgstr ""
 
 #: xpos/x_pos/api/cash_movement/service.py:62
@@ -4827,7 +5923,7 @@ msgstr ""
 msgid "Target account must belong to the selected company."
 msgstr ""
 
-#: xpos/x_pos/api/stock_transfer.py:261
+#: xpos/x_pos/api/stock_transfer.py:242
 msgid "Target warehouse is required."
 msgstr ""
 
@@ -4851,12 +5947,17 @@ msgstr ""
 msgid "Tax ID"
 msgstr ""
 
+#. Label of the tax_inclusive (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Tax Inclusive"
+msgstr ""
+
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:253
 #: frontend/src/views/PurchaseInvoiceView.vue:1194
 msgid "Tax Total"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Purchase Taxes'
+#. Label of the tax_type (Data) field in DocType 'POS Purchase Taxes'
 #: xpos/x_pos/doctype/pos_purchase_taxes/pos_purchase_taxes.json
 msgid "Tax Type"
 msgstr ""
@@ -4865,7 +5966,7 @@ msgstr ""
 msgid "Tax%"
 msgstr ""
 
-#. Label of a Table field in DocType 'POS Closing Shift'
+#. Label of the taxes (Table) field in DocType 'POS Closing Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/closing_shift_details.html:90
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 msgid "Taxes"
@@ -4888,20 +5989,24 @@ msgstr ""
 msgid "Territory"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:687
+#: frontend/src/views/ReportViewerView.vue:374
 msgid "The report route does not match any configured report."
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:294
+#: frontend/src/components/Navbar.vue:309
 msgid "Theme: Dark (click to switch to System)"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:293
+#: frontend/src/components/Navbar.vue:308
 msgid "Theme: Light (click to switch to Dark)"
 msgstr ""
 
-#: frontend/src/components/Navbar.vue:295
+#: frontend/src/components/Navbar.vue:310
 msgid "Theme: System ({0}) (click to switch to Light)"
+msgstr ""
+
+#: frontend/src/services/reports.ts:187
+msgid "Thermal-printable stock audit by item with available qty. Filter by warehouse, brand, supplier, or item."
 msgstr ""
 
 #: xpos/x_pos/api/customer.py:59
@@ -4912,15 +6017,19 @@ msgstr ""
 msgid "This invoice {0} cannot be deleted"
 msgstr ""
 
-#: frontend/src/stores/cartStore.ts:308 frontend/src/stores/cartStore.ts:395
+#: frontend/src/stores/cartStore.ts:312 frontend/src/stores/cartStore.ts:404
 msgid "This item is not in the original invoice"
+msgstr ""
+
+#: frontend/src/components/reports/ReportFilterBar.vue:82
+msgid "This report has no filters."
 msgstr ""
 
 #: frontend/src/components/dialogs/AboutDialog.vue:66
 msgid "Till"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Offer'
+#. Label of the title (Data) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Title"
 msgstr ""
@@ -4929,10 +6038,10 @@ msgstr ""
 msgid "To"
 msgstr ""
 
-#: frontend/src/views/ExpenseView.vue:25
 #: frontend/src/views/PurchaseOrderView.vue:437
 #: xpos/x_pos/report/branch_item_summary/branch_item_summary.js:41
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.js:23
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.js:33
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.js:29
 #: xpos/x_pos/report/slow_fast_moving_items/slow_fast_moving_items.js:26
 #: xpos/x_pos/report/warehouse_stock_movement/warehouse_stock_movement.js:26
@@ -4960,7 +6069,7 @@ msgstr ""
 msgid "Toggle Theme"
 msgstr ""
 
-#: frontend/src/components/Sidebar.vue:96 xpos/x_pos/api/purchase_order.js:43
+#: frontend/src/components/Sidebar.vue:96
 msgid "Tools"
 msgstr ""
 
@@ -4974,6 +6083,7 @@ msgid "Total Discount"
 msgstr ""
 
 #: frontend/src/components/dialogs/ClosingDialog.vue:26
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.py:102
 msgid "Total Invoices"
 msgstr ""
 
@@ -4987,7 +6097,7 @@ msgstr ""
 msgid "Total Qty"
 msgstr ""
 
-#. Label of a Float field in DocType 'POS Closing Shift'
+#. Label of the total_quantity (Float) field in DocType 'POS Closing Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/closing_shift_details.html:41
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 msgid "Total Quantity"
@@ -4997,7 +6107,7 @@ msgstr ""
 msgid "Total Taxes"
 msgstr ""
 
-#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:115
+#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:123
 msgid "Total Value"
 msgstr ""
 
@@ -5017,11 +6127,11 @@ msgstr ""
 msgid "Trigger Manual Sync"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:989
+#: frontend/src/views/ReportViewerView.vue:523
 msgid "Try Again"
 msgstr ""
 
-#: frontend/src/views/ReportsIndexView.vue:163
+#: frontend/src/views/ReportsIndexView.vue:153
 msgid "Try a different keyword or clear the search field."
 msgstr ""
 
@@ -5029,15 +6139,16 @@ msgstr ""
 msgid "Try a different search or category"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:1011
+#: frontend/src/views/ReportViewerView.vue:541
 msgid "Try adjusting the filters, search term, or sort order."
 msgstr ""
 
-#: frontend/src/views/OrdersView.vue:50
+#: frontend/src/views/BankDropView.vue:365
+#: frontend/src/views/ExpenseView.vue:285
 msgid "Try adjusting your filters"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Coupon Detail'
+#. Label of the type (Data) field in DocType 'POS Coupon Detail'
 #: frontend/src/components/dialogs/CreateSupplierDialog.vue:77
 #: xpos/x_pos/doctype/pos_coupon_detail/pos_coupon_detail.json
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.js:35
@@ -5047,6 +6158,7 @@ msgstr ""
 #: frontend/src/components/dialogs/CreateItemDialog.vue:103
 #: frontend/src/components/dialogs/PurchaseInvoiceDetailDialog.vue:109
 #: frontend/src/views/PurchaseInvoiceView.vue:409
+#: xpos/x_pos/report/pos_shift_reconciliation/pos_shift_reconciliation.py:132
 #: xpos/x_pos/report/purchase_order_report/purchase_order_report.py:161
 #: xpos/x_pos/report/zero_qty_sales_report/zero_qty_sales_report.py:70
 msgid "UOM"
@@ -5060,16 +6172,16 @@ msgstr ""
 msgid "Unable to create Journal Entry for customer credit."
 msgstr ""
 
-#: xpos/x_pos/api/invoice_processing/payment.py:70
+#: xpos/x_pos/api/invoice_processing/payment.py:66
 msgid "Unable to determine cash account for change payment entry."
 msgstr ""
 
-#: xpos/x_pos/api/invoice_processing/payment.py:76
+#: xpos/x_pos/api/invoice_processing/payment.py:72
 msgid "Unable to determine customer receivable account for change payment entry."
 msgstr ""
 
-#: xpos/x_pos/api/invoice_processing/creation.py:316
-#: xpos/x_pos/api/invoice_processing/creation.py:330
+#: xpos/x_pos/api/invoice_processing/creation.py:313
+#: xpos/x_pos/api/invoice_processing/creation.py:327
 msgid "Unable to find exchange rate for {0} to {1}. Please create a Currency Exchange record manually"
 msgstr ""
 
@@ -5081,7 +6193,7 @@ msgstr ""
 msgid "Unable to load Payment Entry {0}: {1}"
 msgstr ""
 
-#: xpos/x_pos/doctype/pos_closing_shift/closing_processing/overview.py:47
+#: xpos/x_pos/doctype/pos_closing_shift/closing_processing/overview.py:48
 msgid "Unable to resolve POS Opening Shift."
 msgstr ""
 
@@ -5101,25 +6213,92 @@ msgstr ""
 msgid "Unknown Item"
 msgstr ""
 
-#: frontend/src/components/cart/CartSummary.vue:571
+#: frontend/src/components/cart/CartSummary.vue:597
 msgid "Unknown error"
+msgstr ""
+
+#: xpos/api/reports.py:210
+msgid "Unknown report: {0}"
+msgstr ""
+
+#: xpos/api/print_formats.py:66
+msgid "Unsupported doctype for print tracking: {0}"
+msgstr ""
+
+#. Label of the update_buying_price (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Update Buying Price"
+msgstr ""
+
+#. Label of the update_selling_price (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Update Selling Price"
 msgstr ""
 
 #: frontend/src/components/dialogs/CustomerEditDialog.vue:16
 msgid "Update customer information"
 msgstr ""
 
+#. Description of the 'Update Buying Price' (Check) field in DocType 'POS
+#. Profile'
+#. Description of the 'Update Selling Price' (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Update selling price using profiles' selling price list"
+msgstr ""
+
+#. Label of the use_limit_search (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Use Limit Search"
+msgstr ""
+
+#. Label of the use_pos_payments (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Use POS payments"
+msgstr ""
+
+#. Label of the use_server_cache (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Use Server Cache"
+msgstr ""
+
+#. Label of the use_cashback (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Use cashback"
+msgstr ""
+
+#. Label of the use_customer_credit (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Use customer credit"
+msgstr ""
+
+#. Label of the use_delivery_charges (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Use delivery charges"
+msgstr ""
+
+#. Label of the use_offline_mode (Check) field in DocType 'POS Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "Use offline mode"
+msgstr ""
+
 #: frontend/src/components/dialogs/KeyboardShortcutsDialog.vue:17
 msgid "Use these keyboard shortcuts to navigate faster"
 msgstr ""
 
-#. Label of a Int field in DocType 'POS Coupon'
+#: frontend/src/views/CashierView.vue:16
+msgid "Use ↑ ↓ to navigate, Enter to settle"
+msgstr ""
+
+#. Label of the used (Int) field in DocType 'POS Coupon'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 msgid "Used"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Cash Movement'
-#: frontend/src/components/Navbar.vue:160
+#. Label of the user (Link) field in DocType 'POS Cash Movement'
+#: frontend/src/components/Navbar.vue:173
+#: frontend/src/components/dialogs/BankDropDetailDialog.vue:79
+#: frontend/src/components/dialogs/ExpenseDetailDialog.vue:79
 #: xpos/x_pos/doctype/pos_cash_movement/pos_cash_movement.json
 msgid "User"
 msgstr ""
@@ -5128,29 +6307,30 @@ msgstr ""
 msgid "User must match the selected POS Opening Shift user."
 msgstr ""
 
-#. Label of a Date field in DocType 'POS Coupon'
-#. Label of a Date field in DocType 'POS Offer'
+#. Label of the valid_from (Date) field in DocType 'POS Coupon'
+#. Label of the valid_from (Date) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Valid From"
 msgstr ""
 
-#. Label of a Date field in DocType 'POS Coupon'
-#. Label of a Date field in DocType 'POS Offer'
+#. Label of the valid_upto (Date) field in DocType 'POS Coupon'
+#. Label of the valid_upto (Date) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 msgid "Valid Upto"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'POS Coupon'
+#. Label of the uses (Section Break) field in DocType 'POS Coupon'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 msgid "Validity and Usage"
 msgstr ""
 
 #: xpos/x_pos/report/current_stock_by_brand/current_stock_by_brand.py:80
 #: xpos/x_pos/report/current_stock_report/current_stock_report.py:84
+#: xpos/x_pos/report/current_stock_summary/current_stock_summary.py:61
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.py:83
-#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:109
+#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:117
 msgid "Valuation Rate"
 msgstr ""
 
@@ -5187,34 +6367,48 @@ msgstr ""
 msgid "View sales orders"
 msgstr ""
 
+#: xpos/x_pos/report/warehouse_stock_movement/warehouse_stock_movement.py:47
+msgid "Voucher Type"
+msgstr ""
+
 #: frontend/src/components/dialogs/DraftInvoiceDialog.vue:66
 msgid "Walk-in Customer"
 msgstr ""
 
-#. Label of a Link field in DocType 'POS Offer'
+#. Label of the warehouse (Link) field in DocType 'POS Offer'
 #: xpos/x_pos/doctype/pos_offer/pos_offer.json
 #: xpos/x_pos/report/branch_item_summary/branch_item_summary.js:19
 #: xpos/x_pos/report/branch_set_summary/branch_set_summary.js:19
 #: xpos/x_pos/report/current_stock_by_brand/current_stock_by_brand.py:60
 #: xpos/x_pos/report/current_stock_report/current_stock_report.js:19
 #: xpos/x_pos/report/current_stock_summary/current_stock_summary.js:19
+#: xpos/x_pos/report/current_stock_summary/current_stock_summary.py:48
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.js:19
 #: xpos/x_pos/report/current_stock_with_levels/current_stock_with_levels.py:70
 #: xpos/x_pos/report/dead_stock_report/dead_stock_report.js:19
-#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:87
+#: xpos/x_pos/report/dead_stock_report/dead_stock_report.py:95
 #: xpos/x_pos/report/low_qty_sales_report/low_qty_sales_report.py:60
-#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:106
+#: xpos/x_pos/report/stock_audit_report/stock_audit_report.py:112
 #: xpos/x_pos/report/stock_value_by_warehouse/stock_value_by_warehouse.py:34
+#: xpos/x_pos/report/stock_value_summary_by_date/stock_value_summary_by_date.py:35
+#: xpos/x_pos/report/warehouse_stock_movement/warehouse_stock_movement.py:40
 msgid "Warehouse"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:142
 #: xpos/x_pos/report/warehouse_stock_movement/warehouse_stock_movement.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Warehouse Stock Movement"
 msgstr ""
 
 #: xpos/x_pos/api/purchase_orders.py:664
 msgid "Warehouse is required when receiving stock with a Purchase Invoice."
+msgstr ""
+
+#: frontend/src/services/reports.ts:130
+msgid "Warehouse value and quantity summary for quick inventory valuation."
 msgstr ""
 
 #: xpos/x_pos/report/stock_audit_report/stock_audit_report.js:16
@@ -5231,22 +6425,25 @@ msgstr ""
 msgid "Website Manager"
 msgstr ""
 
-#. Label of a Section Break field in DocType 'Scale Barcode Settings'
+#. Label of the section_break_weight (Section Break) field in DocType 'Scale
+#. Barcode Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Weight"
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#. Label of the weight_decimals (Int) field in DocType 'Scale Barcode Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Weight decimals"
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#. Label of the weight_total_digits (Int) field in DocType 'Scale Barcode
+#. Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Weight digits"
 msgstr ""
 
-#. Label of a Int field in DocType 'Scale Barcode Settings'
+#. Label of the weight_starting_digit (Int) field in DocType 'Scale Barcode
+#. Settings'
 #: xpos/x_pos/doctype/scale_barcode_settings/scale_barcode_settings.json
 msgid "Weight starting position"
 msgstr ""
@@ -5263,25 +6460,39 @@ msgstr ""
 msgid "When enabled, price is extracted using the price start/digits/decimals fields below."
 msgstr ""
 
+#. Description of the 'Enable cashier settlement' (Check) field in DocType 'POS
+#. Profile'
+#: xpos/x_pos/custom/pos_profile.json
+msgid "When enabled, the POS terminal creates an unsettled invoice instead of collecting payment. A cashier settles it later from the Cashier screen."
+msgstr ""
+
+#: frontend/src/views/BarcodePrintView.vue:78
+msgid "Width (mm)"
+msgstr ""
+
 #: frontend/src/components/cart/CartSummary.vue:106
 #: frontend/src/components/dialogs/PaymentDialog.vue:394
 msgid "Write Off"
 msgstr ""
 
-#: xpos/x_pos/api/invoice_processing/creation.py:134
+#: xpos/x_pos/api/invoice_processing/creation.py:135
 msgid "Write off amount exceeds the allowed limit ({0}). Please add payment for the remaining amount."
 msgstr ""
 
+#. Label of a Desktop Icon
+#. Title of a Workspace Sidebar
 #. Name of a Workspace
 #: frontend/src/components/Navbar.vue:8
 #: frontend/src/components/dialogs/AboutDialog.vue:14
 #: frontend/src/components/dialogs/AboutDialog.vue:21
+#: xpos/desktop_icon/x_pos.json xpos/workspace_sidebar/x_pos.json
 #: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "X POS"
 msgstr ""
 
+#. Label of a Workspace Sidebar Item
 #. Label of a shortcut in the X POS Workspace
-#: xpos/x_pos/workspace/x_pos/x_pos.json
+#: xpos/workspace_sidebar/x_pos.json xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "X POS App"
 msgstr ""
 
@@ -5289,7 +6500,13 @@ msgstr ""
 msgid "X POS Desktop"
 msgstr ""
 
-#: xpos/x_pos/api/payment_processing/processor.py:22
+#. Label of the xpos_local_id (Data) field in DocType 'POS Invoice'
+#. Label of the xpos_local_id (Data) field in DocType 'Sales Invoice'
+#: xpos/x_pos/custom/pos_invoice.json xpos/x_pos/custom/sales_invoice.json
+msgid "X POS Local ID"
+msgstr ""
+
+#: xpos/x_pos/api/payment_processing/processor.py:21
 msgid "X POS Payments is not enabled for this POS Profile"
 msgstr ""
 
@@ -5297,17 +6514,21 @@ msgstr ""
 msgid "X POS Purchase Order Flow Failed"
 msgstr ""
 
-#. Label of a Data field in DocType 'POS Closing Shift'
-#. Label of a Data field in DocType 'POS Opening Shift'
+#. Label of the xpos_local_id (Data) field in DocType 'POS Closing Shift'
+#. Label of the xpos_local_id (Data) field in DocType 'POS Opening Shift'
 #: xpos/x_pos/doctype/pos_closing_shift/pos_closing_shift.json
 #: xpos/x_pos/doctype/pos_opening_shift/pos_opening_shift.json
 msgid "XPOS Local ID"
 msgstr ""
 
 #: frontend/src/components/core/ListFilterBar.vue:38
-#: frontend/src/services/reports.ts:829
+#: frontend/src/services/reports.ts:525
 #: frontend/src/views/PurchaseOrderView.vue:495
 msgid "Yes"
+msgstr ""
+
+#: frontend/src/views/CashierView.vue:43
+msgid "You are not a cashier"
 msgstr ""
 
 #: xpos/x_pos/api/cash_movement/service.py:35
@@ -5318,15 +6539,23 @@ msgstr ""
 msgid "You are not allowed to manage this cash movement record."
 msgstr ""
 
+#: xpos/api/auth.py:138
+msgid "You are not permitted to manage POS role permissions."
+msgstr ""
+
+#: xpos/api/invoices.py:796
+msgid "You are not permitted to settle invoices."
+msgstr ""
+
 #: frontend/src/stores/offlineStore.ts:80
 msgid "You are offline. Check your internet connection."
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:299
+#: frontend/src/views/ReportViewerView.vue:203
 msgid "You are offline. Connect to the server and try again."
 msgstr ""
 
-#: frontend/src/components/dialogs/PaymentDialog.vue:1132
+#: frontend/src/components/dialogs/PaymentDialog.vue:1134
 msgid "You are offline. Invoice could not be saved locally."
 msgstr ""
 
@@ -5334,13 +6563,17 @@ msgstr ""
 msgid "You are trying to return more quantity for item {0} than was sold."
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:214
-#: frontend/src/views/ReportViewerView.vue:293
+#: frontend/src/views/ReportViewerView.vue:158
+#: frontend/src/views/ReportViewerView.vue:197
 msgid "You do not have access to this report."
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:707
+#: frontend/src/views/ReportViewerView.vue:394
 msgid "You do not have permission to open this report from the app."
+msgstr ""
+
+#: frontend/src/services/reports.ts:205
+msgid "Z-report: items sold with quantities plus totals by payment mode for end-of-shift cash-up."
 msgstr ""
 
 #: frontend/src/views/PurchaseOrderView.vue:490
@@ -5349,20 +6582,23 @@ msgid "Zero Qty"
 msgstr ""
 
 #. Name of a report
+#. Label of a Link in the X POS Workspace
+#: frontend/src/services/reports.ts:170
 #: xpos/x_pos/report/zero_qty_sales_report/zero_qty_sales_report.json
+#: xpos/x_pos/workspace/x_pos/x_pos.json
 msgid "Zero Qty Sales Report"
 msgstr ""
 
-#: frontend/src/views/ReportsIndexView.vue:114
+#: frontend/src/views/ReportsIndexView.vue:103
 msgid "available"
+msgstr ""
+
+#: frontend/src/views/BarcodePrintView.vue:163
+msgid "barcodes"
 msgstr ""
 
 #: frontend/src/components/items/CommandSearch.vue:202
 msgid "close"
-msgstr ""
-
-#: frontend/src/views/ReportViewerView.vue:741
-msgid "columns"
 msgstr ""
 
 #: frontend/src/components/dialogs/LoyaltyDialog.vue:131
@@ -5372,10 +6608,6 @@ msgstr ""
 #. Description of the 'Coupon Name' (Data) field in DocType 'POS Coupon'
 #: xpos/x_pos/doctype/pos_coupon/pos_coupon.json
 msgid "e.g. \"Summer Holiday 2019 Offer 20\""
-msgstr ""
-
-#: frontend/src/views/ReportsIndexView.vue:240
-msgid "filters"
 msgstr ""
 
 #: xpos/x_pos/api/invoices.py:87
@@ -5391,7 +6623,7 @@ msgstr ""
 msgid "item"
 msgstr ""
 
-#: frontend/src/views/BarcodePrintView.vue:158
+#: frontend/src/views/BarcodePrintView.vue:189
 msgid "item(s)"
 msgstr ""
 
@@ -5399,15 +6631,15 @@ msgstr ""
 #: frontend/src/components/purchase/StockReceiving.vue:381
 #: frontend/src/views/PurchaseInvoiceView.vue:1029
 #: frontend/src/views/PurchaseInvoiceView.vue:1090
-#: frontend/src/views/PurchaseOrderListView.vue:247
+#: frontend/src/views/PurchaseOrderListView.vue:168
 msgid "items"
 msgstr ""
 
-#: xpos/x_pos/api/barcode_generator.py:324
+#: xpos/x_pos/api/barcode_generator.py:365
 msgid "items must be a list"
 msgstr ""
 
-#: frontend/src/views/BarcodePrintView.vue:159
+#: frontend/src/views/BarcodePrintView.vue:190
 msgid "label(s)"
 msgstr ""
 
@@ -5423,8 +6655,16 @@ msgstr ""
 msgid "navigate"
 msgstr ""
 
+#: frontend/src/views/RolePermissionsView.vue:45
+msgid "of"
+msgstr ""
+
 #: frontend/src/views/PurchaseInvoiceView.vue:1209
 msgid "or"
+msgstr ""
+
+#: frontend/src/views/RolePermissionsView.vue:45
+msgid "permissions enabled"
 msgstr ""
 
 #: frontend/src/components/dialogs/PaymentDialog.vue:311
@@ -5437,16 +6677,16 @@ msgstr ""
 msgid "received"
 msgstr ""
 
-#: frontend/src/views/ReportsIndexView.vue:110
-#: frontend/src/views/ReportsIndexView.vue:177
+#: frontend/src/views/ReportsIndexView.vue:99
+#: frontend/src/views/ReportsIndexView.vue:167
 msgid "reports"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:836
+#: frontend/src/components/reports/ReportFilterBar.vue:69
 msgid "required"
 msgstr ""
 
-#: frontend/src/views/ReportViewerView.vue:737
+#: frontend/src/views/ReportViewerView.vue:508
 msgid "rows"
 msgstr ""
 
@@ -5503,6 +6743,10 @@ msgstr ""
 msgid "{0} is invalid."
 msgstr ""
 
+#: frontend/src/views/CashierView.vue:103
+msgid "{0} items"
+msgstr ""
+
 #: frontend/src/stores/purchaseStore.ts:1116
 msgid "{0} items added"
 msgstr ""
@@ -5515,7 +6759,7 @@ msgstr ""
 msgid "{0} payment(s) were skipped."
 msgstr ""
 
-#: xpos/x_pos/api/invoice_processing/payment.py:31
+#: xpos/x_pos/api/invoice_processing/payment.py:27
 msgid "{0} {1} must be submitted before creating change payment entries."
 msgstr ""
 

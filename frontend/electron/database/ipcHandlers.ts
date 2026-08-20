@@ -396,6 +396,37 @@ export function registerDbHandlers(): void {
 		return rows[0]?.cnt ?? 0;
 	});
 
+	ipcMain.handle("db:get-dead-letters", async () => {
+		const invoices = await query(
+			"SELECT * FROM `pending_invoices` WHERE `status` = 'dead_letter' ORDER BY `created_at`",
+		);
+		const purchases = await query(
+			"SELECT * FROM `pending_purchases` WHERE `status` = 'dead_letter' ORDER BY `created_at`",
+		);
+		return { invoices, purchases };
+	});
+
+	ipcMain.handle("db:count-dead-letters", async () => {
+		const inv = await queryOne<{ cnt: number }>(
+			"SELECT COUNT(*) as cnt FROM `pending_invoices` WHERE `status` = 'dead_letter'",
+		);
+		const pur = await queryOne<{ cnt: number }>(
+			"SELECT COUNT(*) as cnt FROM `pending_purchases` WHERE `status` = 'dead_letter'",
+		);
+		return (inv?.cnt ?? 0) + (pur?.cnt ?? 0);
+	});
+
+	ipcMain.handle("db:retry-dead-letter", async (_e, table: string, id: number) => {
+		if (table !== "pending_invoices" && table !== "pending_purchases") {
+			throw new Error(`Invalid dead-letter table: ${table}`);
+		}
+		await execute(
+			`UPDATE \`${table}\` SET \`status\` = 'pending', \`retry_count\` = 0, \`error\` = NULL WHERE \`id\` = ? AND \`status\` = 'dead_letter'`,
+			[id],
+		);
+		return true;
+	});
+
 	ipcMain.handle("db:add-sync-id", async (_e, localId: string, serverName: string, doctype: string) => {
 		await execute(
 			`INSERT INTO \`sync_id_map\` (\`local_id\`, \`server_name\`, \`doctype\`)
@@ -758,17 +789,49 @@ export function registerDbHandlers(): void {
 				role?: string;
 			},
 		) => {
-			const { createHash } = await import("crypto");
-			const hash = createHash("sha256").update(user.password).digest("hex");
+			const { hashPassword } = await import("./passwordHash");
+			const { hash, salt } = await hashPassword(user.password);
 			await execute(
-				`INSERT INTO \`pos_users\` (\`name\`, \`username\`, \`full_name\`, \`password_hash\`, \`role\`, \`enabled\`)
-       VALUES (?, ?, ?, ?, ?, 1)
-       ON DUPLICATE KEY UPDATE \`password_hash\` = VALUES(\`password_hash\`), \`full_name\` = VALUES(\`full_name\`)`,
-				[user.username, user.username, user.fullName || user.username, hash, user.role || "Manager"],
+				`INSERT INTO \`pos_users\` (\`name\`, \`username\`, \`full_name\`, \`password_hash\`, \`password_salt\`, \`role\`, \`enabled\`)
+       VALUES (?, ?, ?, ?, ?, ?, 1)
+       ON DUPLICATE KEY UPDATE \`password_hash\` = VALUES(\`password_hash\`), \`password_salt\` = VALUES(\`password_salt\`), \`full_name\` = VALUES(\`full_name\`)`,
+				[
+					user.username,
+					user.username,
+					user.fullName || user.username,
+					hash,
+					salt,
+					user.role || "Manager",
+				],
 			);
 			return true;
 		},
 	);
+
+	ipcMain.handle("db:verify-password", async (_e, username: string, password: string) => {
+		const row = await queryOne<{ name: string; password_hash: string; password_salt: string | null }>(
+			"SELECT `name`, `password_hash`, `password_salt` FROM `pos_users` WHERE `username` = ? OR `name` = ?",
+			[username, username],
+		);
+		if (!row || !row.password_hash) return false;
+
+		const { verifyPassword, hashPassword } = await import("./passwordHash");
+		const { valid, needsUpgrade } = await verifyPassword(password, row.password_hash, row.password_salt);
+		if (!valid) return false;
+
+		if (needsUpgrade) {
+			try {
+				const { hash, salt } = await hashPassword(password);
+				await execute(
+					"UPDATE `pos_users` SET `password_hash` = ?, `password_salt` = ? WHERE `name` = ?",
+					[hash, salt, row.name],
+				);
+			} catch (err) {
+				log.warn("Password hash upgrade failed", err);
+			}
+		}
+		return true;
+	});
 
 	ipcMain.handle("db:get-sales-tax-templates", async (_e, company?: string) => {
 		let sql = "SELECT * FROM `sales_taxes_templates` WHERE `disabled` = 0";

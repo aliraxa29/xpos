@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain, net } from "electron";
-import { SYNC_TABLES, SYNC_DEFAULTS, type SyncTableConfig } from "./syncConfig";
+import { SYNC_TABLES, SYNC_DEFAULTS, getPrimaryKeyForTable, type SyncTableConfig } from "./syncConfig";
 import { query, queryOne, execute, upsertBatch, getMeta, setMeta } from "../database/dbService";
 import { createLogger } from "../logger";
 
@@ -31,6 +31,8 @@ let syncContext: SyncContext | null = null;
 let syncCycleCount = 0;
 
 const DELETION_CHECK_EVERY = 5;
+const DELETION_MIN_LOCAL_FLOOR = 20;
+const DELETION_MAX_RATIO = 0.5;
 
 function getMainWindow(): BrowserWindow | null {
 	const windows = BrowserWindow.getAllWindows();
@@ -48,25 +50,39 @@ function isOnline(): boolean {
 	return net.isOnline();
 }
 
-async function apiCall<T = unknown>(method: string, args: Record<string, unknown> = {}): Promise<T> {
+async function apiCall<T = unknown>(
+	method: string,
+	args: Record<string, unknown> = {},
+	options: { httpMethod?: "GET" | "POST" } = {},
+): Promise<T> {
 	if (!syncContext) throw new Error("Sync context not initialized");
 
+	const httpMethod = options.httpMethod ?? "GET";
 	const baseUrl = `${syncContext.serverUrl}/api/method/${method}`;
-	const queryString = Object.entries(args)
-		.map(
-			([k, v]) =>
-				`${encodeURIComponent(k)}=${encodeURIComponent(typeof v === "object" ? JSON.stringify(v) : String(v))}`,
-		)
-		.join("&");
-	const url = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+	let url = baseUrl;
+	let body: string | null = null;
+	if (httpMethod === "POST") {
+		body = JSON.stringify(args);
+	} else {
+		const queryString = Object.entries(args)
+			.map(
+				([k, v]) =>
+					`${encodeURIComponent(k)}=${encodeURIComponent(typeof v === "object" ? JSON.stringify(v) : String(v))}`,
+			)
+			.join("&");
+		if (queryString) url = `${baseUrl}?${queryString}`;
+	}
 
 	return new Promise<T>((resolve, reject) => {
 		const request = net.request({
-			method: "GET",
+			method: httpMethod,
 			url,
 		});
 
 		request.setHeader("Accept", "application/json");
+		if (body !== null) {
+			request.setHeader("Content-Type", "application/json");
+		}
 		if (syncContext!.apiKey && syncContext!.apiSecret) {
 			request.setHeader("Authorization", `token ${syncContext!.apiKey}:${syncContext!.apiSecret}`);
 		} else {
@@ -103,6 +119,9 @@ async function apiCall<T = unknown>(method: string, args: Record<string, unknown
 			reject(err);
 		});
 
+		if (body !== null) {
+			request.write(body);
+		}
 		request.end();
 	});
 }
@@ -212,6 +231,28 @@ async function detectDeletions(config: SyncTableConfig): Promise<number> {
 		`SELECT \`${primaryKey}\` FROM \`${config.idbStore}\``,
 	);
 
+	const toDelete = localRows.filter((row) => !serverNameSet.has(row[primaryKey]));
+
+	if (toDelete.length > 0 && localRows.length >= DELETION_MIN_LOCAL_FLOOR) {
+		if (serverNameSet.size === 0) {
+			log.warn(
+				`Skipping deletion pass for ${config.label}: server returned 0 rows but local has ${localRows.length}`,
+			);
+			return 0;
+		}
+		if (toDelete.length > localRows.length * DELETION_MAX_RATIO) {
+			log.warn(
+				`Skipping deletion pass for ${config.label}: would delete ${toDelete.length}/${localRows.length} ` +
+					`(server returned ${serverNameSet.size}), exceeds ${DELETION_MAX_RATIO * 100}% safety threshold`,
+			);
+			emitToRenderer("sync-error", {
+				message: `Deletion check skipped for ${config.label}: server returned an implausibly small list (${serverNameSet.size} rows). Catalog left intact.`,
+				table: config.label,
+			});
+			return 0;
+		}
+	}
+
 	let deleted = 0;
 
 	for (const row of localRows) {
@@ -240,16 +281,6 @@ async function detectDeletions(config: SyncTableConfig): Promise<number> {
 	}
 
 	return deleted;
-}
-
-function getPrimaryKeyForTable(table: string): string {
-	const map: Record<string, string> = {
-		items: "item_code",
-		item_groups: "name",
-		customers: "name",
-		suppliers: "name",
-	};
-	return map[table] || "name";
 }
 
 async function pushTable(config: SyncTableConfig): Promise<{ synced: number; failed: number }> {
@@ -350,6 +381,7 @@ async function pushTable(config: SyncTableConfig): Promise<{ synced: number; fai
 						: (rawData as Record<string, unknown>) || {};
 
 				if (pendingTable === "pending_invoices") {
+					delete data.receipt;
 					const localShiftId = data.pos_opening_shift || data.pos_opening_shift_local_id;
 					if (localShiftId) {
 						const serverShiftName = await getServerShiftName(String(localShiftId));
@@ -400,10 +432,14 @@ async function pushTable(config: SyncTableConfig): Promise<{ synced: number; fai
 				data = record as Record<string, unknown>;
 			}
 
-			const serverResult = await apiCall<{ name?: string }>(config.pushMethod, {
-				data: JSON.stringify(data),
-				local_id: recordLocalId,
-			});
+			const serverResult = await apiCall<{ name?: string }>(
+				config.pushMethod,
+				{
+					data: JSON.stringify(data),
+					local_id: recordLocalId,
+				},
+				{ httpMethod: "POST" },
+			);
 
 			if (serverResult?.name) {
 				await execute(
@@ -437,10 +473,28 @@ async function pushTable(config: SyncTableConfig): Promise<{ synced: number; fai
 			const errMsg = error instanceof Error ? error.message : String(error);
 
 			if (pendingTable === "pending_invoices" || pendingTable === "pending_purchases") {
+				const newRetryCount = (Number(record.retry_count) || 0) + 1;
+				const exhausted = newRetryCount >= SYNC_DEFAULTS.maxRetries;
+				const nextStatus = exhausted ? "dead_letter" : "failed";
+
 				await execute(
-					`UPDATE \`${pendingTable}\` SET \`status\` = 'failed', \`error\` = ?, \`retry_count\` = COALESCE(\`retry_count\`, 0) + 1 WHERE \`id\` = ?`,
+					`UPDATE \`${pendingTable}\` SET \`status\` = '${nextStatus}', \`error\` = ?, \`retry_count\` = COALESCE(\`retry_count\`, 0) + 1 WHERE \`id\` = ?`,
 					[errMsg, recordId],
 				);
+
+				if (exhausted) {
+					log.error(
+						`Dead-letter: ${pendingTable} id=${recordId} (local_id=${recordLocalId}) gave up after ${newRetryCount} attempts: ${errMsg}`,
+					);
+					emitToRenderer("sync-dead-letter", {
+						table: config.label,
+						pendingTable,
+						id: recordId,
+						localId: recordLocalId,
+						retryCount: newRetryCount,
+						error: errMsg,
+					});
+				}
 			} else {
 				await execute(
 					`UPDATE \`${pendingTable}\` SET \`${statusField}\` = 'failed' WHERE \`${idField}\` = ?`,

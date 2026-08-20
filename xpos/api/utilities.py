@@ -163,3 +163,54 @@ def get_default_warehouse(company: str | None = None):
 	if warehouse:
 		return warehouse
 	return frappe.db.get_value("Company", company, "default_warehouse_for_sales")
+
+
+def get_invoice_type():
+	"""Returns the invoice type based on POS settings."""
+	return frappe.get_single_value("POS Settings", "invoice_type") or "Sales Invoice"
+
+
+def is_pos_cashier(user: str | None = None, pos_profile: str | None = None) -> bool:
+	"""Return whether ``user`` may settle (close) bills on the Cashier screen.
+
+	A user qualifies if their row in the POS Profile's ``applicable_for_users``
+	child table has ``is_cashier`` checked. Administrators and System Managers
+	always qualify so they are never locked out. Until the ``is_cashier`` custom
+	field is deployed (pre-migration) the restriction is inactive and everyone
+	qualifies, so existing behaviour is preserved.
+	"""
+	user = user or frappe.session.user
+
+	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+		return True
+
+	if not frappe.db.has_column("POS Profile User", "is_cashier"):
+		return True
+
+	if not pos_profile:
+		pos_profile = frappe.db.get_value(
+			"POS Profile User", {"user": user}, "parent"
+		) or frappe.db.get_single_value("POS Settings", "pos_profile")
+
+	if not pos_profile:
+		return False
+
+	return bool(
+		frappe.db.get_value(
+			"POS Profile User",
+			{"parent": pos_profile, "parenttype": "POS Profile", "user": user},
+			"is_cashier",
+		)
+	)
+
+
+def can_close_shift(user: str | None = None, pos_profile: str | None = None) -> bool:
+	"""Return whether ``user`` may close a cashier/sales shift (the ``close_shift`` right).
+
+	Resolved from the user's POS Role permission map so it stays in sync with
+	the Role Permissions admin screen. Administrators / System Managers always
+	qualify.
+	"""
+	from xpos.api.auth import user_has_pos_permission
+
+	return user_has_pos_permission("close_shift", user, pos_profile)

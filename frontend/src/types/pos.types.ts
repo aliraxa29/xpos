@@ -1,3 +1,23 @@
+export interface POSSearchField {
+	field: string;
+	[key: string]: unknown;
+}
+
+export interface POSAdditionalField {
+	fieldname: string;
+	default_value: any;
+	reqd: boolean;
+	read_only: boolean;
+	[key: string]: unknown;
+}
+
+export interface POSSettings {
+	invoice_type: string;
+	post_change_gl_entries: boolean;
+	invoice_fields: POSAdditionalField[];
+	pos_search_fields: POSSearchField[];
+}
+
 export interface POSProfile {
 	name: string;
 	warehouse: string;
@@ -9,10 +29,7 @@ export interface POSProfile {
 	write_off_cost_center?: string;
 	selling_price_list?: string;
 	default_customer?: string;
-	allow_rate_change?: boolean;
 	allow_change_posting_date?: boolean;
-	allow_user_to_edit_additional_discount?: boolean;
-	allow_discount_change?: boolean;
 	display_items_in_stock?: boolean;
 	allow_partial_payment?: boolean;
 	allow_credit_sale?: boolean;
@@ -20,13 +37,13 @@ export interface POSProfile {
 	allow_return_without_invoice?: boolean;
 	allow_sales_order?: boolean;
 	allow_delete_offline_invoice?: boolean;
-	allow_print_last_invoice?: boolean;
 	display_additional_notes?: boolean;
 	allow_write_off_change?: boolean;
 	input_qty?: boolean;
 	display_item_code?: boolean;
 	allow_zero_rated_items?: boolean;
-	allow_print_draft_invoices?: boolean;
+	enable_cashier_settlement?: boolean;
+	print_backup_receipt?: boolean;
 	auto_set_batch?: boolean;
 	search_serial_no?: boolean;
 	tax_inclusive?: boolean;
@@ -42,14 +59,12 @@ export interface POSProfile {
 	auto_fetch_coupons_gifts?: boolean;
 	hide_closing_shift?: boolean;
 	use_offline_mode?: boolean;
-	fetch_items_directly_from_server?: boolean;
 	cash_mode_of_payment?: string;
 	use_customer_credit?: boolean;
 	use_cashback?: boolean;
 	apply_customer_discount?: boolean;
 	show_template_items?: boolean;
 	hide_variants_items?: boolean;
-	create_pos_invoice_instead_of_sales_invoice?: boolean;
 	hide_unavailable_items?: boolean;
 	hide_images?: boolean;
 	default_pos_expense_account?: string;
@@ -320,7 +335,7 @@ export interface InvoiceItem {
 	local_item_name?: string;
 	qty: number;
 	rate: number;
-	price_list_rate: number;
+	price_list_rate?: number;
 	amount?: number;
 	uom?: string;
 	discount_percentage?: number;
@@ -374,6 +389,7 @@ export interface InvoiceData {
 	currency?: string;
 	conversion_rate?: number;
 	is_credit_sale?: boolean;
+	pos_awaiting_settlement?: boolean;
 	pos_delivery_charges?: string;
 	pos_delivery_charges_rate?: number;
 }
@@ -606,6 +622,68 @@ export interface PrintSettings {
 	letter_head: string;
 }
 
+export interface ReceiptContext {
+	company_name: string;
+	company_phone: string;
+	company_email: string;
+	company_website: string;
+	company_address: string;
+	company_tax_id: string;
+	company_logo: string;
+	receipt_header: string;
+	receipt_footer: string;
+	currency: string;
+	print_discount_amount: number;
+	print_format: string;
+	css: string;
+}
+
+export interface ReceiptSnapshotItem {
+	item_code: string;
+	item_name: string;
+	qty: number;
+	rate: number;
+	amount: number;
+	uom?: string;
+	discount_percentage?: number;
+	discount_amount?: number;
+	price_list_rate?: number;
+	serial_no?: string;
+	batch_no?: string;
+	pos_notes?: string;
+}
+
+export interface ReceiptSnapshotTax {
+	description: string;
+	rate: number;
+	amount: number;
+	included_in_print_rate: boolean;
+}
+
+export interface ReceiptSnapshotPayment {
+	mode_of_payment: string;
+	amount: number;
+}
+
+export interface ReceiptSnapshot {
+	name: string;
+	posting_date: string;
+	posting_time: string;
+	is_return: boolean;
+	cashier: string;
+	customer_name: string;
+	items: ReceiptSnapshotItem[];
+	taxes: ReceiptSnapshotTax[];
+	payments: ReceiptSnapshotPayment[];
+	subtotal: number;
+	total_discount: number;
+	net_total: number;
+	grand_total: number;
+	total_qty: number;
+	change: number;
+	notes?: string;
+}
+
 export interface ShiftCheckResult {
 	pos_opening_shift: POSOpeningShift;
 	pos_profile: POSProfile;
@@ -615,6 +693,7 @@ export interface ShiftCheckResult {
 	tax_inclusive?: number;
 	print_settings?: PrintSettings;
 	disable_rounded_total?: number;
+	is_cashier?: boolean;
 }
 
 export interface OpeningData {
