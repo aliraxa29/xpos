@@ -252,7 +252,13 @@ export async function getCachedItemByCode(itemCode: string): Promise<POSItem | u
 	return db.items.get(itemCode);
 }
 
-export async function searchCachedItems(term: string, group: string): Promise<POSItem[]> {
+const DEFAULT_CACHED_SEARCH_FIELDS = ["item_code", "item_name", "local_item_name", "description"];
+
+export async function searchCachedItems(
+	term: string,
+	group: string,
+	searchFields?: string[],
+): Promise<POSItem[]> {
 	let results: POSItem[];
 
 	if (group && group !== "All Item Groups") {
@@ -263,14 +269,17 @@ export async function searchCachedItems(term: string, group: string): Promise<PO
 
 	if (term) {
 		const lower = term.toLowerCase();
-		results = results.filter(
-			(i) =>
-				i.item_code.toLowerCase().includes(lower) ||
-				i.item_name.toLowerCase().includes(lower) ||
-				(i.local_item_name && i.local_item_name.toLowerCase().includes(lower)) ||
-				(i.barcode && i.barcode.toLowerCase().includes(lower)) ||
-				(i.description && i.description.toLowerCase().includes(lower)),
+		const fields = (searchFields?.length ? searchFields : DEFAULT_CACHED_SEARCH_FIELDS).map((f) =>
+			f === "name" ? "item_code" : f,
 		);
+		results = results.filter((item) => {
+			const record = item as unknown as Record<string, unknown>;
+			const matchesField = fields.some((field) => {
+				const value = record[field];
+				return typeof value === "string" && value.toLowerCase().includes(lower);
+			});
+			return matchesField || (!!item.barcode && item.barcode.toLowerCase().includes(lower));
+		});
 	}
 
 	return results;

@@ -25,12 +25,12 @@
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="text-muted-foreground">{{ __("Invoice total") }}</span>
-						<span>{{ posStore.currencySymbol }}{{ money(invoice.grand_total) }}</span>
+						<span>{{ money(invoice.grand_total) }}</span>
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="text-muted-foreground">{{ __("Outstanding") }}</span>
 						<span class="font-semibold text-primary">
-							{{ posStore.currencySymbol }}{{ money(invoice.outstanding_amount) }}
+							{{ money(invoice.outstanding_amount) }}
 						</span>
 					</div>
 				</div>
@@ -73,6 +73,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { call, showSuccess, showError } from "@/services/api";
 import { extractErrorMessage } from "@/utils";
 import {
@@ -94,6 +95,7 @@ const props = defineProps<{ invoice: OutstandingInvoice | null }>();
 const emit = defineEmits<{ (e: "close"): void; (e: "settled"): void }>();
 
 const posStore = usePosStore();
+const { money } = useMoney();
 
 const amount = ref(0);
 const modeOfPayment = ref("");
@@ -152,9 +154,5 @@ async function submit() {
 	} finally {
 		isSaving.value = false;
 	}
-}
-
-function money(value: number | string | undefined) {
-	return parseFloat(String(value ?? 0) || "0").toFixed(2);
 }
 </script>

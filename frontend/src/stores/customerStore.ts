@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed, type Ref, type ComputedRef } from "vue";
+import { ref, computed, type ComputedRef } from "vue";
 import { call } from "@/services/api";
 import { usePosStore } from "@/stores/posStore";
 import { cacheCustomers, getCachedCustomers, searchCachedCustomers } from "@/services/dbBridge";
@@ -7,7 +7,6 @@ import type {
 	Customer,
 	CustomerAddress,
 	CustomerCredit,
-	SalesPerson,
 	LoyaltyProgram,
 	CustomerLoyaltyInfo,
 } from "@/types/pos.types";
@@ -30,8 +29,6 @@ export const useCustomerStore = defineStore("customers", () => {
 	const loyaltyPrograms = ref<LoyaltyProgram[]>([]);
 	const customerLoyaltyInfo = ref<CustomerLoyaltyInfo | null>(null);
 	const isLoadingLoyalty = ref(false);
-
-	const salesPersons: Ref<SalesPerson[]> = ref([]);
 
 	const filteredCustomers = computed(() => customers.value);
 
@@ -201,17 +198,6 @@ export const useCustomerStore = defineStore("customers", () => {
 		}
 	}
 
-	async function fetchSalesPersons(): Promise<SalesPerson[]> {
-		try {
-			const result = await call<SalesPerson[]>("xpos.api.customers.get_sales_person_names");
-			salesPersons.value = result || [];
-			return salesPersons.value;
-		} catch (error) {
-			console.error("Error fetching sales persons:", error);
-			return [];
-		}
-	}
-
 	function clearDetail(): void {
 		selectedCustomerInfo.value = null;
 		customerAddresses.value = [];
@@ -320,7 +306,6 @@ export const useCustomerStore = defineStore("customers", () => {
 		customerAddresses,
 		customerCredit,
 		isLoadingDetail,
-		salesPersons,
 		loyaltyPrograms,
 		customerLoyaltyInfo,
 		isLoadingLoyalty,
@@ -336,7 +321,6 @@ export const useCustomerStore = defineStore("customers", () => {
 		fetchAddresses,
 		createAddress,
 		fetchCredit,
-		fetchSalesPersons,
 		clearDetail,
 		fetchLoyaltyPrograms,
 		fetchCustomerLoyaltyInfo,

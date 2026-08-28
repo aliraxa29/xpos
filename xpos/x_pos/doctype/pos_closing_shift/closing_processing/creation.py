@@ -15,8 +15,15 @@ from xpos.x_pos.doctype.pos_closing_shift.closing_processing.utils import (
 
 
 @frappe.whitelist()
-def make_closing_shift_from_opening(opening_shift: dict):
-	opening_shift = json.loads(opening_shift)
+def make_closing_shift_from_opening(opening_shift: str | dict):
+	"""
+	Build an unsaved POS Closing Shift from the given opening shift.
+
+	`opening_shift` arrives as a dict on JSON requests and as a JSON string on
+	form-encoded ones, so both are accepted.
+	"""
+	if isinstance(opening_shift, str):
+		opening_shift = json.loads(opening_shift)
 	doctype = get_invoice_type()
 	submit_printed_invoices(opening_shift.get("name"), doctype)
 	closing_shift = frappe.new_doc("POS Closing Shift")

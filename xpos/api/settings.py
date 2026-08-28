@@ -4,15 +4,12 @@
 import frappe
 from frappe.utils import cint, flt
 
+from xpos.api.utilities import get_item_search_settings
+
 
 @frappe.whitelist()
 def get_erp_settings():
-	"""
-	Fetch all relevant ERPNext settings for local POS caching.
-
-	Returns a dict with keys: selling_settings, buying_settings,
-	stock_settings, accounts_settings, pos_settings.
-	"""
+	"""Fetch all relevant ERPNext settings for local POS caching."""
 	settings = {}
 
 	selling = frappe.get_cached_doc("Selling Settings")
@@ -80,6 +77,14 @@ def get_erp_settings():
 		),
 	}
 
+	pos = frappe.get_cached_doc("POS Settings")
+	settings["pos_settings"] = {
+		"invoice_type": pos.get("invoice_type") or "Sales Invoice",
+		"post_change_gl_entries": cint(pos.get("post_change_gl_entries")),
+	}
+
+	settings["item_search"] = get_item_search_settings()
+
 	settings["global_defaults"] = {
 		"default_currency": frappe.db.get_default("currency") or "",
 		"default_company": frappe.db.get_default("company") or "",
@@ -94,7 +99,30 @@ def get_erp_settings():
 		"float_precision": frappe.db.get_default("float_precision") or "",
 	}
 
+	settings["number_format"] = get_number_format_settings()
+
 	return settings
+
+
+def get_number_format_settings():
+	"""Number presentation defaults for the SPA formatter."""
+	from frappe.locale import get_number_format
+
+	system_settings = frappe.get_cached_doc("System Settings")
+
+	try:
+		number_format = str(get_number_format())
+	except KeyError:
+		# The stored mask is not one frappe knows; fall back to the raw System Settings value.
+		number_format = system_settings.get("number_format") or "#,###.##"
+
+	return {
+		"number_format": number_format or "#,###.##",
+		"float_precision": system_settings.get("float_precision") or "",
+		"currency_precision": system_settings.get("currency_precision") or "",
+		"use_number_format_from_currency": cint(system_settings.get("use_number_format_from_currency")),
+		"hide_currency_symbol": frappe.db.get_default("hide_currency_symbol") or "",
+	}
 
 
 BRANDING_TOKENS = (

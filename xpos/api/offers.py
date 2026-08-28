@@ -7,11 +7,7 @@ import frappe
 from frappe import _
 from frappe.utils import cstr, flt, getdate, nowdate
 
-
-def _row_value(row: dict | object, key: str, default=None):
-	if isinstance(row, dict):
-		return row.get(key, default)
-	return getattr(row, key, default)
+from xpos.utils import row_value
 
 
 @frappe.whitelist()
@@ -92,9 +88,9 @@ def get_pos_coupon(coupon: str, customer: str, company: str):
 		frappe.throw(_("Coupon has already been used the maximum number of times"))
 
 	today = getdate(nowdate())
-	valid_from = _row_value(coupon_doc, "valid_from")
-	valid_upto = _row_value(coupon_doc, "valid_upto")
-	coupon_customer = _row_value(coupon_doc, "customer")
+	valid_from = row_value(coupon_doc, "valid_from")
+	valid_upto = row_value(coupon_doc, "valid_upto")
+	coupon_customer = row_value(coupon_doc, "customer")
 
 	if valid_from and getdate(valid_from) > today:
 		frappe.throw(_("Coupon is not yet valid"))
@@ -104,7 +100,7 @@ def get_pos_coupon(coupon: str, customer: str, company: str):
 		frappe.throw(_("Coupon is not valid for this customer"))
 
 	offer_data = None
-	pos_offer_name = _row_value(coupon_doc, "pos_offer")
+	pos_offer_name = row_value(coupon_doc, "pos_offer")
 	if pos_offer_name:
 		try:
 			offer_doc = frappe.get_doc("POS Offer", pos_offer_name)
@@ -138,17 +134,7 @@ def get_active_gift_coupons(customer: str, company: str):
 		fields=["coupon_code", "valid_from", "valid_upto"],
 	)
 
-	return [_row_value(c, "coupon_code") for c in coupons_data if _is_coupon_active(c, today)]
-
-
-@frappe.whitelist()
-def get_delivery_charges(pos_profile: str):
-	"""Backward-compatible delivery charges API."""
-	return frappe.get_all(
-		"Delivery Charges",
-		filters={"pos_profile": ["in", [pos_profile, "", None]], "disabled": 0},
-		fields=["name", "label", "charge_type", "amount"],
-	)
+	return [row_value(c, "coupon_code") for c in coupons_data if _is_coupon_active(c, today)]
 
 
 @frappe.whitelist()
@@ -159,25 +145,17 @@ def get_applicable_delivery_charges(
 	shipping_address_name: str | None = None,
 ):
 	"""Returns applicable delivery charges"""
-	try:
-		from xpos.x_pos.doctype.delivery_charges.delivery_charges import (
-			get_applicable_delivery_charges as _get_applicable_delivery_charges,
-		)
+	from xpos.x_pos.doctype.delivery_charges.delivery_charges import (
+		get_applicable_delivery_charges as resolve_delivery_charges,
+	)
 
-		return _get_applicable_delivery_charges(company, pos_profile, customer, shipping_address_name)
-	except (ImportError, AttributeError):
-		charges = frappe.get_all(
-			"Delivery Charges",
-			filters={"company": company, "disabled": 0},
-			fields=["name", "label", "charge_type", "amount"],
-		)
-		return charges
+	return resolve_delivery_charges(company, pos_profile, customer, shipping_address_name)
 
 
 def _is_coupon_active(coupon_data: dict | object, today: Any):
 	"""Return True if the coupon is valid for the provided date."""
-	valid_from = _row_value(coupon_data, "valid_from")
-	valid_upto = _row_value(coupon_data, "valid_upto")
+	valid_from = row_value(coupon_data, "valid_from")
+	valid_upto = row_value(coupon_data, "valid_upto")
 	if valid_from and getdate(valid_from) > today:
 		return False
 	if valid_upto and getdate(valid_upto) < today:

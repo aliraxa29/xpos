@@ -1,4 +1,5 @@
 import "./commands";
+import "./slowMotion";
 import { resetStub } from "./frappeStub";
 
 beforeEach(() => {

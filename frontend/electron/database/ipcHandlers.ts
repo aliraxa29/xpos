@@ -24,6 +24,38 @@ import { createLogger } from "../logger";
 
 const log = createLogger("DB-IPC");
 
+const DEFAULT_LOCAL_SEARCH_COLUMNS = ["item_code", "item_name", "local_item_name", "description"];
+const SAFE_COLUMN = /^[a-z_][a-z0-9_]*$/;
+
+let localItemColumns: Set<string> | null = null;
+
+async function getLocalItemColumns(): Promise<Set<string>> {
+	if (!localItemColumns) {
+		const rows = (await query(
+			"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'items'",
+		)) as { COLUMN_NAME: string }[];
+		localItemColumns = new Set(rows.map((r) => r.COLUMN_NAME));
+	}
+	return localItemColumns;
+}
+
+async function resolveItemSearchColumns(requested?: string[]): Promise<string[]> {
+	const wanted = requested?.length ? requested : DEFAULT_LOCAL_SEARCH_COLUMNS;
+	const available = await getLocalItemColumns();
+	const mapped = wanted.map((f) => (f === "name" ? "item_code" : f));
+
+	const usable = [...new Set(mapped.filter((f) => SAFE_COLUMN.test(f) && available.has(f)))];
+	const dropped = [...new Set(mapped)].filter((f) => !usable.includes(f));
+	if (dropped.length) {
+		log.warn(
+			`Offline item search ignoring field(s) with no local column: ${dropped.join(", ")}. ` +
+				"Add them to schema.sql and the sync field list to search them offline.",
+		);
+	}
+
+	return usable.length ? usable : ["item_code", "item_name"];
+}
+
 export function registerDbHandlers(): void {
 	ipcMain.handle("db:get-setting", async (_e, key: string) => {
 		const row = await queryOne<{ value: string }>("SELECT `value` FROM `app_settings` WHERE `key` = ?", [
@@ -75,6 +107,7 @@ export function registerDbHandlers(): void {
 			_e,
 			opts?: {
 				search?: string;
+				searchFields?: string[];
 				group?: string;
 				limit?: number;
 				offset?: number;
@@ -114,10 +147,12 @@ export function registerDbHandlers(): void {
 				params.push(opts.group);
 			}
 			if (opts?.search) {
-				sql +=
-					" AND (i.`item_code` LIKE ? OR i.`item_name` LIKE ? OR i.`local_item_name` LIKE ? OR ib.`barcode` LIKE ? OR i.`description` LIKE ?)";
+				const columns = await resolveItemSearchColumns(opts.searchFields);
+				const clauses = columns.map((c) => `COALESCE(i.\`${c}\`, '') LIKE ?`);
+				clauses.push("ib.`barcode` LIKE ?");
+				sql += ` AND (${clauses.join(" OR ")})`;
 				const like = `%${opts.search}%`;
-				params.push(like, like, like, like, like);
+				for (let i = 0; i < clauses.length; i++) params.push(like);
 			}
 			sql += " ORDER BY i.`item_name` ASC";
 			if (opts?.limit) {
@@ -1202,9 +1237,37 @@ export function registerDbHandlers(): void {
 			for (const p of payments) {
 				await execute(
 					`INSERT INTO \`sales_invoice_payments\`
-           (\`parent_id\`, \`mode_of_payment\`, \`amount\`, \`account\`)
-           VALUES (?, ?, ?, ?)`,
-					[invoiceId, p.mode_of_payment, p.amount || 0, p.account || null],
+           (\`parent_id\`, \`mode_of_payment\`, \`amount\`, \`account\`,
+            \`pos_tender_currency\`, \`pos_tender_amount\`, \`pos_exchange_rate\`)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+					[
+						invoiceId,
+						p.mode_of_payment,
+						p.amount || 0,
+						p.account || null,
+						p.pos_tender_currency || null,
+						p.pos_tender_amount ?? null,
+						p.pos_exchange_rate ?? null,
+					],
+				);
+			}
+		}
+
+		const changeLegs = invoice.pos_change_legs as Array<Record<string, unknown>> | undefined;
+		if (changeLegs?.length) {
+			for (const leg of changeLegs) {
+				await execute(
+					`INSERT INTO \`sales_invoice_change_legs\`
+           (\`parent_id\`, \`mode_of_payment\`, \`currency\`, \`amount\`, \`base_amount\`, \`exchange_rate\`)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+					[
+						invoiceId,
+						leg.mode_of_payment,
+						leg.currency || null,
+						leg.amount || 0,
+						leg.base_amount || 0,
+						leg.exchange_rate ?? null,
+					],
 				);
 			}
 		}
@@ -1265,7 +1328,10 @@ export function registerDbHandlers(): void {
 		const payments = await query("SELECT * FROM `sales_invoice_payments` WHERE `parent_id` = ?", [
 			inv.id,
 		]);
-		return { ...inv, items, payments };
+		const posChangeLegs = await query("SELECT * FROM `sales_invoice_change_legs` WHERE `parent_id` = ?", [
+			inv.id,
+		]);
+		return { ...inv, items, payments, pos_change_legs: posChangeLegs };
 	});
 
 	ipcMain.handle("db:get-shift-sales-summary", async (_e, shiftId: string | number) => {
@@ -1277,15 +1343,51 @@ export function registerDbHandlers(): void {
        WHERE \`pos_opening_entry_id\` = ? AND \`status\` != 'Cancelled'`,
 			[shiftIdNum],
 		);
-		const paymentSummary = await query(
-			`SELECT sip.\`mode_of_payment\`, COALESCE(SUM(sip.\`amount\`), 0) as total
+		const collected = await query<{ mode_of_payment: string; currency: string | null; total: number }>(
+			`SELECT sip.\`mode_of_payment\`,
+              sip.\`pos_tender_currency\` as currency,
+              COALESCE(SUM(CASE WHEN sip.\`pos_tender_currency\` IS NOT NULL
+                                THEN sip.\`pos_tender_amount\` ELSE sip.\`amount\` END), 0) as total
        FROM \`sales_invoice_payments\` sip
        JOIN \`sales_invoices\` si ON si.\`id\` = sip.\`parent_id\`
        WHERE si.\`pos_opening_entry_id\` = ? AND si.\`status\` != 'Cancelled'
-       GROUP BY sip.\`mode_of_payment\``,
+       GROUP BY sip.\`mode_of_payment\`, sip.\`pos_tender_currency\``,
 			[shiftIdNum],
 		);
-		return { ...(summary ?? { total: 0, count: 0 }), payment_breakdown: paymentSummary };
+
+		const returned = await query<{ mode_of_payment: string; currency: string | null; total: number }>(
+			`SELECT scl.\`mode_of_payment\`, scl.\`currency\` as currency,
+              COALESCE(SUM(scl.\`amount\`), 0) as total
+       FROM \`sales_invoice_change_legs\` scl
+       JOIN \`sales_invoices\` si ON si.\`id\` = scl.\`parent_id\`
+       WHERE si.\`pos_opening_entry_id\` = ? AND si.\`status\` != 'Cancelled'
+       GROUP BY scl.\`mode_of_payment\`, scl.\`currency\``,
+			[shiftIdNum],
+		);
+
+		const byMode = new Map<string, { mode_of_payment: string; currency: string | null; total: number }>();
+		const accumulate = (
+			row: { mode_of_payment: string; currency: string | null; total: number },
+			sign: number,
+		) => {
+			if (!row.mode_of_payment) return;
+			const existing = byMode.get(row.mode_of_payment);
+			if (existing) {
+				existing.total += sign * Number(row.total || 0);
+				existing.currency = existing.currency || row.currency;
+				return;
+			}
+			byMode.set(row.mode_of_payment, {
+				mode_of_payment: row.mode_of_payment,
+				currency: row.currency,
+				total: sign * Number(row.total || 0),
+			});
+		};
+
+		for (const row of collected) accumulate(row, 1);
+		for (const row of returned) accumulate(row, -1);
+
+		return { ...(summary ?? { total: 0, count: 0 }), payment_breakdown: [...byMode.values()] };
 	});
 
 	ipcMain.handle("db:create-expense", async (_e, expense: Record<string, unknown>) => {

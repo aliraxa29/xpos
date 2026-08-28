@@ -9,13 +9,23 @@ POS Utilities API.
 - Sales person names
 - Tax inclusive settings
 - Language options
+- Item search configuration
 """
 
 import platform
+import re
 import subprocess
 
 import frappe
 from frappe.utils import cint
+
+BASE_ITEM_SEARCH_FIELDS = ("name", "item_name", "item_code")
+
+ITEM_SEARCH_FIELDTYPES = frozenset(
+	{"Data", "Link", "Dynamic Link", "Long Text", "Select", "Small Text", "Text", "Text Editor"}
+)
+
+SAFE_FIELDNAME = re.compile(r"^[a-z_][a-z0-9_]*$")
 
 
 @frappe.whitelist()
@@ -152,7 +162,7 @@ def get_profile_setting(profile: str, setting: str, default=None):
 
 @frappe.whitelist()
 def get_default_warehouse(company: str | None = None):
-	"""Returns default warehouse for a company."""
+	"""Return the default warehouse, preferring Stock Settings over the Company default."""
 
 	if not company:
 		company = frappe.defaults.get_user_default("company")
@@ -162,7 +172,7 @@ def get_default_warehouse(company: str | None = None):
 	warehouse = frappe.db.get_single_value("Stock Settings", "default_warehouse")
 	if warehouse:
 		return warehouse
-	return frappe.db.get_value("Company", company, "default_warehouse_for_sales")
+	return frappe.db.get_value("Company", company, "default_warehouse_for_sales_return")
 
 
 def get_invoice_type():
@@ -170,15 +180,49 @@ def get_invoice_type():
 	return frappe.get_single_value("POS Settings", "invoice_type") or "Sales Invoice"
 
 
-def is_pos_cashier(user: str | None = None, pos_profile: str | None = None) -> bool:
-	"""Return whether ``user`` may settle (close) bills on the Cashier screen.
+def get_item_search_settings() -> dict:
+	"""Site-wide item search configuration, read from POS Settings."""
+	cached = getattr(frappe.local, "xpos_item_search_settings", None)
+	if cached is not None:
+		return cached
 
-	A user qualifies if their row in the POS Profile's ``applicable_for_users``
-	child table has ``is_cashier`` checked. Administrators and System Managers
-	always qualify so they are never locked out. Until the ``is_cashier`` custom
-	field is deployed (pre-migration) the restriction is inactive and everyone
-	qualifies, so existing behaviour is preserved.
-	"""
+	settings = frappe.get_cached_doc("POS Settings")
+	meta = frappe.get_meta("Item")
+
+	fields = list(BASE_ITEM_SEARCH_FIELDS)
+	seen = set(fields)
+
+	for row in settings.get("pos_search_fields") or []:
+		fieldname = (row.get("fieldname") or "").strip()
+		if not fieldname:
+			label = (row.get("field") or "").strip()
+			match = next((df for df in meta.fields if df.label == label), None)
+			fieldname = match.fieldname if match else ""
+
+		if not fieldname or fieldname in seen or not SAFE_FIELDNAME.match(fieldname):
+			continue
+
+		docfield = meta.get_field(fieldname)
+		if not docfield or docfield.fieldtype not in ITEM_SEARCH_FIELDTYPES:
+			continue
+		if docfield.get("is_virtual"):
+			continue
+
+		seen.add(fieldname)
+		fields.append(fieldname)
+
+	config = {
+		"fields": fields,
+		"item_search_limit": cint(settings.get("item_search_limit")),
+		"search_serial_no": cint(settings.get("search_serial_no")),
+		"search_batch_no": cint(settings.get("search_batch_no")),
+	}
+	frappe.local.xpos_item_search_settings = config
+	return config
+
+
+def is_pos_cashier(user: str | None = None, pos_profile: str | None = None) -> bool:
+	"""Return whether ``user`` may settle (close) bills on the Cashier screen."""
 	user = user or frappe.session.user
 
 	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
@@ -205,24 +249,14 @@ def is_pos_cashier(user: str | None = None, pos_profile: str | None = None) -> b
 
 
 def can_close_shift(user: str | None = None, pos_profile: str | None = None) -> bool:
-	"""Return whether ``user`` may close a cashier/sales shift (the ``close_shift`` right).
-
-	Resolved from the user's POS Role permission map so it stays in sync with
-	the Role Permissions admin screen. Administrators / System Managers always
-	qualify.
-	"""
+	"""Return whether ``user`` may close a cashier/sales shift (the ``close_shift`` right)."""
 	from xpos.api.auth import user_has_pos_permission
 
 	return user_has_pos_permission("close_shift", user, pos_profile)
 
 
 def pos_profile_flag(pos_profile: str | None, fieldname: str) -> bool:
-	"""Read a POS Profile checkbox, treating a not-yet-migrated column as off.
-
-	Both open-tab gates ship as custom fields, so a site that has upgraded the
-	code but not run ``bench migrate`` must fall back to disabled rather than
-	raising.
-	"""
+	"""Read a POS Profile checkbox, treating a not-yet-migrated column as off."""
 	if not pos_profile:
 		return False
 	if not frappe.db.has_column("POS Profile", fieldname):
@@ -231,12 +265,7 @@ def pos_profile_flag(pos_profile: str | None, fieldname: str) -> bool:
 
 
 def can_recall_other_shift_tabs(pos_profile: str | None = None, user: str | None = None) -> bool:
-	"""Return whether ``user`` may pull open tabs raised on another shift.
-
-	Both gates must agree: the POS Profile has to opt in, and the user's POS Role
-	has to grant ``recall_other_shift_tabs``. Both are off by default, so the
-	behaviour of an existing site is unchanged until an administrator enables them.
-	"""
+	"""Return whether ``user`` may pull open tabs raised on another shift."""
 	from xpos.api.auth import user_has_pos_permission
 
 	if not pos_profile_flag(pos_profile, "allow_open_tab_recall"):
@@ -246,11 +275,7 @@ def can_recall_other_shift_tabs(pos_profile: str | None = None, user: str | None
 
 
 def can_settle_outstanding(pos_profile: str | None = None, user: str | None = None) -> bool:
-	"""Return whether ``user`` may settle a past unpaid invoice from the POS.
-
-	Gated the same way as :func:`can_recall_other_shift_tabs` - profile opt-in plus
-	the ``settle_outstanding_invoice`` role permission.
-	"""
+	"""Return whether ``user`` may settle a past unpaid invoice from the POS."""
 	from xpos.api.auth import user_has_pos_permission
 
 	if not pos_profile_flag(pos_profile, "allow_outstanding_settlement"):

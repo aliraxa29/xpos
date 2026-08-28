@@ -239,7 +239,6 @@ async function runMigrations(): Promise<void> {
 		["hide_images", "TINYINT(1) NOT NULL DEFAULT 0"],
 		["hide_unavailable_items", "TINYINT(1) NOT NULL DEFAULT 0"],
 		["block_sale_beyond_available_qty", "TINYINT(1) NOT NULL DEFAULT 0"],
-		["display_items_in_stock", "TINYINT(1) NOT NULL DEFAULT 0"],
 		["cash_mode_of_payment", "VARCHAR(255) DEFAULT NULL"],
 		["apply_customer_discount", "TINYINT(1) NOT NULL DEFAULT 0"],
 		["allow_print_draft_invoices", "TINYINT(1) NOT NULL DEFAULT 0"],
@@ -336,6 +335,30 @@ async function runMigrations(): Promise<void> {
 			}
 		} catch (err) {
 			log.warn(`Migration for pos_users rename ${oldCol} -> ${newCol} failed`, err);
+		}
+	}
+
+	const columnMigrations: [string, string, string][] = [
+		["sales_invoice_payments", "pos_tender_currency", "VARCHAR(10) DEFAULT NULL"],
+		["sales_invoice_payments", "pos_tender_amount", "DECIMAL(18,6) DEFAULT NULL"],
+		["sales_invoice_payments", "pos_exchange_rate", "DECIMAL(21,9) DEFAULT NULL"],
+		["modes_of_payment", "pos_tender_currency", "VARCHAR(10) DEFAULT NULL"],
+		["currencies", "number_format", "VARCHAR(20) DEFAULT NULL"],
+		["currencies", "smallest_currency_fraction_value", "DECIMAL(18,6) DEFAULT 0"],
+		["currencies", "symbol_on_right", "TINYINT(1) DEFAULT 0"],
+	];
+	for (const [table, col, typedef] of columnMigrations) {
+		try {
+			const [existing] = await db.execute<RowDataPacket[]>(
+				"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+				[table, col],
+			);
+			if ((existing as RowDataPacket[]).length === 0) {
+				await db.execute(`ALTER TABLE \`${table}\` ADD COLUMN \`${col}\` ${typedef}`);
+				log.info(`Migration: added ${table}.${col}`);
+			}
+		} catch (err) {
+			log.warn(`Migration for ${table}.${col} failed`, err);
 		}
 	}
 

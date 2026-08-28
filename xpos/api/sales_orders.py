@@ -16,6 +16,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt, nowdate
 
+from xpos.api.invoices import apply_sales_person
+
 
 @frappe.whitelist()
 def search_orders(company: str, currency: str | None = None, order_name: str | None = None):
@@ -107,6 +109,8 @@ def create_sales_order(data: str | dict):
 	if data.get("discount_amount"):
 		so.discount_amount = flt(data["discount_amount"])
 		so.apply_discount_on = data.get("apply_discount_on") or "Grand Total"
+
+	apply_sales_person(so, data.get("sales_person") or None, pos_profile)
 
 	so.save(ignore_permissions=True)
 

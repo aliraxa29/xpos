@@ -1,4 +1,6 @@
+import { formatFor, formatWithSymbol } from "@/composables/useCurrency";
 import type { ReceiptContext, ReceiptSnapshot } from "@/types/pos.types";
+import { formatFloat, formatQty } from "@/utils/numberFormat";
 
 function esc(value: unknown): string {
 	return String(value ?? "")
@@ -9,22 +11,11 @@ function esc(value: unknown): string {
 }
 
 function fmtMoney(amount: number, currency: string): string {
-	const value = Number(amount || 0);
-	if (currency && /^[A-Z]{3}$/.test(currency)) {
-		try {
-			return new Intl.NumberFormat(undefined, {
-				style: "currency",
-				currency,
-			}).format(value);
-		} catch {
-			/* fall through to plain formatting */
-		}
-	}
-	const plain = new Intl.NumberFormat(undefined, {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	}).format(value);
-	return currency ? `${currency} ${plain}` : plain;
+	return formatWithSymbol(currency, Number(amount || 0));
+}
+
+function fmtNative(amount: number, currency: string): string {
+	return `${currency} ${formatFor(currency, amount)}`;
 }
 
 function fmtDate(date: string): string {
@@ -79,7 +70,7 @@ export function buildReceiptHtml(snapshot: ReceiptSnapshot, ctx: ReceiptContext)
 			if (item.discount_percentage && item.discount_percentage > 0) {
 				discountLine = ctx.print_discount_amount
 					? `<div class="item-discount">Discount: ${money(item.discount_amount || 0)}</div>`
-					: `<div class="item-discount">Discount: ${item.discount_percentage}%</div>`;
+					: `<div class="item-discount">Discount: ${formatFloat(item.discount_percentage)}%</div>`;
 			} else if (item.discount_amount && item.discount_amount > 0) {
 				discountLine = `<div class="item-discount">Discount: ${money(item.discount_amount)}</div>`;
 			}
@@ -91,9 +82,9 @@ export function buildReceiptHtml(snapshot: ReceiptSnapshot, ctx: ReceiptContext)
         <div class="item-name">${esc(item.item_name)}</div>
         <div class="item-detail-line">
             <span class="col-desc" style="flex:1;">${codeLine}</span>
-            <span class="col-qty">${item.qty}</span>
-            <span class="col-rate">${item.rate}</span>
-            <span class="col-amt">${item.amount}</span>
+            <span class="col-qty">${formatQty(item.qty)}</span>
+            <span class="col-rate">${formatFor(currency, item.rate)}</span>
+            <span class="col-amt">${formatFor(currency, item.amount)}</span>
         </div>
         ${uomLine}${serialLine}${batchLine}${discountLine}${notesLine}
     </div>`;
@@ -130,6 +121,61 @@ export function buildReceiptHtml(snapshot: ReceiptSnapshot, ctx: ReceiptContext)
         </div>`
 			: "";
 
+	const paymentRowHtml = (p: ReceiptSnapshot["payments"][number]) => {
+		const isForeign = !!p.currency && p.currency !== currency && p.native_amount !== undefined;
+		const headline = isForeign
+			? fmtNative(Math.abs(p.native_amount!), p.currency!)
+			: money(Math.abs(p.amount));
+		const rateLine = isForeign
+			? `
+        <div class="payment-rate-line" style="font-size:8px;color:#555;padding-left:6px;">
+            @ ${formatFor(currency, p.exchange_rate || 0)}${
+				p.rate_date ? ` (${fmtDate(p.rate_date)})` : ""
+			} = ${money(Math.abs(p.amount))}
+        </div>`
+			: "";
+		return `
+        <div class="payment-row">
+            <span>${esc(p.mode_of_payment)}</span>
+            <span style="font-weight:700;">${headline}</span>
+        </div>${rateLine}`;
+	};
+
+	const changeLegs = snapshot.change_legs || [];
+
+	const changeHtml =
+		snapshot.change > 0.01
+			? changeLegs.length
+				? `
+        <hr class="div-dashed">
+        <div class="total-row" style="font-size:9px;font-weight:700;text-transform:uppercase;color:#000;margin-bottom:2px;">
+            <span>Change</span>
+        </div>
+        ${changeLegs
+			.map(
+				(leg) => `
+        <div class="payment-row change-leg-row">
+            <span>${esc(leg.mode_of_payment)}</span>
+            <span>${
+				leg.currency && leg.currency !== currency
+					? fmtNative(leg.amount, leg.currency)
+					: money(leg.amount)
+			}</span>
+        </div>`,
+			)
+			.join("")}
+        <div class="payment-row change-row" style="font-weight:700;">
+            <span>Total Change</span>
+            <span>${money(snapshot.change)}</span>
+        </div>`
+				: `
+        <hr class="div-dashed">
+        <div class="payment-row change-row">
+            <span>Change</span>
+            <span>${money(snapshot.change)}</span>
+        </div>`
+			: "";
+
 	const paymentsHtml = snapshot.payments.length
 		? `
     <hr class="div-dashed">
@@ -137,25 +183,8 @@ export function buildReceiptHtml(snapshot: ReceiptSnapshot, ctx: ReceiptContext)
         <div class="total-row" style="font-size:9px;font-weight:700;text-transform:uppercase;color:#000;margin-bottom:2px;">
             <span>Payment Details</span>
         </div>
-        ${snapshot.payments
-			.map(
-				(p) => `
-        <div class="payment-row">
-            <span>${esc(p.mode_of_payment)}</span>
-            <span style="font-weight:700;">${money(Math.abs(p.amount))}</span>
-        </div>`,
-			)
-			.join("")}
-        ${
-			snapshot.change > 0.01
-				? `
-        <hr class="div-dashed">
-        <div class="payment-row change-row">
-            <span>Change</span>
-            <span>${money(snapshot.change)}</span>
-        </div>`
-				: ""
-		}
+        ${snapshot.payments.map(paymentRowHtml).join("")}
+        ${changeHtml}
     </div>`
 		: "";
 
@@ -225,9 +254,9 @@ export function buildReceiptHtml(snapshot: ReceiptSnapshot, ctx: ReceiptContext)
 
     <div class="totals-section">
         <div class="total-row" style="font-size:9px;color:#333;">
-            <span class="total-label">${totalItems} item${totalItems !== 1 ? "s" : ""} &bull; ${
-				snapshot.total_qty
-			} unit${snapshot.total_qty !== 1 ? "s" : ""}</span>
+            <span class="total-label">${totalItems} item${totalItems !== 1 ? "s" : ""} &bull; ${formatQty(
+				snapshot.total_qty,
+			)} unit${snapshot.total_qty !== 1 ? "s" : ""}</span>
         </div>
         <div class="total-row">
             <span class="total-label">Subtotal</span>

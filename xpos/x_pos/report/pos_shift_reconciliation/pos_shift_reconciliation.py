@@ -12,6 +12,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+from xpos.api.exchange import get_currency_precision
+from xpos.api.shifts import get_shift_payment_totals, resolve_cash_mode_of_payment
 from xpos.api.utilities import get_invoice_type
 
 
@@ -24,7 +26,7 @@ def execute(filters=None):
 		_get_items_sold(invoices, doctype),
 		None,
 		None,
-		_get_report_summary(invoices, doctype),
+		_get_report_summary(invoices, doctype, filters),
 	)
 
 
@@ -46,7 +48,7 @@ def _get_invoices(filters, doctype):
 	return frappe.get_all(
 		doctype,
 		filters=conditions,
-		fields=["name", "grand_total", "net_total", "change_amount", "is_return"],
+		fields=["name", "currency", "grand_total", "net_total", "change_amount", "is_return"],
 	)
 
 
@@ -75,25 +77,16 @@ def _get_items_sold(invoices, doctype):
 	)
 
 
-def _get_report_summary(invoices, doctype):
-	# Totals by payment mode, mirroring xpos.api.shifts.get_shift_summary so the
-	# report and the closing dialog always agree (change is distributed across
-	# the modes used on each invoice).
-	payment_summary = {}
-	for inv in invoices:
-		payments = frappe.get_all(
-			"Sales Invoice Payment",
-			filters={"parent": inv["name"], "parenttype": doctype},
-			fields=["mode_of_payment", "amount"],
-		)
-		inv_change = flt(inv.get("change_amount"))
-		inv_paid = sum(flt(p["amount"]) for p in payments)
-		for p in payments:
-			pay_amount = flt(p["amount"])
-			if inv_paid > 0 and inv_change > 0:
-				pay_amount -= pay_amount / inv_paid * inv_change
-			mode = p["mode_of_payment"]
-			payment_summary[mode] = payment_summary.get(mode, 0) + pay_amount
+def _resolve_report_cash_mode(filters):
+	"""The cash mode the shift's change came out of, for the leg-less legacy fallback."""
+	pos_profile = filters.get("pos_profile")
+	if not pos_profile and filters.get("pos_opening_shift"):
+		pos_profile = frappe.db.get_value("POS Opening Shift", filters["pos_opening_shift"], "pos_profile")
+	return resolve_cash_mode_of_payment(pos_profile)
+
+
+def _get_report_summary(invoices, doctype, filters):
+	payment_summary = get_shift_payment_totals(doctype, invoices, _resolve_report_cash_mode(filters))
 
 	grand_total = sum(flt(inv.get("grand_total")) for inv in invoices)
 	returns_count = sum(1 for inv in invoices if inv.get("is_return"))
@@ -108,8 +101,17 @@ def _get_report_summary(invoices, doctype):
 			"indicator": "Green",
 		},
 	]
-	for mode, amount in sorted(payment_summary.items()):
-		summary.append({"label": mode, "value": flt(amount, 2), "datatype": "Currency", "indicator": "Green"})
+	for mode, row in sorted(payment_summary.items()):
+		currency = row.get("currency") or ""
+		summary.append(
+			{
+				"label": f"{mode} ({currency})" if currency else mode,
+				"value": flt(row.get("amount"), get_currency_precision(currency)),
+				"datatype": "Currency",
+				"currency": currency or None,
+				"indicator": "Green",
+			}
+		)
 	return summary
 
 

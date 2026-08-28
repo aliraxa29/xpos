@@ -8,7 +8,40 @@ from frappe.query_builder import DocType
 from frappe.query_builder.functions import Sum
 from frappe.utils import cint, flt, getdate, nowdate
 
-from xpos.api.utilities import get_invoice_type
+from xpos.api.utilities import SAFE_FIELDNAME, get_invoice_type, get_item_search_settings
+
+
+def resolve_scanned_item_code(term: str, config: dict) -> str | None:
+	"""Resolve a typed or scanned value to an item code via serial or batch lookup.
+
+	Returns None when neither lookup is enabled: plain barcodes are already covered
+	by the LIKE on item_code.
+	"""
+	if not (config["search_serial_no"] or config["search_batch_no"]):
+		return None
+
+	from xpos.x_pos.api.item_processing.barcode import search_serial_or_batch_or_barcode_number
+
+	scan = search_serial_or_batch_or_barcode_number(
+		term, config["search_serial_no"], config["search_batch_no"]
+	)
+	return scan.get("item_code")
+
+
+def build_item_search_or_filters(term: str, config: dict) -> list[list]:
+	"""or_filters for frappe.get_list, over the configured Item columns."""
+	pattern = f"%{term}%"
+	return [[fieldname, "like", pattern] for fieldname in config["fields"]]
+
+
+def build_item_search_sql(config: dict) -> str:
+	"""OR fragment for the raw-SQL count query, over the configured Item columns."""
+	clauses = [
+		f"COALESCE(i.`{fieldname}`, '') LIKE %(search)s"
+		for fieldname in config["fields"]
+		if SAFE_FIELDNAME.match(fieldname)
+	]
+	return " OR ".join(clauses)
 
 
 @frappe.whitelist()
@@ -49,15 +82,15 @@ def get_pos_items(
 		if all_groups:
 			filters["item_group"] = ["in", list(all_groups)]
 
+	config = get_item_search_settings()
 	or_filters = []
 	if search_term:
-		search_term = f"%{search_term.strip()}%"
-		or_filters = [
-			["name", "like", search_term],
-			["item_name", "like", search_term],
-			["item_code", "like", search_term],
-			["local_item_name", "like", search_term],
-		]
+		term = search_term.strip()
+		resolved_item_code = resolve_scanned_item_code(term, config)
+		if resolved_item_code:
+			filters["item_code"] = resolved_item_code
+		else:
+			or_filters = build_item_search_or_filters(term, config)
 
 	hide_unavailable = pos.get("hide_unavailable_items") and warehouse
 	use_pos_deduction = bool(get_invoice_type() == "POS Invoice")
@@ -103,6 +136,13 @@ def get_pos_items(
 			return []
 		filters["name"] = ["in", available_items]
 
+	effective_page_length = cint(page_length)
+	search_limit = cint(config["item_search_limit"])
+	if search_term and search_limit > 0:
+		effective_page_length = (
+			min(effective_page_length, search_limit) if effective_page_length > 0 else search_limit
+		)
+
 	items = frappe.get_list(
 		"Item",
 		filters=filters,
@@ -125,7 +165,7 @@ def get_pos_items(
 		],
 		order_by="item_name asc",
 		limit_start=cint(start),
-		limit_page_length=cint(page_length),
+		limit_page_length=effective_page_length,
 	)
 
 	price_list = pos.selling_price_list or frappe.db.get_single_value(
@@ -204,14 +244,11 @@ def get_items_count(pos_profile: str, search_term: str = "", item_group: str = "
 			conditions += f" AND i.item_group IN ({placeholders})"
 
 	if search_term:
-		search_term = search_term.strip()
-		conditions += """ AND (
-			i.name LIKE %(search)s
-			OR i.item_name LIKE %(search)s
-            OR COALESCE(i.local_item_name, '') LIKE %(search)s
-			OR i.item_code LIKE %(search)s
-		)"""
-		values["search"] = f"%{search_term}%"
+		config = get_item_search_settings()
+		fragment = build_item_search_sql(config)
+		if fragment:
+			conditions += f" AND ({fragment})"
+			values["search"] = f"%{search_term.strip()}%"
 
 	sql = "SELECT COUNT(DISTINCT i.name) FROM `tabItem` i " + bin_join + " WHERE " + conditions
 	count = frappe.db.sql(sql, values)
@@ -279,6 +316,7 @@ def search_barcode(barcode: str, pos_profile: str | None = None):
 
 	Also supports scale barcodes (weighted items) if configured on the POS Profile.
 	"""
+	barcode = (barcode or "").strip()
 	if not barcode:
 		return None
 
@@ -345,11 +383,45 @@ def search_barcode(barcode: str, pos_profile: str | None = None):
 			"actual_qty": get_stock_qty(item.name, warehouse, pos_profile=pos_profile) if warehouse else 0,
 		}
 
-	if pos_profile:
-		result = _parse_scale_barcode(barcode, pos_profile)
-		if result:
-			result["rate"] = _get_item_rate(result["item_code"])
-			return result
+	config = get_item_search_settings()
+	if config["search_serial_no"] or config["search_batch_no"]:
+		from xpos.x_pos.api.item_processing.barcode import search_serial_or_batch_or_barcode_number
+
+		scan = search_serial_or_batch_or_barcode_number(
+			barcode, config["search_serial_no"], config["search_batch_no"]
+		)
+		if scan.get("item_code"):
+			item = frappe.get_cached_doc("Item", scan["item_code"])
+			return {
+				"item_code": item.name,
+				"item_name": item.item_name,
+				"local_item_name": item.get("local_item_name"),
+				"barcode": scan.get("barcode") or barcode,
+				"batch_no": scan.get("batch_no"),
+				"serial_no": scan.get("serial_no"),
+				"uom": item.stock_uom,
+				"stock_uom": item.stock_uom,
+				"rate": _get_item_rate(item.name),
+				"has_batch_no": item.has_batch_no,
+				"has_serial_no": item.has_serial_no,
+				"is_stock_item": item.is_stock_item,
+				"image": item.image,
+				"actual_qty": get_stock_qty(item.name, warehouse, pos_profile=pos_profile)
+				if warehouse
+				else 0,
+			}
+
+	result = resolve_scale_barcode(barcode)
+	if result:
+		scale_price = result.pop("scale_price", None)
+		rate = _get_item_rate(result["item_code"])
+		if scale_price is not None and flt(result.get("qty")):
+			rate = flt(scale_price) / flt(result["qty"])
+		result["rate"] = rate
+		result["actual_qty"] = (
+			get_stock_qty(result["item_code"], warehouse, pos_profile=pos_profile) if warehouse else 0
+		)
+		return result
 
 	return None
 
@@ -607,32 +679,6 @@ def get_stock_availability(items: str | list, warehouse: str | None = None, pos_
 
 
 @frappe.whitelist()
-def update_price_list_rate(item_code: str, price_list: str, rate: float, uom: str | None = None):
-	"""Create or update an Item Price record."""
-	filters = {"item_code": item_code, "price_list": price_list, "selling": 1}
-	if uom:
-		filters["uom"] = uom
-
-	existing = frappe.db.get_value("Item Price", filters, "name")
-	if existing:
-		frappe.db.set_value("Item Price", existing, "price_list_rate", flt(rate))
-	else:
-		doc = frappe.get_doc(
-			{
-				"doctype": "Item Price",
-				"item_code": item_code,
-				"price_list": price_list,
-				"selling": 1,
-				"price_list_rate": flt(rate),
-				"uom": uom,
-			}
-		)
-		doc.insert(ignore_permissions=True)
-
-	return {"success": True, "rate": flt(rate)}
-
-
-@frappe.whitelist()
 def get_price_for_uom(
 	item_code: str, uom: str, pos_profile: str | None = None, price_list: str | None = None
 ):
@@ -827,63 +873,56 @@ def _get_batch_data(item_code: str, warehouse: str, today: str | None = None):
 	return result
 
 
-def _parse_scale_barcode(barcode: str, pos_profile: str):
-	"""Parse scale barcodes for weighted items (e.g. deli scale barcodes)."""
-	try:
-		settings = frappe.get_all(
-			"Scale Barcode Settings",
-			filters={"pos_profile": pos_profile},
-			fields=[
-				"barcode_prefix",
-				"item_code_start",
-				"item_code_end",
-				"qty_start",
-				"qty_end",
-				"qty_decimals",
-			],
-			limit=1,
-		)
-		if not settings:
-			return None
+def resolve_scale_barcode(barcode: str):
+	"""Decode a scale barcode into an item and its weighed quantity."""
+	from xpos.x_pos.api.item_processing.barcode import (
+		get_scale_barcode_settings,
+		parse_scale_barcode_data,
+	)
 
-		s = settings[0]
-		prefix = s.get("barcode_prefix", "")
-		if prefix and not barcode.startswith(prefix):
-			return None
-
-		ic_start = cint(s.get("item_code_start", 0))
-		ic_end = cint(s.get("item_code_end", 0))
-		qty_start = cint(s.get("qty_start", 0))
-		qty_end = cint(s.get("qty_end", 0))
-		qty_decimals = cint(s.get("qty_decimals", 3))
-
-		if not ic_start or not ic_end or not qty_start or not qty_end:
-			return None
-
-		item_barcode = barcode[ic_start:ic_end]
-		qty_str = barcode[qty_start:qty_end]
-
-		barcode_data = frappe.db.get_value(
-			"Item Barcode",
-			{"barcode": item_barcode},
-			["parent as item_code", "barcode", "uom"],
-			as_dict=True,
-		)
-		if not barcode_data:
-			return None
-
-		qty = flt(qty_str) / (10**qty_decimals) if qty_str else 0
-
-		item = frappe.get_cached_doc("Item", barcode_data.item_code)
-		return {
-			"item_code": item.name,
-			"item_name": item.item_name,
-			"barcode": barcode_data.barcode,
-			"uom": barcode_data.uom or item.stock_uom,
-			"has_batch_no": item.has_batch_no,
-			"has_serial_no": item.has_serial_no,
-			"qty": qty,
-			"is_scale_barcode": True,
-		}
-	except Exception:
+	data = parse_scale_barcode_data(barcode)
+	if not data or not data.get("item_code"):
 		return None
+
+	settings = get_scale_barcode_settings()
+	weight_configured = (
+		settings and cint(settings.weight_starting_digit) and cint(settings.weight_total_digits)
+	)
+	if weight_configured and data.get("qty") is None:
+		return None
+
+	decoded = data["item_code"]
+	item_code = None
+	uom = None
+
+	if frappe.db.exists("Item", decoded):
+		item_code = decoded
+	else:
+		row = frappe.db.get_value(
+			"Item Barcode", {"barcode": decoded}, ["parent as item_code", "uom"], as_dict=True
+		)
+		if row:
+			item_code = row.item_code
+			uom = row.uom
+
+	if not item_code:
+		return None
+
+	item = frappe.get_cached_doc("Item", item_code)
+	qty = flt(data.get("qty"))
+
+	return {
+		"item_code": item.name,
+		"item_name": item.item_name,
+		"local_item_name": item.get("local_item_name"),
+		"barcode": barcode,
+		"uom": uom or item.stock_uom,
+		"stock_uom": item.stock_uom,
+		"has_batch_no": item.has_batch_no,
+		"has_serial_no": item.has_serial_no,
+		"is_stock_item": item.is_stock_item,
+		"image": item.image,
+		"qty": qty,
+		"is_scale_barcode": True,
+		"scale_price": flt(data["price"]) if data.get("price") is not None else None,
+	}

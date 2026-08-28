@@ -22,7 +22,7 @@
 				<div v-if="!selectedInvoice">
 					<div class="relative mb-3">
 						<Search
-							class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+							class="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
 						/>
 						<Input
 							v-model="searchTerm"
@@ -54,7 +54,7 @@
 								</p>
 							</div>
 							<span class="font-bold text-foreground text-sm">{{
-								formatPrice(inv.grand_total)
+								money(inv.grand_total)
 							}}</span>
 						</button>
 					</div>
@@ -95,7 +95,7 @@
 
 					<div class="border border-border rounded-lg overflow-hidden">
 						<div class="overflow-x-auto">
-							<table class="w-full text-sm min-w-[340px]">
+							<table class="w-full text-sm min-w-85">
 								<thead class="bg-muted">
 									<tr>
 										<th class="text-start px-3 py-2 text-muted-foreground font-medium">
@@ -139,7 +139,7 @@
 											/>
 										</td>
 										<td class="px-3 py-2 text-end font-medium text-foreground">
-											{{ formatPrice(item.rate * (item.return_qty || 0)) }}
+											{{ money(item.rate * (item.return_qty || 0)) }}
 										</td>
 									</tr>
 								</tbody>
@@ -168,6 +168,7 @@
 import { ref, computed } from "vue";
 import { useCartStore } from "@/stores/cartStore";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { call } from "@/services/api";
 import {
 	Dialog,
@@ -188,6 +189,7 @@ const emit = defineEmits<{ (e: "close"): void }>();
 
 const cartStore = useCartStore();
 const posStore = usePosStore();
+const { money } = useMoney();
 
 interface SearchInvoice {
 	name: string;
@@ -338,9 +340,5 @@ function close() {
 	selectedInvoice.value = null;
 	returnItems.value = [];
 	emit("close");
-}
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
 }
 </script>

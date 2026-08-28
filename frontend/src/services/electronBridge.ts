@@ -206,6 +206,7 @@ export interface ElectronDbAPI {
 	reinit: (config: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
 	getItems: (opts?: {
 		search?: string;
+		searchFields?: string[];
 		group?: string;
 		limit?: number;
 		offset?: number;

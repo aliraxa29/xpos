@@ -36,7 +36,7 @@
 									{{ __("Grand Total") }}
 								</p>
 								<p class="text-2xl font-extrabold text-emerald-700 dark:text-emerald-300">
-									{{ posStore.currencySymbol }}{{ formatPrice(summary.grand_total ?? 0) }}
+									{{ money(summary.grand_total ?? 0) }}
 								</p>
 							</CardContent>
 						</Card>
@@ -46,7 +46,7 @@
 									{{ __("Net Total") }}
 								</p>
 								<p class="text-2xl font-extrabold text-blue-700 dark:text-blue-300">
-									{{ posStore.currencySymbol }}{{ formatPrice(summary.net_total ?? 0) }}
+									{{ money(summary.net_total ?? 0) }}
 								</p>
 							</CardContent>
 						</Card>
@@ -75,8 +75,7 @@
 									{{ __("Total Taxes") }}
 								</p>
 								<p class="text-lg font-bold text-violet-700 dark:text-violet-300">
-									{{ posStore.currencySymbol
-									}}{{ formatPrice((summary as any).total_taxes ?? 0) }}
+									{{ money((summary as any).total_taxes ?? 0) }}
 								</p>
 							</CardContent>
 						</Card>
@@ -95,9 +94,9 @@
 								<span class="text-muted-foreground">{{
 									tax.description || tax.account_head
 								}}</span>
-								<span class="font-medium text-foreground"
-									>{{ posStore.currencySymbol }}{{ formatPrice(tax.tax_amount ?? 0) }}</span
-								>
+								<span class="font-medium text-foreground">{{
+									money(tax.tax_amount ?? 0)
+								}}</span>
 							</div>
 						</div>
 					</div>
@@ -108,7 +107,7 @@
 						</h3>
 						<div class="border border-border rounded-lg overflow-hidden">
 							<div class="overflow-x-auto">
-								<table class="w-full text-sm min-w-[420px]">
+								<table class="w-full text-sm min-w-105">
 									<thead class="bg-muted">
 										<tr>
 											<th
@@ -143,27 +142,40 @@
 											v-for="(detail, index) in closingDetails"
 											:key="detail.mode_of_payment"
 											class="border-t border-border"
+											data-testid="closing-row"
+											:data-mode="detail.mode_of_payment"
 										>
 											<td class="px-4 py-2.5 font-medium text-foreground">
 												{{ detail.mode_of_payment }}
+												<span
+													class="block text-[11px] font-normal text-muted-foreground"
+													data-testid="closing-currency"
+												>
+													{{ detail.currency }}
+												</span>
 											</td>
 											<td class="px-4 py-2.5 text-end text-muted-foreground">
-												{{ formatPrice(detail.opening_amount) }}
+												{{ formatFor(detail.currency, detail.opening_amount) }}
 											</td>
-											<td class="px-4 py-2.5 text-end text-muted-foreground">
-												{{ formatPrice(detail.expected_amount) }}
+											<td
+												class="px-4 py-2.5 text-end text-muted-foreground"
+												data-testid="closing-expected"
+											>
+												{{ formatFor(detail.currency, detail.expected_amount) }}
 											</td>
 											<td class="px-4 py-2.5 text-end">
 												<NumberInput
 													v-model="closingDetails[index].closing_amount"
 													:min="0"
-													:precision="2"
+													:precision="precisionFor(detail.currency)"
 													class="w-28 text-end text-sm ms-auto"
+													data-testid="closing-input"
 													@change="calculateDifference(index)"
 												/>
 											</td>
 											<td
 												class="px-4 py-2.5 text-end font-bold"
+												data-testid="closing-difference"
 												:class="
 													detail.difference >= 0
 														? 'text-emerald-600'
@@ -171,7 +183,7 @@
 												"
 											>
 												{{ detail.difference >= 0 ? "+" : ""
-												}}{{ formatPrice(detail.difference) }}
+												}}{{ formatFor(detail.currency, detail.difference) }}
 											</td>
 										</tr>
 									</tbody>
@@ -218,8 +230,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { showSuccess, showError } from "@/services/api";
 import { hasPermission } from "@/services/userRights";
+import { formatFor, precisionFor, roundFor } from "@/composables/useCurrency";
+import type { ShiftModeTotal } from "@/types/pos.types";
 import {
 	Dialog,
 	DialogScrollContent,
@@ -238,13 +253,15 @@ interface ClosingSummary {
 	total_invoices?: number;
 	grand_total?: number;
 	net_total?: number;
-	payment_summary?: Record<string, number>;
-	opening_balances?: Record<string, number>;
+	payment_summary?: Record<string, ShiftModeTotal>;
+	opening_balances?: Record<string, ShiftModeTotal>;
+	expected_amounts?: Record<string, ShiftModeTotal>;
 	[key: string]: unknown;
 }
 
 interface ClosingDetail {
 	mode_of_payment: string;
+	currency: string;
 	opening_amount: number;
 	expected_amount: number;
 	closing_amount: number;
@@ -252,6 +269,7 @@ interface ClosingDetail {
 }
 
 const posStore = usePosStore();
+const { money } = useMoney();
 
 const isLoading = ref(true);
 const isClosing = ref(false);
@@ -260,52 +278,47 @@ const closedShiftName = ref("");
 const summary = ref<ClosingSummary | null>(null);
 const closingDetails = ref<ClosingDetail[]>([]);
 
+function buildClosingDetails(data: ClosingSummary): ClosingDetail[] {
+	const expectedAmounts = data.expected_amounts || {};
+	const openingBalances = data.opening_balances || {};
+	const modes = Object.keys(expectedAmounts).length
+		? Object.keys(expectedAmounts)
+		: Object.keys(openingBalances);
+
+	if (modes.length === 0) {
+		return [
+			{
+				mode_of_payment: posStore.cashModeOfPayment || "Cash",
+				currency: posStore.invoiceCurrency,
+				opening_amount: 0,
+				expected_amount: 0,
+				closing_amount: 0,
+				difference: 0,
+			},
+		];
+	}
+
+	return modes.map((mode) => {
+		const expected = expectedAmounts[mode]?.amount ?? openingBalances[mode]?.amount ?? 0;
+		return {
+			mode_of_payment: mode,
+			currency:
+				expectedAmounts[mode]?.currency ||
+				openingBalances[mode]?.currency ||
+				posStore.invoiceCurrency,
+			opening_amount: openingBalances[mode]?.amount ?? 0,
+			expected_amount: expected,
+			closing_amount: expected,
+			difference: 0,
+		};
+	});
+}
+
 onMounted(async () => {
 	try {
 		const data = (await posStore.fetchClosingData()) as ClosingSummary | undefined;
 		summary.value = data || null;
-
-		if (data) {
-			const methods = Object.keys(data.payment_summary || {});
-			const openingBalances = (data.opening_balances || {}) as Record<string, number>;
-
-			if (methods.length === 0) {
-				const openMethods = Object.keys(openingBalances);
-				if (openMethods.length > 0) {
-					closingDetails.value = openMethods.map((m) => ({
-						mode_of_payment: m,
-						opening_amount: openingBalances[m] || 0,
-						expected_amount: openingBalances[m] || 0,
-						closing_amount: openingBalances[m] || 0,
-						difference: 0,
-					}));
-				} else {
-					closingDetails.value = [
-						{
-							mode_of_payment: "Cash",
-							opening_amount: 0,
-							expected_amount: 0,
-							closing_amount: 0,
-							difference: 0,
-						},
-					];
-				}
-			} else {
-				const paymentSummary = (data.payment_summary || {}) as Record<string, number>;
-				closingDetails.value = methods.map((m) => {
-					const opening = openingBalances[m] || 0;
-					const sales = paymentSummary[m] || 0;
-					const expected = opening + sales;
-					return {
-						mode_of_payment: m,
-						opening_amount: opening,
-						expected_amount: expected,
-						closing_amount: expected,
-						difference: 0,
-					};
-				});
-			}
-		}
+		if (data) closingDetails.value = buildClosingDetails(data);
 	} catch (error) {
 		showError("Failed to load shift data");
 	} finally {
@@ -315,7 +328,7 @@ onMounted(async () => {
 
 function calculateDifference(index: number) {
 	const detail = closingDetails.value[index];
-	detail.difference = (detail.closing_amount || 0) - detail.expected_amount;
+	detail.difference = roundFor(detail.currency, (detail.closing_amount || 0) - detail.expected_amount);
 }
 
 async function handleCloseShift() {
@@ -347,9 +360,5 @@ function printShiftSummary() {
 
 function close() {
 	posStore.showClosingDialog = false;
-}
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
 }
 </script>

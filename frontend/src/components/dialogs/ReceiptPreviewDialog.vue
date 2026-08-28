@@ -85,7 +85,7 @@
 					</h3>
 					<div class="rounded-lg border border-border overflow-hidden">
 						<div class="overflow-x-auto">
-							<table class="w-full text-sm min-w-[360px]">
+							<table class="w-full text-sm min-w-90">
 								<thead class="bg-muted/50">
 									<tr>
 										<th
@@ -127,20 +127,19 @@
 												{{ __("Discount") }}:
 												{{
 													item.discount_percentage
-														? item.discount_percentage + "%"
-														: posStore.currencySymbol +
-															formatNumber(item.discount_amount || 0)
+														? percent(item.discount_percentage)
+														: money(item.discount_amount || 0)
 												}}
 											</div>
 										</td>
 										<td class="px-4 py-3 text-end text-muted-foreground">
-											{{ item.qty }} {{ item.uom }}
+											{{ qty(item.qty) }} {{ item.uom }}
 										</td>
 										<td class="px-4 py-3 text-end text-muted-foreground">
-											{{ formatNumber(item.rate) }}
+											{{ amount(item.rate) }}
 										</td>
 										<td class="px-4 py-3 text-end font-medium text-foreground">
-											{{ formatNumber(item.amount ?? 0) }}
+											{{ amount(item.amount ?? 0) }}
 										</td>
 									</tr>
 								</tbody>
@@ -154,16 +153,13 @@
 					<div class="rounded-lg border border-border p-4 space-y-2">
 						<div class="flex justify-between text-sm">
 							<span class="text-muted-foreground">{{ __("Net Total") }}</span>
-							<span class="text-foreground"
-								>{{ posStore.currencySymbol }}{{ formatNumber(invoice!.net_total) }}</span
-							>
+							<span class="text-foreground">{{ money(invoice!.net_total) }}</span>
 						</div>
 						<div v-if="invoice!.total_taxes_and_charges" class="flex justify-between text-sm">
 							<span class="text-muted-foreground">{{ __("Taxes & Charges") }}</span>
-							<span class="text-foreground"
-								>{{ posStore.currencySymbol
-								}}{{ formatNumber(Number(invoice!.total_taxes_and_charges) || 0) }}</span
-							>
+							<span class="text-foreground">{{
+								money(Number(invoice!.total_taxes_and_charges) || 0)
+							}}</span>
 						</div>
 						<div
 							v-if="invoice!.discount_amount || invoice!.additional_discount_percentage"
@@ -172,26 +168,20 @@
 							<span class="text-muted-foreground">
 								{{ __("Discount") }}
 								<span v-if="invoice!.additional_discount_percentage"
-									>({{ invoice!.additional_discount_percentage }}%)</span
+									>({{ percent(invoice!.additional_discount_percentage) }})</span
 								>
 							</span>
 							<span class="text-destructive"
-								>-{{ posStore.currencySymbol
-								}}{{ formatNumber(Number(invoice!.discount_amount) || 0) }}</span
+								>-{{ money(Number(invoice!.discount_amount) || 0) }}</span
 							>
 						</div>
 						<div v-if="invoice!.loyalty_amount" class="flex justify-between text-sm">
 							<span class="text-muted-foreground">{{ __("Loyalty Points Redeemed") }}</span>
-							<span class="text-destructive"
-								>-{{ posStore.currencySymbol
-								}}{{ formatNumber(invoice!.loyalty_amount) }}</span
-							>
+							<span class="text-destructive">-{{ money(invoice!.loyalty_amount) }}</span>
 						</div>
 						<div class="flex justify-between text-base font-bold pt-2 border-t border-border">
 							<span class="text-foreground">{{ __("Grand Total") }}</span>
-							<span class="text-foreground"
-								>{{ posStore.currencySymbol }}{{ formatNumber(invoice!.grand_total) }}</span
-							>
+							<span class="text-foreground">{{ money(invoice!.grand_total) }}</span>
 						</div>
 					</div>
 				</div>
@@ -209,10 +199,10 @@
 							:key="tax.description"
 							class="flex justify-between px-4 py-2.5 text-sm"
 						>
-							<span class="text-muted-foreground">{{ tax.description }} ({{ tax.rate }}%)</span>
-							<span class="text-foreground font-medium"
-								>{{ posStore.currencySymbol }}{{ formatNumber(tax.tax_amount) }}</span
+							<span class="text-muted-foreground"
+								>{{ tax.description }} ({{ percent(tax.rate) }})</span
 							>
+							<span class="text-foreground font-medium">{{ money(tax.tax_amount) }}</span>
 						</div>
 					</div>
 				</div>
@@ -226,19 +216,16 @@
 							class="flex justify-between items-center px-4 py-2.5"
 						>
 							<span class="text-muted-foreground text-sm">{{ p.mode_of_payment }}</span>
-							<span class="font-medium text-foreground"
-								>{{ posStore.currencySymbol }}{{ formatNumber(p.amount) }}</span
-							>
+							<span class="font-medium text-foreground">{{ money(p.amount) }}</span>
 						</div>
 						<div
 							v-if="invoice.change_amount"
 							class="flex justify-between items-center px-4 py-2.5 bg-muted/30"
 						>
 							<span class="text-muted-foreground text-sm">{{ __("Change Given") }}</span>
-							<span class="font-medium text-foreground"
-								>{{ posStore.currencySymbol
-								}}{{ formatNumber(Number(invoice.change_amount) || 0) }}</span
-							>
+							<span class="font-medium text-foreground">{{
+								money(Number(invoice.change_amount) || 0)
+							}}</span>
 						</div>
 					</div>
 				</div>
@@ -324,6 +311,7 @@ import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/services/userRights";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { useCartStore } from "@/stores/cartStore";
 import __ from "@/lib/translate";
 import { ref } from "vue";
@@ -340,6 +328,7 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>();
 
 const posStore = usePosStore();
+const { money, amount, qty, percent } = useMoney();
 const cartStore = useCartStore();
 const router = useRouter();
 
@@ -471,9 +460,5 @@ async function returnFromOrder(order: Invoice) {
 	} catch (error) {
 		console.error("Error preparing return:", error);
 	}
-}
-
-function formatNumber(num: number | string) {
-	return parseFloat(String(num) || "0").toFixed(2);
 }
 </script>

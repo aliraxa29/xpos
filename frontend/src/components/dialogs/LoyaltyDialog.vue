@@ -55,8 +55,7 @@
 							</div>
 							<div class="bg-background rounded-lg p-2.5 text-center">
 								<p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-									{{ posStore.currencySymbol
-									}}{{ formatPrice(customerStore.customerLoyaltyInfo.points_value || 0) }}
+									{{ money(customerStore.customerLoyaltyInfo.points_value || 0) }}
 								</p>
 								<p class="text-[11px] text-muted-foreground">
 									{{ __("Points Value") }}
@@ -195,6 +194,7 @@ import { ref, computed, watch } from "vue";
 import { useCustomerStore } from "@/stores/customerStore";
 import { useCartStore } from "@/stores/cartStore";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { showSuccess, showError } from "@/services/api";
 import {
 	Dialog,
@@ -214,6 +214,7 @@ const customerStore = useCustomerStore();
 const { showLoyaltyDialog } = storeToRefs(customerStore);
 const cartStore = useCartStore();
 const posStore = usePosStore();
+const { money } = useMoney();
 
 const selectedProgram = ref("");
 const isProcessing = ref(false);
@@ -280,9 +281,5 @@ function close() {
 	customerStore.showLoyaltyDialog = false;
 	selectedProgram.value = "";
 	customerStore.clearLoyaltyInfo();
-}
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
 }
 </script>

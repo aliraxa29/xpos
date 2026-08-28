@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, watch, computed, type HTMLAttributes } from "vue";
 import { cn } from "@/lib/utils";
+import {
+	floatPrecision,
+	formatNumber as formatBySystem,
+	getNumberFormatInfo,
+	parseNumber,
+	roundTo,
+} from "@/utils/numberFormat";
 
 export interface NumberInputProps {
 	modelValue?: number;
@@ -39,23 +46,28 @@ const isFocused = ref(false);
 
 const effectivePrecision = computed(() => {
 	if (props.precision !== undefined) return props.precision;
-	return props.allowDecimal ? 2 : 0;
+	return props.allowDecimal ? floatPrecision() : 0;
 });
 
 function formatNumber(val: number): string {
 	if (val === null || val === undefined || isNaN(val)) return "";
-	const p = effectivePrecision.value;
-	return p > 0 ? val.toFixed(p) : String(Math.round(val));
+	return formatBySystem(val, null, effectivePrecision.value);
 }
 
 const displayValue = ref(formatNumber(props.modelValue));
 
+function editValue(val: number): string {
+	if (val === null || val === undefined || isNaN(val)) return "";
+	const { decimalStr } = getNumberFormatInfo();
+	const text = String(val);
+	return decimalStr && decimalStr !== "." ? text.split(".").join(decimalStr) : text;
+}
+
 function parseInput(raw: string): number | null {
 	const cleaned = raw.trim();
-	if (!cleaned) return null;
-	const num = Number(cleaned);
-	if (!Number.isFinite(num)) return null;
-	return num;
+	if (!cleaned || !/\d/.test(cleaned)) return null;
+	const num = parseNumber(cleaned);
+	return Number.isFinite(num) ? num : null;
 }
 
 function clampValue(val: number): number {
@@ -66,10 +78,7 @@ function clampValue(val: number): number {
 
 function commitValue(val: number): void {
 	const clamped = clampValue(val);
-	const rounded =
-		effectivePrecision.value > 0
-			? parseFloat(clamped.toFixed(effectivePrecision.value))
-			: Math.round(clamped);
+	const rounded = roundTo(clamped, effectivePrecision.value);
 	emit("update:modelValue", rounded);
 	emit("change", rounded);
 }
@@ -86,7 +95,7 @@ watch(
 function onFocus(event: FocusEvent): void {
 	isFocused.value = true;
 	const val = props.modelValue ?? 0;
-	displayValue.value = val === 0 ? "" : String(val);
+	displayValue.value = val === 0 ? "" : editValue(val);
 	if (props.selectOnFocus) {
 		requestAnimationFrame(() => {
 			(event.target as HTMLInputElement)?.select();
@@ -117,7 +126,7 @@ function onInput(event: Event): void {
 function onKeyDown(event: KeyboardEvent): void {
 	const blocked = ["e", "E"];
 	if (!props.allowDecimal) {
-		blocked.push(".");
+		blocked.push(".", ",");
 	}
 	if (blocked.includes(event.key)) {
 		event.preventDefault();
@@ -149,11 +158,8 @@ function select() {
 
 function setValue(val: number): void {
 	const clamped = clampValue(val);
-	const rounded =
-		effectivePrecision.value > 0
-			? parseFloat(clamped.toFixed(effectivePrecision.value))
-			: Math.round(clamped);
-	displayValue.value = isFocused.value ? String(rounded) : formatNumber(rounded);
+	const rounded = roundTo(clamped, effectivePrecision.value);
+	displayValue.value = isFocused.value ? editValue(rounded) : formatNumber(rounded);
 	emit("update:modelValue", rounded);
 	emit("change", rounded);
 }

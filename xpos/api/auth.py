@@ -26,15 +26,11 @@ ALL_PERMISSION_KEYS = (
 
 DEFAULT_ROLE = "Cashier"
 DEFAULT_DISCOUNT_LIMIT = 100
-_ROLE_CACHE_KEY = "xpos_role_permissions"
+ROLE_CACHE_KEY = "xpos_role_permissions"
 
 
-def _resolve_role_permissions(role_name: str) -> dict:
-	"""Build the full permission map for a role from its POS Role Permission rows.
-
-	Every key in :data:`ALL_PERMISSION_KEYS` is present in the result; flags
-	without an enabled child row default to ``False``.
-	"""
+def resolve_role_permissions(role_name: str) -> dict:
+	"""Build the full permission map for a role from its POS Role Permission rows."""
 	perms = {key: False for key in ALL_PERMISSION_KEYS}
 
 	if not role_name or not frappe.db.exists("POS Role", role_name):
@@ -53,13 +49,8 @@ def _resolve_role_permissions(role_name: str) -> dict:
 	return perms
 
 
-def _get_user_pos_role(user: str, pos_profile: str | None = None) -> str:
-	"""Resolve a user's POS Role from the POS Profile User child rows.
-
-	When ``pos_profile`` is given the matching profile's row is preferred;
-	otherwise the first profile row that carries a ``pos_role`` wins. Falls
-	back to :data:`DEFAULT_ROLE` when no assignment exists.
-	"""
+def get_user_pos_role(user: str, pos_profile: str | None = None) -> str:
+	"""Resolve a user's POS Role from the POS Profile User child rows."""
 	filters = {"user": user, "parenttype": "POS Profile"}
 	if pos_profile:
 		filters["parent"] = pos_profile
@@ -78,63 +69,60 @@ def _get_user_pos_role(user: str, pos_profile: str | None = None) -> str:
 	return DEFAULT_ROLE
 
 
-def _get_role_permissions(role_name: str) -> dict:
-	"""Cached accessor for :func:`_resolve_role_permissions`.
-
-	Cached per-role in ``frappe.cache`` and invalidated by the POS Role /
-	POS Permission doc_events (see :func:`clear_role_permission_cache`).
-	"""
+def get_role_permissions(role_name: str) -> dict:
+	"""Cached accessor for :func:`resolve_role_permissions`."""
 	role_name = role_name or DEFAULT_ROLE
 	return frappe.cache().hget(
-		_ROLE_CACHE_KEY,
+		ROLE_CACHE_KEY,
 		role_name,
-		generator=lambda: _resolve_role_permissions(role_name),
+		generator=lambda: resolve_role_permissions(role_name),
 	)
 
 
 def clear_role_permission_cache(role_name: str | None = None) -> None:
 	"""Invalidate the cached permission map for a role (or all roles)."""
 	if role_name:
-		frappe.cache().hdel(_ROLE_CACHE_KEY, role_name)
+		frappe.cache().hdel(ROLE_CACHE_KEY, role_name)
 	else:
-		frappe.cache().delete_key(_ROLE_CACHE_KEY)
+		frappe.cache().delete_key(ROLE_CACHE_KEY)
 
 
-def _all_enabled() -> dict:
+def all_enabled() -> dict:
 	"""Permission map with every flag granted (System Manager / Administrator)."""
 	return {key: True for key in ALL_PERMISSION_KEYS}
 
 
-def _is_superuser(user: str) -> bool:
+def is_superuser(user: str) -> bool:
 	return user == "Administrator" or "System Manager" in frappe.get_roles(user)
 
 
-def user_has_pos_permission(key: str, user: str | None = None, pos_profile: str | None = None) -> bool:
-	"""Whether ``user``'s POS Role grants the permission ``key``.
-
-	Single source of truth for server-side POS permission checks. Resolves the
-	role from the user's POS Profile User row (preferring ``pos_profile`` when
-	supplied). Administrators and System Managers always qualify; Guest never.
-	"""
+def is_pos_manager(user: str | None = None) -> bool:
+	"""Whether ``user`` may act on POS records owned by another cashier."""
 	user = user or frappe.session.user
 	if user == "Guest":
 		return False
-	if _is_superuser(user):
+	if is_superuser(user):
 		return True
-	role_name = _get_user_pos_role(user, pos_profile)
-	return bool(_get_role_permissions(role_name).get(key))
+	return user_has_pos_permission("recall_other_shift_tabs", user)
+
+
+def user_has_pos_permission(key: str, user: str | None = None, pos_profile: str | None = None) -> bool:
+	"""Whether ``user``'s POS Role grants the permission ``key``."""
+	user = user or frappe.session.user
+	if user == "Guest":
+		return False
+	if is_superuser(user):
+		return True
+	role_name = get_user_pos_role(user, pos_profile)
+	return bool(get_role_permissions(role_name).get(key))
 
 
 def can_manage_role_permissions(user: str | None = None) -> bool:
-	"""Whether ``user`` may view and edit the POS role permission matrix.
-
-	Administrators and System Managers always qualify. Any other user must
-	have the ``manage_role_permissions`` flag enabled on their POS Role.
-	"""
+	"""Whether ``user`` may view and edit the POS role permission matrix."""
 	return user_has_pos_permission("manage_role_permissions", user)
 
 
-def _require_manage_permissions() -> None:
+def require_manage_permissions() -> None:
 	if not can_manage_role_permissions():
 		frappe.throw(
 			_("You are not permitted to manage POS role permissions."),
@@ -142,55 +130,32 @@ def _require_manage_permissions() -> None:
 		)
 
 
-def _get_user_discount_limit(user_name: str, pos_profile: str | None) -> float:
-	"""Per-user discount cap, read from the POS Profile User child row."""
-	if not pos_profile:
-		return DEFAULT_DISCOUNT_LIMIT
-
-	value = frappe.db.get_value(
-		"POS Profile User",
-		{"parent": pos_profile, "parenttype": "POS Profile", "user": user_name},
-		"discount_limit",
-	)
-	return flt(value) if value not in (None, "") else DEFAULT_DISCOUNT_LIMIT
-
-
 @frappe.whitelist()
 def get_my_pos_permissions(pos_profile: str | None = None) -> dict:
-	"""Return POS permission flags for the current logged-in user (browser mode).
-
-	Resolves the user's POS Role from their POS Profile User row (preferring
-	``pos_profile`` when supplied). System Manager / Administrator receive every
-	flag enabled.
-	"""
+	"""Return POS permission flags for the current logged-in user (browser mode)."""
 	user = frappe.session.user
 	if user == "Guest":
 		return {key: False for key in ALL_PERMISSION_KEYS}
 
-	if _is_superuser(user):
-		return _all_enabled()
+	if is_superuser(user):
+		return all_enabled()
 
-	role_name = _get_user_pos_role(user, pos_profile)
-	return _get_role_permissions(role_name)
+	role_name = get_user_pos_role(user, pos_profile)
+	return get_role_permissions(role_name)
 
 
 def get_current_user_permissions() -> dict:
-	"""Return the current session user's xPOS role and permission flags.
-
-	Used by ``extend_bootinfo`` so the web app has an authoritative source of
-	truth for permissions. System Manager / Administrator resolve to all
-	permissions enabled.
-	"""
+	"""Return the current session user's xPOS role and permission flags."""
 	user = frappe.session.user
 	if user == "Guest":
 		return {}
 
-	role_name = _get_user_pos_role(user)
+	role_name = get_user_pos_role(user)
 
-	if _is_superuser(user):
-		permissions = _all_enabled()
+	if is_superuser(user):
+		permissions = all_enabled()
 	else:
-		permissions = _get_role_permissions(role_name)
+		permissions = get_role_permissions(role_name)
 
 	return {
 		"role": role_name,
@@ -205,15 +170,8 @@ def get_pos_users(
 ):
 	"""Return POS-enabled Frappe users for offline authentication sync.
 
-	The function signature mirrors ``frappe.client.get_list`` so the sync
-	engine can use it as a drop-in ``pullMethod``.
-
 	Returns:
-	    list[dict]: One record per user with at minimum:
-	        name, username, full_name, enabled, password_hash (empty),
-	        role, pos_profile, warehouse, company, theme, discount_limit,
-	        and every permission flag in :data:`ALL_PERMISSION_KEYS`, resolved
-	        from the POS Role assigned on the user's POS Profile User row.
+	    list[dict]: One record per user with at minimum
 	"""
 	limit_start = cint(limit_start)
 	limit_page_length = cint(limit_page_length)
@@ -258,7 +216,7 @@ def get_pos_users(
 		if not user:
 			continue
 		role_name = pu.pos_role or DEFAULT_ROLE
-		perms = _get_role_permissions(role_name)
+		perms = get_role_permissions(role_name)
 		discount_limit = (
 			flt(pu.discount_limit) if pu.discount_limit not in (None, "") else DEFAULT_DISCOUNT_LIMIT
 		)
@@ -294,7 +252,7 @@ def get_role_permission_matrix() -> dict:
 	        "matrix": {role_name: {permission_name: bool}},
 	    }
 	"""
-	_require_manage_permissions()
+	require_manage_permissions()
 	roles = frappe.get_all(
 		"POS Role",
 		fields=["name", "role_name"],
@@ -317,7 +275,7 @@ def get_role_permission_matrix() -> dict:
 
 	matrix: dict[str, dict[str, bool]] = {}
 	for role in roles:
-		matrix[role.name] = _resolve_role_permissions(role.name)
+		matrix[role.name] = resolve_role_permissions(role.name)
 
 	return {"roles": roles, "permissions": permissions, "matrix": matrix}
 
@@ -325,7 +283,7 @@ def get_role_permission_matrix() -> dict:
 @frappe.whitelist()
 def set_role_permission(role: str, permission: str, enabled: bool | int | str) -> dict:
 	"""Upsert a single POS Role Permission child row and bust the cache."""
-	_require_manage_permissions()
+	require_manage_permissions()
 	if not frappe.db.exists("POS Role", role):
 		frappe.throw(_("POS Role {0} not found").format(role))
 

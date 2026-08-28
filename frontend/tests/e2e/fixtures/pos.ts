@@ -224,10 +224,16 @@ export function defaultRoutes(): Record<string, unknown> {
 		"xpos.api.auth.get_my_pos_permissions": PERMISSIONS,
 		"xpos.api.shifts.check_open_shift": OPEN_SHIFT,
 		"xpos.api.settings.get_erp_settings": {
-			invoice_type: "Sales Invoice",
-			post_change_gl_entries: 0,
-			invoice_fields: [],
-			pos_search_fields: [],
+			pos_settings: {
+				invoice_type: "Sales Invoice",
+				post_change_gl_entries: 0,
+			},
+			item_search: {
+				fields: ["name", "item_name", "item_code", "local_item_name"],
+				item_search_limit: 20,
+				search_serial_no: 0,
+				search_batch_no: 0,
+			},
 		},
 		"xpos.api.settings.get_xpos_branding": null,
 		"xpos.api.print_formats.get_print_formats": [],

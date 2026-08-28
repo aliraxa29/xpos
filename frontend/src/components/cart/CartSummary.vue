@@ -12,7 +12,7 @@
 			<div class="flex items-center justify-between text-sm">
 				<span class="text-muted-foreground">{{ __("Subtotal") }}</span>
 				<span class="font-medium text-foreground">
-					{{ posStore.currencySymbol }}{{ formatPrice(cartStore.subtotal) }}
+					{{ money(cartStore.subtotal) }}
 				</span>
 			</div>
 
@@ -21,7 +21,7 @@
 					<Percent class="w-3 h-3" /> {{ __("Item Discounts") }}
 				</span>
 				<span class="font-medium text-emerald-600 dark:text-emerald-400">
-					-{{ posStore.currencySymbol }}{{ formatPrice(itemDiscountTotal) }}
+					-{{ money(itemDiscountTotal) }}
 				</span>
 			</div>
 
@@ -34,7 +34,7 @@
 					<span class="text-muted-foreground flex items-center gap-1">
 						{{ tax.description }}
 						<span v-if="tax.rate" class="text-xs text-muted-foreground/70"
-							>({{ tax.rate }}%)</span
+							>({{ percent(tax.rate) }})</span
 						>
 						<span v-if="tax.included_in_print_rate" class="text-[10px] text-blue-500">{{
 							__("incl.")
@@ -48,8 +48,7 @@
 								: 'text-foreground'
 						"
 					>
-						{{ tax.included_in_print_rate ? "" : "+" }}{{ posStore.currencySymbol
-						}}{{ formatPrice(tax.amount) }}
+						{{ tax.included_in_print_rate ? "" : "+" }}{{ money(tax.amount) }}
 					</span>
 				</div>
 			</template>
@@ -62,7 +61,7 @@
 					<Ticket class="w-3 h-3" /> {{ __("Offer Discount") }}
 				</span>
 				<span class="font-medium text-emerald-600 dark:text-emerald-400">
-					-{{ posStore.currencySymbol }}{{ formatPrice(cartStore.offerItemDiscountTotal) }}
+					-{{ money(cartStore.offerItemDiscountTotal) }}
 				</span>
 			</div>
 
@@ -72,10 +71,10 @@
 			>
 				<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
 					<Ticket class="w-3 h-3" /> {{ __("Offer") }}
-					<span class="text-xs">({{ cartStore.offerGrandTotalDiscountPct }}%)</span>
+					<span class="text-xs">({{ percent(cartStore.offerGrandTotalDiscountPct) }})</span>
 				</span>
 				<span class="font-medium text-emerald-600 dark:text-emerald-400">
-					-{{ posStore.currencySymbol }}{{ formatPrice(grandTotalOfferDiscount) }}
+					-{{ money(grandTotalOfferDiscount) }}
 				</span>
 			</div>
 
@@ -90,11 +89,11 @@
 						v-if="cartStore.discountPercentage > 0"
 						class="text-xs text-emerald-600 dark:text-emerald-400"
 					>
-						({{ cartStore.discountPercentage }}%)
+						({{ percent(cartStore.discountPercentage) }})
 					</span>
 				</span>
 				<span class="font-medium text-emerald-600 dark:text-emerald-400">
-					-{{ posStore.currencySymbol }}{{ formatPrice(discountValue) }}
+					-{{ money(discountValue) }}
 				</span>
 			</div>
 
@@ -106,14 +105,14 @@
 					<Gift class="w-3.5 h-3.5" /> {{ __("Loyalty") }}
 				</span>
 				<span class="font-medium text-violet-600 dark:text-violet-400">
-					-{{ posStore.currencySymbol }}{{ formatPrice(cartStore.loyaltyAmount) }}
+					-{{ money(cartStore.loyaltyAmount) }}
 				</span>
 			</div>
 
 			<div v-if="cartStore.writeOffAmount > 0" class="flex items-center justify-between text-sm">
 				<span class="text-muted-foreground">{{ __("Write Off") }}</span>
 				<span class="font-medium text-amber-600 dark:text-amber-400">
-					-{{ posStore.currencySymbol }}{{ formatPrice(cartStore.writeOffAmount) }}
+					-{{ money(cartStore.writeOffAmount) }}
 				</span>
 			</div>
 
@@ -122,11 +121,11 @@
 					<Truck class="w-3 h-3" /> {{ cartStore.selectedDeliveryCharge.label }}
 				</span>
 				<span class="font-medium text-foreground">
-					+{{ posStore.currencySymbol }}{{ formatPrice(cartStore.selectedDeliveryCharge.rate) }}
+					+{{ money(cartStore.selectedDeliveryCharge.rate) }}
 				</span>
 			</div>
 
-			<Separator class="!my-2" />
+			<Separator class="my-2!" />
 
 			<div class="flex items-center justify-between">
 				<span class="text-base font-bold text-foreground">{{ __("Total") }}</span>
@@ -138,8 +137,7 @@
 							: 'text-primary dark:text-primary'
 					"
 				>
-					{{ cartStore.isReturnMode ? "-" : "" }}{{ posStore.currencySymbol
-					}}{{ formatPrice(Math.abs(cartStore.grandTotal)) }}
+					{{ cartStore.isReturnMode ? "-" : "" }}{{ money(Math.abs(cartStore.grandTotal)) }}
 				</span>
 			</div>
 		</div>
@@ -272,7 +270,7 @@
 								: 'bg-background border-border hover:border-blue-400 hover:text-blue-600'
 						"
 					>
-						{{ charge.label }} &mdash; {{ posStore.currencySymbol }}{{ formatPrice(charge.rate) }}
+						{{ charge.label }} &mdash; {{ money(charge.rate) }}
 					</button>
 				</div>
 			</div>
@@ -300,7 +298,7 @@
 						v-model="discountInput"
 						:min="0"
 						:max="discountType === 'percentage' ? 100 : undefined"
-						:precision="2"
+						:precision="moneyPrecision"
 						class="flex-1"
 						:placeholder="
 							discountType === 'percentage' ? __('Discount %') : __('Discount amount')
@@ -337,8 +335,8 @@
 			class="w-full font-bold tracking-wide shadow-lg"
 			:class="
 				cartStore.isReturnMode
-					? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/25 text-white'
-					: 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-primary/25'
+					? 'bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/25 text-white'
+					: 'bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-primary/25'
 			"
 			:disabled="cartStore.isEmpty || !cartStore.customer"
 			@click="handleCheckout()"
@@ -382,8 +380,10 @@ import {
 	X,
 } from "lucide-vue-next";
 import type { DeliveryCharge } from "@/types/pos.types";
+import { useMoney } from "@/composables/useMoney";
 
 const posStore = usePosStore();
+const { money, moneyPrecision, percent } = useMoney();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 const offerStore = useOfferStore();
@@ -449,7 +449,7 @@ const payButtonLabel = computed(() => {
 	if (cartStore.isEmpty) return __("Add items to pay");
 	if (!cartStore.customer) return __("Select customer first");
 	if (posStore.enableCashierSettlement && !cartStore.isReturnMode) return __("Send to Cashier");
-	const amt = `${posStore.currencySymbol}${formatPrice(Math.abs(cartStore.grandTotal))}`;
+	const amt = `${money(Math.abs(cartStore.grandTotal))}`;
 	return cartStore.isReturnMode ? __("Process Return {0}", [amt]) : __("Pay {0}", [amt]);
 });
 
@@ -795,9 +795,5 @@ async function sendToCashier() {
 		if (handleTabConflict(error)) return;
 		showError(__("Failed to send to cashier: {0}", [extractErrorMessage(error)]));
 	}
-}
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
 }
 </script>

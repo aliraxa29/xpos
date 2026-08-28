@@ -34,7 +34,7 @@
 					<NumberInput
 						v-model="form.amount"
 						:min="0"
-						:precision="2"
+						:precision="moneyPrecision"
 						class="text-lg font-bold"
 						placeholder="0.00"
 					/>
@@ -84,6 +84,7 @@ import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/ui/number-input";
 import { Select } from "@/components/ui/select";
 import __ from "@/lib/translate";
+import { useMoney } from "@/composables/useMoney";
 import { ArrowDownCircle, Loader2 } from "lucide-vue-next";
 
 interface ExpenseFormValues {
@@ -116,6 +117,7 @@ const emit = defineEmits<{
 	(e: "update:open", value: boolean): void;
 	(e: "submit", values: ExpenseFormValues): void;
 }>();
+const { moneyPrecision } = useMoney();
 
 const form = ref<ExpenseFormValues>({
 	expense_account: "",

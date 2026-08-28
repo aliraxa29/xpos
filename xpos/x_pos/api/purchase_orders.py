@@ -8,35 +8,17 @@ from erpnext.accounts.party import get_party_account
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from .utils import get, get_active_pos_profile, get_default_warehouse
+from xpos.api.profiles import resolve_pos_profile
+
+from .utils import get, get_default_warehouse
 
 
-def _resolve_pos_profile(pos_profile: str | dict | None) -> dict:
-	if isinstance(pos_profile, dict):
-		return pos_profile
-
-	if isinstance(pos_profile, str):
-		raw_value = pos_profile.strip()
-		if raw_value:
-			try:
-				decoded = json.loads(raw_value)
-			except Exception:
-				decoded = raw_value
-
-			if isinstance(decoded, dict):
-				return decoded
-			if isinstance(decoded, str) and decoded:
-				return frappe.get_doc("POS Profile", decoded).as_dict()
-
-	profile = get_active_pos_profile()
-	if not profile:
-		frappe.throw(_("POS Profile is required to create purchase documents."))
-	return profile
-
-
-def _ensure_allowed(profile: dict, flag: str, label: str):
+def ensure_allowed(profile: dict, flag: str, label: str):
 	if not cint(profile.get(flag)):
-		frappe.throw(_("{0} is disabled for this POS Profile.").format(label))
+		frappe.throw(
+			_("{0} is disabled for this POS Profile.").format(label),
+			frappe.PermissionError,
+		)
 
 
 def _resolve_supplier(supplier_value: str | dict | None) -> str | None:
@@ -249,8 +231,8 @@ def _create_purchase_receipt(
 @frappe.whitelist()
 def create_supplier(data: str | dict) -> dict:
 	payload = json.loads(data) if isinstance(data, str) else data
-	profile = _resolve_pos_profile(payload.get("pos_profile"))
-	_ensure_allowed(profile, "allow_create_purchase_suppliers", _("Create suppliers"))
+	profile = resolve_pos_profile(payload.get("pos_profile")).as_dict()
+	ensure_allowed(profile, "allow_create_purchase_suppliers", _("Create suppliers"))
 
 	supplier_name = payload.get("supplier_name") or payload.get("supplier")
 	if not supplier_name:
@@ -312,8 +294,8 @@ def search_suppliers(search_text: str | None = None, limit: int = 20) -> list[di
 @frappe.whitelist()
 def create_purchase_item(data: str | dict) -> dict:
 	payload = json.loads(data) if isinstance(data, str) else data
-	profile = _resolve_pos_profile(payload.get("pos_profile"))
-	_ensure_allowed(profile, "allow_create_purchase_items", _("Create items"))
+	profile = resolve_pos_profile(payload.get("pos_profile")).as_dict()
+	ensure_allowed(profile, "allow_create_purchase_items", _("Create items"))
 
 	item_code = payload.get("item_code") or payload.get("item_name")
 	item_name = payload.get("item_name") or item_code
@@ -468,12 +450,12 @@ def _create_payment_entry(
 @frappe.whitelist()
 def create_purchase_order(data: str | dict) -> dict:
 	payload = json.loads(data) if isinstance(data, str) else data
-	profile = _resolve_pos_profile(payload.get("pos_profile"))
-	_ensure_allowed(profile, "allow_purchase_order", _("Purchase orders"))
+	profile = resolve_pos_profile(payload.get("pos_profile")).as_dict()
+	ensure_allowed(profile, "allow_purchase_order", _("Purchase orders"))
 
 	receive_now = cint(payload.get("receive"))
 	if receive_now:
-		_ensure_allowed(profile, "allow_purchase_receipt", _("Receive stock"))
+		ensure_allowed(profile, "allow_purchase_receipt", _("Receive stock"))
 
 	supplier_input = payload.get("supplier")
 	if not supplier_input:
@@ -643,12 +625,12 @@ def create_purchase_order(data: str | dict) -> dict:
 @frappe.whitelist()
 def create_purchase_invoice_direct(data: str | dict) -> dict:
 	payload = json.loads(data) if isinstance(data, str) else data
-	profile = _resolve_pos_profile(payload.get("pos_profile"))
-	_ensure_allowed(profile, "allow_purchase_order", _("Purchase invoices"))
+	profile = resolve_pos_profile(payload.get("pos_profile")).as_dict()
+	ensure_allowed(profile, "allow_purchase_order", _("Purchase invoices"))
 
 	update_stock = cint(payload.get("receive") or payload.get("update_stock"))
 	if update_stock:
-		_ensure_allowed(profile, "allow_purchase_receipt", _("Receive stock"))
+		ensure_allowed(profile, "allow_purchase_receipt", _("Receive stock"))
 
 	supplier = _resolve_supplier(payload.get("supplier"))
 	if not supplier:

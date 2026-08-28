@@ -7,6 +7,7 @@ import { isOnline, isNetworkError } from "@/utils";
 import { isElectron, getApiBaseUrlSync, getApiCredentialsSync } from "@/services/electronBridge";
 import { captureError } from "@/services/errorLog";
 import { getMeta } from "./idbService";
+import { formatWithSymbol } from "@/composables/useCurrency";
 
 export { isNetworkError } from "@/utils";
 
@@ -96,9 +97,7 @@ function extractErrorMessage(data: Record<string, unknown>, status: number, trac
 
 function stripHtml(value: string): string {
 	const doc = new DOMParser().parseFromString(value, "text/html");
-	return (doc.body.textContent || "")
-		.replace(/\s+/g, " ")
-		.trim();
+	return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
 }
 
 async function fetchCall<T = unknown>(method: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -232,20 +231,12 @@ export function searchLink(
 	});
 }
 
-/**
- * Format currency using Intl.NumberFormat
- */
 export function formatCurrency(value: number, currency?: string): string {
 	const cur =
 		currency ||
 		(window.xpos?.boot as { sysdefaults?: { currency?: string } })?.sysdefaults?.currency ||
-		"USD";
-	return new Intl.NumberFormat(undefined, {
-		style: "currency",
-		currency: cur,
-		currencyDisplay: "narrowSymbol",
-		minimumFractionDigits: 2,
-	}).format(value || 0);
+		"";
+	return formatWithSymbol(cur, value || 0);
 }
 
 /**

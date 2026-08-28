@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { usePurchaseStore } from "@/stores/purchaseStore";
-import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import PurchaseOrderDetailDialog from "@/components/dialogs/PurchaseOrderDetailD
 
 const router = useRouter();
 const purchaseStore = usePurchaseStore();
-const posStore = usePosStore();
+const { money, percent } = useMoney();
 
 const selectedOrder = ref<PurchaseOrder | null>(null);
 const isLoadingDetail = ref(false);
@@ -70,10 +70,6 @@ function editSubmittedOrder(order: PurchaseOrder): void {
 	purchaseStore.loadFromOrder(order);
 	selectedOrder.value = null;
 	router.push("/purchase-order");
-}
-
-function formatCurrency(value: number): string {
-	return `${posStore.currencySymbol}${(value || 0).toFixed(2)}`;
 }
 
 function formatDate(date: string): string {
@@ -223,11 +219,11 @@ onMounted(() => {
 
 						<div class="text-end shrink-0">
 							<div class="font-bold text-foreground text-base sm:text-lg leading-tight">
-								{{ formatCurrency(order.grand_total) }}
+								{{ money(order.grand_total) }}
 							</div>
 							<div class="flex items-center gap-2 justify-end text-xs text-muted-foreground">
-								<span>{{ __("Recv") }}: {{ order.per_received || 0 }}%</span>
-								<span>{{ __("Billed") }}: {{ order.per_billed || 0 }}%</span>
+								<span>{{ __("Recv") }}: {{ percent(order.per_received || 0) }}</span>
+								<span>{{ __("Billed") }}: {{ percent(order.per_billed || 0) }}</span>
 							</div>
 						</div>
 						<ChevronRight class="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground/40 shrink-0" />

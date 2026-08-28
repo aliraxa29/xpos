@@ -12,8 +12,8 @@ keywords = ["frappe", "erpnext", "xpos", "point-of-sale", "retail", "offline", "
 
 dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
-    "python-barcode>=0.15.1",
-    "qrcode[pil]>=7.4",
+    "python-barcode>=0.16.1",
+    "qrcode[pil]>=8.2",
 ]
 
 [project.urls]

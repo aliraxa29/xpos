@@ -13,6 +13,10 @@ import electronRenderer from "vite-plugin-electron-renderer";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import loadEnv from "./scripts/loadEnv.mjs";
+
+loadEnv();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

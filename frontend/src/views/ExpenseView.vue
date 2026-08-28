@@ -55,9 +55,7 @@
 							<div
 								class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
 							>
-								<span
-									class="flex items-center gap-1 min-w-0 truncate max-w-[120px] sm:max-w-none"
-								>
+								<span class="flex items-center gap-1 min-w-0 truncate max-w-30 sm:max-w-none">
 									{{ expense.name }}
 								</span>
 								<span
@@ -69,13 +67,13 @@
 								</span>
 								<span
 									v-if="expense.expense_account"
-									class="min-w-0 truncate max-w-[160px] sm:max-w-none"
+									class="min-w-0 truncate max-w-40 sm:max-w-none"
 								>
 									{{ expense.expense_account }}
 								</span>
 								<span
 									v-if="expense.remarks"
-									class="hidden sm:inline min-w-0 truncate max-w-[280px]"
+									class="hidden sm:inline min-w-0 truncate max-w-70"
 								>
 									{{ expense.remarks }}
 								</span>
@@ -84,7 +82,7 @@
 
 						<div class="text-end shrink-0">
 							<div class="font-bold text-base sm:text-lg leading-tight text-red-500">
-								{{ posStore.currencySymbol }}{{ formatPrice(expense.amount) }}
+								{{ money(expense.amount) }}
 							</div>
 							<div class="text-xs text-muted-foreground whitespace-nowrap">
 								{{ __("Expense") }}
@@ -149,9 +147,7 @@
 							<div
 								class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
 							>
-								<span
-									class="flex items-center gap-1 min-w-0 truncate max-w-[120px] sm:max-w-none"
-								>
+								<span class="flex items-center gap-1 min-w-0 truncate max-w-30 sm:max-w-none">
 									{{ expense.name }}
 								</span>
 								<span
@@ -163,13 +159,13 @@
 								</span>
 								<span
 									v-if="expense.expense_account"
-									class="min-w-0 truncate max-w-[160px] sm:max-w-none"
+									class="min-w-0 truncate max-w-40 sm:max-w-none"
 								>
 									{{ expense.expense_account }}
 								</span>
 								<span
 									v-if="expense.remarks"
-									class="hidden sm:inline min-w-0 truncate max-w-[280px]"
+									class="hidden sm:inline min-w-0 truncate max-w-70"
 								>
 									{{ expense.remarks }}
 								</span>
@@ -178,7 +174,7 @@
 
 						<div class="text-end shrink-0">
 							<div class="font-bold text-base sm:text-lg leading-tight text-red-500">
-								{{ posStore.currencySymbol }}{{ formatPrice(expense.amount) }}
+								{{ money(expense.amount) }}
 							</div>
 							<div class="text-xs text-muted-foreground whitespace-nowrap">
 								{{ __("Expense") }}
@@ -216,6 +212,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { useAuthStore } from "@/stores/authStore";
 import { usePaymentStore } from "@/stores/paymentStore";
 import { hasPermission } from "@/services/userRights";
@@ -235,6 +232,7 @@ import type { DocField } from "@/services/doctypeMeta";
 import type { QueryFilter } from "@/composables/useListView";
 
 const posStore = usePosStore();
+const { money } = useMoney();
 const authStore = useAuthStore();
 const paymentStore = usePaymentStore();
 
@@ -370,10 +368,6 @@ watch(
 		}
 	},
 );
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
-}
 
 function formatDate(date: string) {
 	if (!date) return "";

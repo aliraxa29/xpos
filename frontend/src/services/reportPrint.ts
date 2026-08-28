@@ -1,4 +1,5 @@
 import type { ReportColumn, ReportFilterDefinition } from "@/services/reports";
+import { formatQty as formatNumberQty } from "@/utils/numberFormat";
 
 export interface ThermalReportOptions {
 	title: string;
@@ -33,7 +34,7 @@ function pickQtyColumn(columns: ReportColumn[]): ReportColumn | undefined {
 function formatQty(value: unknown): string {
 	const qty = Number(value ?? 0);
 	if (Number.isNaN(qty)) return String(value ?? "0");
-	return qty % 1 === 0 ? String(qty) : qty.toFixed(2);
+	return formatNumberQty(qty);
 }
 
 function buildFilterLines(filters: ReportFilterDefinition[], values: Record<string, unknown>): string {

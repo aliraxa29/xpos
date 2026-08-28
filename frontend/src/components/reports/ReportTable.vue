@@ -19,7 +19,7 @@ const props = withDefaults(
 		columns: ReportColumn[];
 		rows: Record<string, unknown>[];
 		totals?: Record<string, unknown>[];
-		currencySymbol: string;
+		currency: string;
 		sortState: ReportSortState | null;
 		emptyTitle?: string;
 		emptyDescription?: string;
@@ -49,7 +49,7 @@ function rowKey(row: Record<string, unknown>, index: number): string {
 function totalCell(row: Record<string, unknown>, column: ReportColumn): string {
 	const value = row[column.fieldname];
 	if (value === null || value === undefined || value === "") return "";
-	return formatReportCell(column, value, props.currencySymbol);
+	return formatReportCell(column, value, props.currency);
 }
 </script>
 
@@ -113,10 +113,10 @@ function totalCell(row: Record<string, unknown>, column: ReportColumn): string {
 						:class="isReportNumericColumn(column) ? 'text-end tabular-nums' : 'text-start'"
 					>
 						<div
-							class="max-w-[340px] break-words"
+							class="max-w-85 wrap-break-word"
 							:class="isReportNumericColumn(column) ? 'ms-auto' : ''"
 						>
-							{{ formatReportCell(column, row[column.fieldname], currencySymbol) }}
+							{{ formatReportCell(column, row[column.fieldname], currency) }}
 						</div>
 					</td>
 				</tr>

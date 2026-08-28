@@ -268,10 +268,20 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Setup",
-   "link_count": 6,
+   "link_count": 7,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Branding Settings",
+   "link_count": 0,
+   "link_to": "XPOS Branding Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   },
   {
    "hidden": 0,
@@ -334,7 +344,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-06-06 12:12:41.123126",
+ "modified": "2026-08-18 22:26:08.697769",
  "modified_by": "Administrator",
  "module": "X POS",
  "name": "X POS",

@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { call, isNetworkError } from "@/services/api";
 import { isElectron } from "@/services/electronBridge";
 import { usePosStore } from "@/stores/posStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 import {
 	cacheItems as idbCacheItems,
 	getCachedItems as idbGetCachedItems,
@@ -40,6 +41,13 @@ export const useItemStore = defineStore("items", () => {
 	const totalCount = ref(0);
 	const itemGroups = ref<ItemGroup[]>([]);
 	const parentGroups = ref<ItemGroup[]>([]);
+
+	function offlineSearchConfig() {
+		const settings = useSettingsStore();
+		const limit = settings.itemSearchLimit;
+		const capped = searchTerm.value && limit > 0 ? Math.min(pageLength.value, limit) : pageLength.value;
+		return { fields: settings.itemSearchFields, limit: capped };
+	}
 
 	const showItemDetail = ref(false);
 	const selectedItemDetail = ref<ItemDetail | null>(null);
@@ -133,10 +141,12 @@ export const useItemStore = defineStore("items", () => {
 		try {
 			if (isElectron()) {
 				const posStoreRef = usePosStore();
+				const { fields, limit } = offlineSearchConfig();
 				const results = (await window.electronAPI!.db.getItems({
 					search: searchTerm.value || undefined,
+					searchFields: fields,
 					group: selectedGroup.value === "All Item Groups" ? undefined : selectedGroup.value,
-					limit: pageLength.value,
+					limit,
 					offset: append ? items.value.length : undefined,
 					priceList: posStoreRef.sellingPriceList || undefined,
 					warehouse: posStoreRef.warehouse || undefined,
@@ -148,12 +158,16 @@ export const useItemStore = defineStore("items", () => {
 					items.value = results;
 					currentPage.value = 0;
 				}
-				hasMore.value = results.length === pageLength.value;
+				hasMore.value = results.length === limit;
 				return;
 			}
 
 			if (!isOnline() && usePosStore().useOfflineMode) {
-				const filtered = await idbSearchCachedItems(searchTerm.value, selectedGroup.value);
+				const filtered = await idbSearchCachedItems(
+					searchTerm.value,
+					selectedGroup.value,
+					offlineSearchConfig().fields,
+				);
 
 				if (append) {
 					const sliced = filtered.slice(items.value.length, items.value.length + pageLength.value);
@@ -208,7 +222,11 @@ export const useItemStore = defineStore("items", () => {
 				try {
 					const cached = await idbGetCachedItems();
 					if (cached.length > 0) {
-						const filtered = await idbSearchCachedItems(searchTerm.value, selectedGroup.value);
+						const filtered = await idbSearchCachedItems(
+							searchTerm.value,
+							selectedGroup.value,
+							offlineSearchConfig().fields,
+						);
 						items.value = filtered.slice(0, pageLength.value);
 						hasMore.value = filtered.length > pageLength.value;
 						console.log("[XPOS Offline] Serving items from idb cache after fetch failure");

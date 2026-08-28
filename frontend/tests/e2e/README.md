@@ -9,6 +9,7 @@ Pinia stores, watchers, debouncing and reactivity together.
 
 ```bash
 yarn test:e2e          # headless; starts a Vite dev server if one isn't running
+yarn test:e2e:demo     # headed Chrome at watchable speed - see below
 yarn test:e2e:open     # interactive runner
 yarn test:e2e:run      # headless against a server you started yourself
 ```
@@ -21,6 +22,31 @@ Run one spec:
 ```bash
 node scripts/run-cypress.mjs run --with-server --spec tests/e2e/specs/pricing-rules.cy.ts
 ```
+
+## Watching a run
+
+A normal run is far faster than anyone can follow, which is the point in CI and useless when you
+want to show someone the feature working or catch a visual glitch. `--demo` opens real Chrome and
+paces the run like a person using the till:
+
+```bash
+yarn test:e2e:demo
+node scripts/run-cypress.mjs run --with-server --demo --spec tests/e2e/specs/scale-barcodes.cy.ts
+```
+
+It pauses after every action, types character by character, and outlines the element each action
+touched. Retries are turned off so a flaky spec does not silently replay itself while you watch,
+and the command timeout is raised because each action now carries the pause inside it.
+
+Set the pace yourself with `CYPRESS_SLOW_MO` (milliseconds, default `700` in demo mode):
+
+```bash
+CYPRESS_SLOW_MO=1500 yarn test:e2e:demo     # slower
+CYPRESS_SLOW_MO=250 yarn test:e2e           # headless but paced
+```
+
+Unset or `0` disables the whole mechanism, so ordinary runs behave exactly as they did before. The
+implementation is `support/slowMotion.ts`.
 
 ### Why `scripts/run-cypress.mjs` instead of `cypress` directly
 
@@ -37,9 +63,9 @@ route table lives in `support/frappeStub.ts` and is keyed by method name:
 
 ```ts
 cy.bootPos({
-  routes: {
-    "xpos.api.pricing_rules.reconcile_line_prices": reconcileWith({ discountPercentage: 10 }),
-  },
+	routes: {
+		"xpos.api.pricing_rules.reconcile_line_prices": reconcileWith({ discountPercentage: 10 }),
+	},
 });
 ```
 
@@ -70,13 +96,16 @@ The specs here assume the stub.
 
 ## Layout
 
-| Path | Purpose |
-| --- | --- |
-| `specs/` | The tests |
-| `support/frappeStub.ts` | Route table + the single `cy.intercept` |
-| `support/commands.ts` | `cy.bootPos`, `cy.addItemToCart`, `cy.cartRow`, offline toggles |
-| `fixtures/pos.ts` | POS profile, items, customers, default routes |
-| `fixtures/pricingRules.ts` | Builders for pricing responses and rule snapshots |
+| Path                        | Purpose                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| `specs/`                    | The tests                                                                         |
+| `support/frappeStub.ts`     | Route table + the single `cy.intercept`                                           |
+| `support/commands.ts`       | `cy.bootPos`, `cy.addItemToCart`, `cy.scanBarcode`, `cy.cartRow`, offline toggles |
+| `support/slowMotion.ts`     | The `--demo` pacing, off unless `slowMo` is set                                   |
+| `fixtures/pos.ts`           | POS profile, items, customers, default routes                                     |
+| `fixtures/pricingRules.ts`  | Builders for pricing responses and rule snapshots                                 |
+| `fixtures/mixedCurrency.ts` | LBP/USD profile, tagged payment modes, per-currency shift summary                 |
+| `fixtures/scaleBarcode.ts`  | Weighed catalogue and `search_barcode` responses, scale and plain                 |
 
 ## Gotchas worth knowing
 
@@ -89,3 +118,16 @@ The specs here assume the stub.
 - **IndexedDB persists across specs.** `cy.bootPos()` deletes `xpos_offline_v3`
   before the app loads; otherwise a stale cache can make an offline test pass
   that should have failed.
+- **A spec that swaps the catalogue must pass `readyItem`.** `cy.bootPos()` waits
+  for an item tile to prove the shift/profile boot landed, and defaults to
+  `Espresso Beans` from `fixtures/pos.ts`.
+- **Currency decimals come from `number_format`,** which `cy.bootPos()` injects
+  through its `currencies` option. A spec covering a zero-decimal currency has to
+  supply it, or every amount renders at two decimals and the assertions drift.
+- **A barcode scanner is a keyboard wedge.** `cy.scanBarcode()` types the digits
+  into the scanner input and sends Enter, which is what the hardware does and
+  what exercises the component's own handler.
+- **Don't slow a command down with `cy.wait().then(() => originalFn())`.** The
+  callback hands a chainable back to `.then()`, whose queue cannot drain until the
+  outer command finishes, so it waits on itself until the timeout. `slowMotion.ts`
+  returns a plain promise after the command instead.

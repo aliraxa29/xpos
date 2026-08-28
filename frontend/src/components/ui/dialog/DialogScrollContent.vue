@@ -25,14 +25,12 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
 
 <template>
 	<DialogPortal to="body">
-		<DialogOverlay
-			class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-		/>
+		<DialogOverlay class="dialog-overlay fixed inset-0 z-9999 bg-black/60 backdrop-blur-sm" />
 		<DialogContent
 			v-bind="forwarded"
 			:class="
 				cn(
-					'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col border bg-background shadow-lg duration-200 overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-xl max-h-[90vh] w-[90vw]',
+					'dialog-panel fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-9999 flex flex-col border bg-background shadow-lg overflow-hidden rounded-xl max-h-[90vh] w-[90vw]',
 					props.class,
 				)
 			"
@@ -41,7 +39,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
 
 			<DialogClose
 				v-if="!hideClose"
-				class="absolute end-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+				class="absolute inset-e-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
 			>
 				<X class="w-5 h-5" />
 				<span class="sr-only">Close</span>

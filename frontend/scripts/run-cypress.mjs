@@ -1,29 +1,18 @@
-/**
- * Cypress launcher.
- *
- * Two jobs the plain `cypress` binary can't do for us:
- *
- * 1. Strips ELECTRON_RUN_AS_NODE. Editors built on Electron (VS Code, Cursor)
- *    export it into their integrated terminal, which makes Cypress's own
- *    Electron start as bare Node and fail with a confusing
- *    "bad option: --no-sandbox".
- * 2. With `--with-server`, boots the Vite dev server, waits for it, runs the
- *    suite, and shuts it down again - so `yarn test:e2e` is self-contained.
- *
- * Usage:
- *   node scripts/run-cypress.mjs run --with-server
- *   node scripts/run-cypress.mjs open
- */
 import { spawn } from "child_process";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
+import loadEnv from "./loadEnv.mjs";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 
+loadEnv({ root });
+
 const argv = process.argv.slice(2);
 const withServer = argv.includes("--with-server");
-const cypressArgs = argv.filter((arg) => arg !== "--with-server");
+const demo = argv.includes("--demo");
+const cypressArgs = argv.filter((arg) => arg !== "--with-server" && arg !== "--demo");
 const mode = cypressArgs[0] === "open" ? "open" : "run";
 
 const BASE_URL = process.env.CYPRESS_BASE_URL || "http://localhost:5174";
@@ -31,6 +20,27 @@ const READY_TIMEOUT_MS = 120_000;
 
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
+
+const DEFAULT_SLOW_MO = "700";
+
+function demoArgs(args) {
+	const configuredSlowMo = env.CYPRESS_SLOW_MO || DEFAULT_SLOW_MO;
+	const parsedSlowMo = Number.parseInt(String(configuredSlowMo), 10);
+	const safeSlowMo = Number.isFinite(parsedSlowMo) && parsedSlowMo > 0 ? parsedSlowMo : Number.parseInt(DEFAULT_SLOW_MO, 10);
+	env.CYPRESS_SLOW_MO = String(safeSlowMo);
+
+	const extra = [];
+	if (mode === "run") {
+		if (!args.includes("--headed")) extra.push("--headed");
+		if (!args.includes("--browser") && !args.includes("-b")) extra.push("--browser", "chrome");
+		if (!args.some((arg) => String(arg).startsWith("--config"))) {
+			extra.push("--config", "retries=0,defaultCommandTimeout=20000");
+		}
+	}
+
+	console.log(`[e2e] demo mode: ${safeSlowMo}ms per action, headed Chrome`);
+	return [...args, ...extra];
+}
 
 /** Vite serves the app under `base`, so probe the real entry point. */
 async function waitForServer(url) {
@@ -85,7 +95,10 @@ async function main() {
 		}
 	}
 
-	const cypress = run("npx", ["cypress", ...(cypressArgs.length ? cypressArgs : [mode])]);
+	let args = cypressArgs.length ? cypressArgs : [mode];
+	if (demo) args = demoArgs(args);
+
+	const cypress = run("npx", ["cypress", ...args]);
 	cypress.on("exit", (code) => shutdown(code ?? 1));
 }
 

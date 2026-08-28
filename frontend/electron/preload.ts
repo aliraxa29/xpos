@@ -136,6 +136,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
 		getItems: (opts?: {
 			search?: string;
+			searchFields?: string[];
 			group?: string;
 			limit?: number;
 			offset?: number;

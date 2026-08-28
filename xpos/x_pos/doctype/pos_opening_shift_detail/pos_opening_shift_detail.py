@@ -15,6 +15,7 @@ class POSOpeningShiftDetail(Document):
 		from frappe.types import DF
 
 		amount: DF.Currency
+		currency: DF.Link | None
 		mode_of_payment: DF.Link
 		parent: DF.Data
 		parentfield: DF.Data

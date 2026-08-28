@@ -6,7 +6,7 @@ from frappe.utils import nowdate
 
 from xpos.x_pos.api.item_fetchers import ItemDetailAggregator, get_batches
 from xpos.x_pos.api.item_processing.stock import get_stock_availability
-from xpos.x_pos.api.utils import _ensure_pos_profile, log_perf_event
+from xpos.x_pos.api.utils import ensure_pos_profile, log_perf_event
 
 
 @frappe.whitelist()
@@ -20,7 +20,7 @@ def get_items_details(
 
 	started_at = time.perf_counter()
 
-	pos_profile = _ensure_pos_profile(pos_profile)
+	pos_profile, _ = ensure_pos_profile(pos_profile)
 	items_data = json.loads(items_data)
 
 	if not items_data:
@@ -193,7 +193,7 @@ def get_item_variants(
 	customer: str | None = None,
 ):
 	"""Return variants of an item along with attribute metadata."""
-	pos_profile = _ensure_pos_profile(pos_profile)
+	pos_profile, _ = ensure_pos_profile(pos_profile)
 	price_list = price_list or pos_profile.get("selling_price_list")
 
 	fields = [

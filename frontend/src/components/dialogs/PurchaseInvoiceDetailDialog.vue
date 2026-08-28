@@ -90,7 +90,7 @@
 					</h3>
 					<div class="rounded-lg border border-border overflow-hidden">
 						<div class="overflow-x-auto">
-							<table class="w-full text-sm min-w-[900px]">
+							<table class="w-full text-sm min-w-225">
 								<thead class="bg-muted/50">
 									<tr>
 										<th
@@ -177,7 +177,7 @@
 											</div>
 										</td>
 										<td class="px-2 py-2.5 text-center text-muted-foreground text-xs">
-											{{ item.qty }}
+											{{ qty(item.qty) }}
 										</td>
 										<td class="px-2 py-2.5 text-center text-muted-foreground text-xs">
 											{{ item.uom || item.stock_uom || "-" }}
@@ -186,35 +186,33 @@
 											{{ getField(item, "conversion_factor") || 1 }}
 										</td>
 										<td class="px-2 py-2.5 text-end text-muted-foreground text-xs">
-											{{ formatCurrency(item.rate || 0) }}
+											{{ money(item.rate || 0) }}
 										</td>
 										<td class="px-2 py-2.5 text-end text-muted-foreground text-xs">
-											{{ formatCurrency(getGross(item)) }}
+											{{ money(getGross(item)) }}
 										</td>
 										<td class="px-2 py-2.5 text-end text-muted-foreground text-xs">
 											{{
 												getField(item, "discount_percentage")
-													? `${Number(getField(item, "discount_percentage")).toFixed(1)}%`
+													? percent(getField(item, "discount_percentage"), 1)
 													: "-"
 											}}
 										</td>
 										<td class="px-2 py-2.5 text-end text-muted-foreground text-xs">
 											{{
 												getField(item, "discount_amount")
-													? formatCurrency(
-															Number(getField(item, "discount_amount")),
-														)
+													? money(Number(getField(item, "discount_amount")))
 													: "-"
 											}}
 										</td>
 										<td class="px-2 py-2.5 text-end text-muted-foreground text-xs">
-											{{ formatCurrency(getNet(item)) }}
+											{{ money(getNet(item)) }}
 										</td>
 										<td class="px-2 py-2.5 text-end text-muted-foreground text-xs">
-											{{ formatCurrency(getTax(item)) }}
+											{{ money(getTax(item)) }}
 										</td>
 										<td class="px-3 py-2.5 text-end font-medium text-foreground text-xs">
-											{{ formatCurrency(getItemAmount(item)) }}
+											{{ money(getItemAmount(item)) }}
 										</td>
 									</tr>
 								</tbody>
@@ -230,20 +228,18 @@
 						</div>
 						<div>
 							<span class="text-xs text-muted-foreground block">{{ __("Gross Total") }}</span>
-							<span class="font-semibold">{{ formatCurrency(grossTotal) }}</span>
+							<span class="font-semibold">{{ money(grossTotal) }}</span>
 						</div>
 						<div>
 							<span class="text-xs text-muted-foreground block">{{
 								__("Total Discount")
 							}}</span>
-							<span class="font-semibold text-red-500"
-								>-{{ formatCurrency(totalDiscountAmt) }}</span
-							>
+							<span class="font-semibold text-red-500">-{{ money(totalDiscountAmt) }}</span>
 						</div>
 						<div>
 							<span class="text-xs text-muted-foreground block">{{ __("Net Total") }}</span>
 							<span class="font-semibold">{{
-								formatCurrency(Number((invoice as any).net_total || 0))
+								money(Number((invoice as any).net_total || 0))
 							}}</span>
 						</div>
 					</div>
@@ -252,7 +248,7 @@
 							<div class="text-muted-foreground">
 								{{ __("Tax Total") }}:
 								<strong>{{
-									formatCurrency(Number((invoice as any).total_taxes_and_charges || 0))
+									money(Number((invoice as any).total_taxes_and_charges || 0))
 								}}</strong>
 							</div>
 							<div
@@ -261,18 +257,18 @@
 							>
 								{{ __("Addl. Discount") }}:
 								<strong class="text-red-500"
-									>-{{ formatCurrency(Number((invoice as any).discount_amount)) }}</strong
+									>-{{ money(Number((invoice as any).discount_amount)) }}</strong
 								>
 							</div>
 							<div class="text-muted-foreground">
 								{{ __("Outstanding") }}:
-								<strong>{{ formatCurrency(invoice.outstanding_amount || 0) }}</strong>
+								<strong>{{ money(invoice.outstanding_amount || 0) }}</strong>
 							</div>
 						</div>
 						<div>
 							<span class="text-muted-foreground">{{ __("Grand Total") }}</span>
 							<span class="font-bold text-foreground text-base ms-2">
-								{{ formatCurrency(invoice.grand_total || 0) }}
+								{{ money(invoice.grand_total || 0) }}
 							</span>
 						</div>
 					</div>
@@ -300,7 +296,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import __ from "@/lib/translate";
-import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import type { PurchaseInvoice, PurchaseItem } from "@/types/pos.types";
 
 const props = defineProps<{
@@ -312,14 +308,10 @@ const emit = defineEmits<{
 	close: [];
 }>();
 
-const posStore = usePosStore();
+const { money, percent, qty } = useMoney();
 
 function getField(item: PurchaseItem, field: string): any {
 	return (item as any)[field];
-}
-
-function formatCurrency(value: number): string {
-	return `${posStore.currencySymbol}${(value || 0).toFixed(2)}`;
 }
 
 function formatDate(date: string): string {

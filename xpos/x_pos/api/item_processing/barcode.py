@@ -5,19 +5,12 @@ from frappe import _
 from frappe.utils import cint, cstr, flt
 
 
-def _get_scale_barcode_settings():
-	"""Return the Scale Barcode Settings single document if it exists."""
-
-	try:
-		return frappe.get_cached_doc("Scale Barcode Settings")
-	except frappe.DoesNotExistError:
-		return None
-	except Exception:
-		frappe.log_error("Unable to load Scale Barcode Settings", "X POS")
-		return None
+def get_scale_barcode_settings():
+	"""Return the Scale Barcode Settings single document"""
+	return frappe.get_cached_doc("Scale Barcode Settings")
 
 
-def _get_scale_settings_metadata(settings: Any) -> dict[str, Any]:
+def get_scale_settings_metadata(settings: Any) -> dict[str, Any]:
 	"""Return a normalized dictionary for the scale barcode settings."""
 
 	if not settings:
@@ -40,13 +33,13 @@ def _get_scale_settings_metadata(settings: Any) -> dict[str, Any]:
 	return metadata
 
 
-def _segment_end(start: int, digits: int, decimals: int = 0) -> int:
+def segment_end(start: int, digits: int, decimals: int = 0) -> int:
 	if not start or not digits:
 		return 0
 	return start + digits + max(decimals, 0) - 1
 
 
-def _replace_segment(target_chars: list[str], start_index: int, value: str):
+def replace_segment(target_chars: list[str], start_index: int, value: str):
 	"""Replace a contiguous segment in ``target_chars``."""
 
 	needed_len = start_index + len(value)
@@ -56,7 +49,7 @@ def _replace_segment(target_chars: list[str], start_index: int, value: str):
 		target_chars[start_index + idx] = ch
 
 
-def _normalize_numeric_code(value: str, length: int) -> str:
+def normalize_numeric_code(value: str, length: int) -> str:
 	digits_only = "".join(ch for ch in cstr(value or "") if ch.isdigit())
 	if not digits_only:
 		return ""
@@ -65,7 +58,7 @@ def _normalize_numeric_code(value: str, length: int) -> str:
 	return digits_only.zfill(length)
 
 
-def _encode_value_segments(value: float, digits: int, decimals: int, label: str):
+def encode_value_segments(value: float, digits: int, decimals: int, label: str):
 	total_digits = max(digits, 0) + max(decimals, 0)
 	if total_digits <= 0:
 		return "", ""
@@ -79,7 +72,7 @@ def _encode_value_segments(value: float, digits: int, decimals: int, label: str)
 	return encoded[:digits], encoded[digits:]
 
 
-def _calculate_ean13_check_digit(code12: str) -> str:
+def calculate_ean13_check_digit(code12: str) -> str:
 	if len(code12) != 12 or not code12.isdigit():
 		return ""
 	total = 0
@@ -92,14 +85,14 @@ def _calculate_ean13_check_digit(code12: str) -> str:
 	return str((10 - (total % 10)) % 10)
 
 
-def _get_required_barcode_length(metadata: dict[str, Any]) -> int:
-	required_len = _segment_end(
+def get_required_barcode_length(metadata: dict[str, Any]) -> int:
+	required_len = segment_end(
 		cint(metadata.get("item_code_starting_digit")),
 		cint(metadata.get("item_code_total_digits")),
 	)
 	required_len = max(
 		required_len,
-		_segment_end(
+		segment_end(
 			cint(metadata.get("weight_starting_digit")),
 			cint(metadata.get("weight_total_digits")),
 			cint(metadata.get("weight_decimals")),
@@ -108,7 +101,7 @@ def _get_required_barcode_length(metadata: dict[str, Any]) -> int:
 	if cint(metadata.get("price_included_in_barcode_or_not")):
 		required_len = max(
 			required_len,
-			_segment_end(
+			segment_end(
 				cint(metadata.get("price_starting_digit")),
 				cint(metadata.get("price_total_digit")),
 				cint(metadata.get("price_decimals")),
@@ -120,7 +113,7 @@ def _get_required_barcode_length(metadata: dict[str, Any]) -> int:
 	return max(required_len, 0)
 
 
-def _find_item_scale_template(item_code: str, uom: str | None = None) -> str:
+def find_item_scale_template(item_code: str, uom: str | None = None) -> str:
 	"""Find a scale barcode template from Item Barcode rows for the item."""
 
 	item_code_value = cstr(item_code or "").strip()
@@ -146,14 +139,14 @@ def _find_item_scale_template(item_code: str, uom: str | None = None) -> str:
 		barcode = cstr(row.get("barcode") or "").strip()
 		if not barcode:
 			continue
-		parsed = _parse_scale_barcode_data(barcode)
+		parsed = parse_scale_barcode_data(barcode)
 		if parsed and parsed.get("item_code"):
 			return barcode
 
 	return ""
 
 
-def _extract_numeric_segment(barcode: str, start: int, length: int, decimals: int = 0):
+def extract_numeric_segment(barcode: str, start: int, length: int, decimals: int = 0):
 	"""Extract a numeric value from ``barcode`` using 1-indexed ``start`` and ``length``."""
 
 	if not (start and length):
@@ -182,14 +175,14 @@ def _extract_numeric_segment(barcode: str, start: int, length: int, decimals: in
 		return None
 
 
-def _parse_scale_barcode_data(barcode: str) -> dict[str, Any] | None:
+def parse_scale_barcode_data(barcode: str) -> dict[str, Any] | None:
 	"""Parse barcode data according to the configured scale barcode settings."""
 
 	barcode_value = cstr(barcode or "").strip()
 	if not barcode_value:
 		return None
 
-	settings = _get_scale_barcode_settings()
+	settings = get_scale_barcode_settings()
 	if not settings:
 		return None
 
@@ -216,7 +209,7 @@ def _parse_scale_barcode_data(barcode: str) -> dict[str, Any] | None:
 	item_code = barcode_value[item_start_index:item_end_index]
 	data: dict[str, Any] = {"barcode": barcode_value, "item_code": item_code}
 
-	qty = _extract_numeric_segment(
+	qty = extract_numeric_segment(
 		barcode_value,
 		cint(settings.weight_starting_digit),
 		cint(settings.weight_total_digits),
@@ -226,7 +219,7 @@ def _parse_scale_barcode_data(barcode: str) -> dict[str, Any] | None:
 		data["qty"] = qty
 
 	if cint(settings.price_included_in_barcode_or_not):
-		price = _extract_numeric_segment(
+		price = extract_numeric_segment(
 			barcode_value,
 			cint(settings.price_starting_digit),
 			cint(settings.price_total_digit),
@@ -242,10 +235,10 @@ def _parse_scale_barcode_data(barcode: str) -> dict[str, Any] | None:
 def parse_scale_barcode(barcode: str):
 	"""Public API to parse a scale barcode and return decoded data."""
 
-	settings = _get_scale_barcode_settings()
-	metadata: dict[str, Any] | None = _get_scale_settings_metadata(settings) if settings else None
+	settings = get_scale_barcode_settings()
+	metadata: dict[str, Any] | None = get_scale_settings_metadata(settings) if settings else None
 
-	data = _parse_scale_barcode_data(barcode)
+	data = parse_scale_barcode_data(barcode)
 
 	if not data:
 		return {"settings": metadata} if metadata else None
@@ -267,11 +260,11 @@ def build_scale_barcode(
 ):
 	"""Build a scale barcode using Scale Barcode Settings."""
 
-	settings = _get_scale_barcode_settings()
+	settings = get_scale_barcode_settings()
 	if not settings:
 		return None
 
-	metadata = _get_scale_settings_metadata(settings)
+	metadata = get_scale_settings_metadata(settings)
 	item_start = cint(metadata.get("item_code_starting_digit"))
 	item_digits = cint(metadata.get("item_code_total_digits"))
 	weight_start = cint(metadata.get("weight_starting_digit"))
@@ -291,14 +284,14 @@ def build_scale_barcode(
 
 	item_code_value = cstr(item_code or "").strip()
 	template_value = cstr(barcode_template or "").strip()
-	parsed_template = _parse_scale_barcode_data(template_value) if template_value else None
+	parsed_template = parse_scale_barcode_data(template_value) if template_value else None
 	if not parsed_template:
-		lookup_template = _find_item_scale_template(item_code_value, uom=uom)
+		lookup_template = find_item_scale_template(item_code_value, uom=uom)
 		if lookup_template:
 			template_value = lookup_template
-			parsed_template = _parse_scale_barcode_data(template_value)
+			parsed_template = parse_scale_barcode_data(template_value)
 
-	required_len = _get_required_barcode_length(metadata)
+	required_len = get_required_barcode_length(metadata)
 	if template_value:
 		chars = list(template_value)
 	else:
@@ -313,7 +306,7 @@ def build_scale_barcode(
 	if prefix:
 		normalized_prefix = (prefix + ("0" * max(prefix_len, 0)))[: max(prefix_len, 0)]
 		if normalized_prefix:
-			_replace_segment(chars, 0, normalized_prefix)
+			replace_segment(chars, 0, normalized_prefix)
 
 	item_code_source = cstr((parsed_template or {}).get("item_code") or "").strip()
 	if not item_code_source and len(chars) >= (item_start - 1 + item_digits):
@@ -330,7 +323,7 @@ def build_scale_barcode(
 			"warning": "missing_item_code_segment",
 		}
 
-	normalized_item_code = _normalize_numeric_code(item_code_source, item_digits)
+	normalized_item_code = normalize_numeric_code(item_code_source, item_digits)
 	if not normalized_item_code:
 		return {
 			"barcode": template_value,
@@ -340,35 +333,35 @@ def build_scale_barcode(
 			"settings": metadata,
 			"warning": "missing_numeric_item_code",
 		}
-	_replace_segment(chars, item_start - 1, normalized_item_code)
+	replace_segment(chars, item_start - 1, normalized_item_code)
 
 	if parsed_template and parsed_template.get("qty") is not None and weight_grams is None and qty is None:
 		qty_value = flt(parsed_template.get("qty"))
 
-	qty_whole, qty_decimal = _encode_value_segments(qty_value, weight_digits, weight_decimals, "Weight")
-	_replace_segment(chars, weight_start - 1, qty_whole + qty_decimal)
+	qty_whole, qty_decimal = encode_value_segments(qty_value, weight_digits, weight_decimals, "Weight")
+	replace_segment(chars, weight_start - 1, qty_whole + qty_decimal)
 
 	if cint(metadata.get("price_included_in_barcode_or_not")):
 		price_start = cint(metadata.get("price_starting_digit"))
 		price_digits = cint(metadata.get("price_total_digit"))
 		price_decimals = cint(metadata.get("price_decimals"))
 		if price_start and price_digits and price is not None and cstr(price) != "":
-			price_whole, price_decimal = _encode_value_segments(
+			price_whole, price_decimal = encode_value_segments(
 				flt(price),
 				price_digits,
 				price_decimals,
 				"Price",
 			)
-			_replace_segment(chars, price_start - 1, price_whole + price_decimal)
+			replace_segment(chars, price_start - 1, price_whole + price_decimal)
 
 	barcode = "".join(chars)
 	if barcode.isdigit():
 		if len(barcode) == 12:
-			barcode = barcode + _calculate_ean13_check_digit(barcode)
+			barcode = barcode + calculate_ean13_check_digit(barcode)
 		elif len(barcode) == 13:
-			barcode = barcode[:12] + _calculate_ean13_check_digit(barcode[:12])
+			barcode = barcode[:12] + calculate_ean13_check_digit(barcode[:12])
 
-	parsed_barcode = _parse_scale_barcode_data(barcode)
+	parsed_barcode = parse_scale_barcode_data(barcode)
 	result = {
 		"barcode": barcode,
 		"item_code": (parsed_barcode or {}).get("item_code") or normalized_item_code,
@@ -381,7 +374,7 @@ def build_scale_barcode(
 
 @frappe.whitelist()
 def get_items_from_barcode(selling_price_list: str, currency: str, barcode: str):
-	scale_data = _parse_scale_barcode_data(barcode)
+	scale_data = parse_scale_barcode_data(barcode)
 	item_code = None
 	scale_qty = None
 	scale_price = None

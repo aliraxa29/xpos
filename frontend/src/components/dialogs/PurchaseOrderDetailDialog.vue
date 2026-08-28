@@ -55,7 +55,7 @@
 					</h3>
 					<div class="rounded-lg border border-border overflow-hidden">
 						<div class="overflow-x-auto">
-							<table class="w-full text-sm min-w-[360px]">
+							<table class="w-full text-sm min-w-90">
 								<thead class="bg-muted/50">
 									<tr>
 										<th
@@ -95,7 +95,7 @@
 											</div>
 										</td>
 										<td class="px-4 py-3 text-end text-muted-foreground">
-											{{ item.qty }} {{ item.uom }}
+											{{ qty(item.qty) }} {{ item.uom }}
 										</td>
 										<td class="px-4 py-3 text-end text-muted-foreground">
 											{{ formatCurrency(item.rate) }}
@@ -144,6 +144,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import __ from "@/lib/translate";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import type { PurchaseOrder } from "@/types/pos.types";
 
 const props = defineProps<{
@@ -157,9 +158,10 @@ const emit = defineEmits<{
 }>();
 
 const posStore = usePosStore();
+const { money, qty } = useMoney();
 
 function formatCurrency(value: number): string {
-	return `${posStore.currencySymbol}${(value || 0).toFixed(2)}`;
+	return money(value);
 }
 
 function formatDate(date: string): string {

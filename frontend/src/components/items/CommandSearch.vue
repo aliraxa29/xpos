@@ -26,7 +26,7 @@
 				</kbd>
 			</div>
 
-			<div ref="resultsContainer" class="max-h-[380px] overflow-y-auto">
+			<div ref="resultsContainer" class="max-h-95 overflow-y-auto">
 				<div v-if="isSearching" class="flex items-center justify-center py-8">
 					<Loader2 class="w-5 h-5 animate-spin text-muted-foreground" />
 				</div>
@@ -127,7 +127,7 @@
 							</div>
 							<div v-if="item.type === 'item'" class="text-end shrink-0">
 								<p class="text-sm font-medium text-green-600">
-									{{ currencySymbol }}{{ ((item.meta as POSItem)?.rate || 0).toFixed(2) }}
+									{{ money((item.meta as POSItem)?.rate || 0) }}
 								</p>
 							</div>
 						</button>
@@ -243,6 +243,7 @@ import {
 } from "lucide-vue-next";
 import { call } from "@/services/api";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { useCartStore } from "@/stores/cartStore";
 import { useCustomerStore } from "@/stores/customerStore";
 import { usePaymentStore } from "@/stores/paymentStore";
@@ -277,6 +278,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const posStore = usePosStore();
+const { money } = useMoney();
 const cartStore = useCartStore();
 const customerStore = useCustomerStore();
 const paymentStore = usePaymentStore();

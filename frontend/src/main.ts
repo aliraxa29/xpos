@@ -71,6 +71,33 @@ async function initializeBrowserStorage(): Promise<void> {
 	}
 }
 
+async function initializeCurrencyMeta(): Promise<void> {
+	try {
+		const { primeCurrencyCache } = await import("@/composables/useCurrency");
+		await primeCurrencyCache();
+	} catch (error) {
+		console.warn("[XPOS] Currency metadata initialization failed", error);
+	}
+}
+
+async function initializeNumberFormat(): Promise<void> {
+	try {
+		const { numberFormatSettings, setNumberFormatSettings } = await import("@/utils/numberFormat");
+		if ((window.xpos?.boot as any)?.xpos_number_format) {
+			numberFormatSettings();
+			return;
+		}
+
+		const { getCachedERPSettings } = await import("@/services/dbBridge");
+		const cached = (await getCachedERPSettings()) as { number_format?: unknown } | null;
+		if (cached?.number_format) {
+			setNumberFormatSettings(cached.number_format as Parameters<typeof setNumberFormatSettings>[0]);
+		}
+	} catch (error) {
+		console.warn("[XPOS] Number format initialization failed", error);
+	}
+}
+
 (async () => {
 	const app = createApp(App);
 	const pinia = createPinia();
@@ -79,6 +106,8 @@ async function initializeBrowserStorage(): Promise<void> {
 	app.use(router);
 	initializeNamespaces();
 	await initializeBrowserStorage();
+	await initializeCurrencyMeta();
+	await initializeNumberFormat();
 	app.config.globalProperties.$dayjs = dayjs;
 	app.config.errorHandler = (err: unknown, _instance: unknown, info: string) => {
 		console.error("X POS Error:", err, info);

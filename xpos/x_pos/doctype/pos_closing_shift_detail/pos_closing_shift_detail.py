@@ -15,6 +15,7 @@ class POSClosingShiftDetail(Document):
 		from frappe.types import DF
 
 		closing_amount: DF.Currency
+		currency: DF.Link | None
 		difference: DF.Currency
 		expected_amount: DF.Currency
 		mode_of_payment: DF.Link

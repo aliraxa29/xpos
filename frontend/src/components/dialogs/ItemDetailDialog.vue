@@ -68,11 +68,11 @@
 							v-if="hasPermission('allow_change_price')"
 							v-model="priceInput"
 							:min="0"
-							:precision="2"
+							:precision="ratePrecision"
 							class="w-32"
 						/>
 						<span v-else class="text-base font-bold text-primary tabular-nums">
-							{{ posStore.currencySymbol }}{{ priceInput.toFixed(2) }}
+							{{ moneyRate(priceInput) }}
 						</span>
 					</div>
 
@@ -108,7 +108,7 @@
 									:variant="batch.qty > 0 ? 'success' : 'destructive'"
 									class="text-[10px]"
 								>
-									{{ batch.qty }} {{ selectedUOM || detail.stock_uom }}
+									{{ qty(batch.qty) }} {{ selectedUOM || detail.stock_uom }}
 								</Badge>
 							</button>
 						</div>
@@ -123,7 +123,7 @@
 						</label>
 						<div class="relative mb-2">
 							<Search
-								class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+								class="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
 							/>
 							<Input
 								v-model="serialSearch"
@@ -208,6 +208,7 @@ import { ref, computed, watch, nextTick } from "vue";
 import { useItemStore } from "@/stores/itemStore";
 import { useCartStore } from "@/stores/cartStore";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { hasPermission } from "@/services/userRights";
 import { showError } from "@/services/api";
 import {
@@ -226,6 +227,7 @@ import { Loader2, Search, Check, Plus, AlertCircle } from "lucide-vue-next";
 import __ from "@/lib/translate";
 
 const itemStore = useItemStore();
+const { moneyRate, ratePrecision, qty } = useMoney();
 const cartStore = useCartStore();
 const posStore = usePosStore();
 

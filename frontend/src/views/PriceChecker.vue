@@ -1,14 +1,11 @@
 <template>
-	<div
-		class="flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground antialiased"
-		:dir="dir"
-	>
+	<div class="flex h-dvh flex-col overflow-hidden bg-background text-foreground antialiased" :dir="dir">
 		<header
 			class="flex flex-none items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 sm:px-8 sm:py-5"
 		>
 			<div class="flex min-w-0 items-center gap-3.5">
 				<img
-					class="h-[clamp(38px,5vh,48px)] w-[clamp(38px,5vh,48px)] flex-shrink-0 rounded-lg"
+					class="h-[clamp(38px,5vh,48px)] w-[clamp(38px,5vh,48px)] shrink-0 rounded-lg"
 					:src="isDark ? logoDark : logoLight"
 					alt="X POS"
 				/>
@@ -36,10 +33,10 @@
 		<main
 			class="flex min-h-0 flex-1 flex-col items-center justify-center gap-[clamp(16px,3.5vh,32px)] overflow-hidden px-4 py-4 sm:px-10 sm:py-8"
 		>
-			<div class="relative w-full max-w-[640px] flex-shrink-0">
+			<div class="relative w-full max-w-160 shrink-0">
 				<ScanBarcode
 					class="absolute top-1/2 -translate-y-1/2 text-muted-foreground"
-					:class="dir === 'rtl' ? 'right-[22px]' : 'left-[22px]'"
+					:class="dir === 'rtl' ? 'right-5.5' : 'left-5.5'"
 				/>
 				<input
 					ref="scanRef"
@@ -51,12 +48,12 @@
 					spellcheck="false"
 					placeholder="Scan a barcode to check the price…"
 					class="w-full rounded-[calc(var(--radius)+6px)] border-2 border-border bg-card py-[clamp(14px,2.4vh,22px)] text-[clamp(18px,2.8vh,24px)] text-foreground outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted-foreground focus:border-primary focus:shadow-[0_0_0_4px_hsl(var(--primary)/0.18)]"
-					:class="dir === 'rtl' ? 'pr-[60px] pl-6' : 'pl-[60px] pr-6'"
+					:class="dir === 'rtl' ? 'pr-15 pl-6' : 'pl-15 pr-6'"
 					@keydown.enter.prevent="doLookup(scanValue)"
 				/>
 			</div>
 
-			<div class="flex w-full min-h-0 max-w-[860px] flex-1 items-center justify-center">
+			<div class="flex w-full min-h-0 max-w-215 flex-1 items-center justify-center">
 				<div
 					v-if="stage === 'idle'"
 					class="flex flex-col items-center gap-[clamp(8px,1.6vh,16px)] text-center text-muted-foreground"
@@ -108,7 +105,9 @@
 							{{ item.item_group }}
 						</span>
 
-						<div class="break-words text-[clamp(20px,4.4vh,34px)] font-extrabold leading-[1.12]">
+						<div
+							class="wrap-break-word text-[clamp(20px,4.4vh,34px)] font-extrabold leading-[1.12]"
+						>
 							{{ item.item_name }}
 						</div>
 
@@ -183,6 +182,7 @@
 
 <script setup>
 import { call } from "@/services/api";
+import { formatFor } from "@/composables/useCurrency";
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from "vue";
 import __ from "@/lib/translate";
 import { ScanBarcode } from "lucide-vue-next";
@@ -210,10 +210,7 @@ const posProfile = ref(null);
 let resetTimer = null;
 
 function money(sym, val) {
-	const n = Number(val || 0).toLocaleString(undefined, {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	});
+	const n = formatFor(item.currency, Number(val || 0));
 	return (sym || "") + " " + n;
 }
 

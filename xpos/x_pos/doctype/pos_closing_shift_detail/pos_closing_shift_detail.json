@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "mode_of_payment",
+  "currency",
   "opening_amount",
   "closing_amount",
   "column_break_mqcy",
@@ -20,6 +21,15 @@
    "label": "Mode of Payment",
    "options": "Mode of Payment",
    "reqd": 1
+  },
+  {
+   "description": "Currency this mode is counted in. Blank means the company currency. Kept off the grid to leave room for the amount columns.",
+   "fetch_from": "mode_of_payment.pos_tender_currency",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
   },
   {
    "fieldname": "opening_amount",

@@ -9,6 +9,8 @@ from frappe import _, cstr
 from frappe.utils import cint, flt, getdate, now_datetime, nowdate
 from frappe.utils.background_jobs import enqueue
 
+from xpos.api.exchange import get_currency_precision
+from xpos.api.tender import build_change_legs, build_tender_legs, invoice_currency_of
 from xpos.api.utilities import can_recall_other_shift_tabs, get_invoice_type, is_pos_cashier
 
 
@@ -90,6 +92,43 @@ def _apply_invoice_loyalty_fields(invoice_doc, data: dict):
 	invoice_doc.redeem_loyalty_points = 1 if redeem_loyalty else 0
 	invoice_doc.loyalty_points = redeem_points if redeem_loyalty else 0
 	invoice_doc.loyalty_amount = 0
+
+
+def resolve_return_sales_person(return_against: str | None) -> str | None:
+	"""Sales person credited on the invoice being returned, if any."""
+	if not return_against:
+		return None
+
+	doctype = _detect_invoice_doctype(return_against)
+	return frappe.db.get_value(
+		"Sales Team",
+		{"parent": return_against, "parenttype": doctype},
+		"sales_person",
+		order_by="idx asc",
+	)
+
+
+def apply_sales_person(doc, sales_person: str | None, pos_profile: str | None = None):
+	"""Attribute the whole document to a single sales person."""
+	if not doc.meta.get_field("sales_team"):
+		return
+
+	doc.set("sales_team", [])
+	if not sales_person:
+		return
+
+	if pos_profile:
+		from xpos.api.customers import get_allowed_sales_persons
+
+		if sales_person not in get_allowed_sales_persons(pos_profile):
+			frappe.throw(
+				_("Sales Person {0} is not allowed on POS Profile {1}.").format(sales_person, pos_profile)
+			)
+
+	if not frappe.db.get_value("Sales Person", sales_person, "enabled"):
+		frappe.throw(_("Sales Person {0} is disabled.").format(sales_person))
+
+	doc.append("sales_team", {"sales_person": sales_person, "allocated_percentage": 100})
 
 
 def _prepare_invoice_totals_for_loyalty_validation(invoice_doc):
@@ -308,8 +347,6 @@ def create_invoice(data: str | dict, local_id: str | None = None):
 		invoice_doc.set("items", [])
 		invoice_doc.set("payments", [])
 		invoice_doc.set("taxes", [])
-		if hasattr(invoice_doc, "sales_team"):
-			invoice_doc.set("sales_team", [])
 		if hasattr(invoice_doc, "coupons"):
 			invoice_doc.set("coupons", [])
 		if hasattr(invoice_doc, "offers"):
@@ -373,14 +410,12 @@ def create_invoice(data: str | dict, local_id: str | None = None):
 
 	invoice_doc.pos_notes = data.get("pos_notes", "")
 	invoice_doc.pos_delivery_date = data.get("pos_delivery_date", None) or None
-	if data.get("sales_person", None):
-		invoice_doc.append(
-			"sales_team",
-			{
-				"sales_person": data["sales_person"],
-				"allocated_percentage": 100,
-			},
-		)
+
+	sales_person = data.get("sales_person") or None
+	if sales_person:
+		apply_sales_person(invoice_doc, sales_person, pos_profile)
+	else:
+		apply_sales_person(invoice_doc, resolve_return_sales_person(invoice_doc.return_against))
 
 	_apply_invoice_loyalty_fields(invoice_doc, data)
 
@@ -523,20 +558,10 @@ def create_invoice(data: str | dict, local_id: str | None = None):
 		_prepare_invoice_totals_for_loyalty_validation(invoice_doc)
 		loyalty_paid = _resolve_loyalty_paid_amount(invoice_doc)
 
-	total_payment = 0
-	for payment in payments:
-		pay_amount = flt(payment.get("amount", 0), 2)
-		if pay_amount != 0:
-			invoice_doc.append(
-				"payments",
-				{
-					"mode_of_payment": payment.get("mode_of_payment"),
-					"amount": pay_amount,
-					"account": payment.get("account"),
-					"type": payment.get("type"),
-				},
-			)
-			total_payment += pay_amount
+	rate_cache: dict = {}
+	tender_rows, total_payment = build_tender_legs(payments, invoice_doc, rate_cache)
+	for row in tender_rows:
+		invoice_doc.append("payments", row)
 
 	_ensure_pos_invoice_payment_row(invoice_doc, pos, bool(invoice_doc.is_pos and not invoice_doc.is_return))
 
@@ -556,10 +581,19 @@ def create_invoice(data: str | dict, local_id: str | None = None):
 	if is_return and doctype == "POS Invoice":
 		invoice_doc.validate_change_amount = lambda: None
 	else:
-		invoice_doc.paid_amount = flt(total_payment + loyalty_paid, 2)
-		invoice_doc.base_paid_amount = flt(invoice_doc.paid_amount * flt(invoice_doc.conversion_rate or 1), 2)
+		paid_precision = get_currency_precision(invoice_currency_of(invoice_doc))
+		invoice_doc.paid_amount = flt(total_payment + loyalty_paid, paid_precision)
+		invoice_doc.base_paid_amount = flt(
+			invoice_doc.paid_amount * flt(invoice_doc.conversion_rate or 1), paid_precision
+		)
 
-	change_amount = flt(data.get("change_amount", 0))
+	change_legs, change_total = build_change_legs(data.get("pos_change_legs") or [], invoice_doc, rate_cache)
+	if change_legs:
+		invoice_doc.set("pos_change_legs", [])
+		for leg in change_legs:
+			invoice_doc.append("pos_change_legs", leg)
+
+	change_amount = change_total if change_legs else flt(data.get("change_amount", 0))
 	if change_amount > 0:
 		invoice_doc.change_amount = change_amount
 
@@ -821,6 +855,8 @@ def save_draft_invoice(data: str | dict):
 	except Exception:
 		pass
 
+	apply_sales_person(invoice_doc, data.get("sales_person") or None, pos_profile)
+
 	rate_precision = _get_item_rate_precision()
 
 	for item_data in items:
@@ -861,17 +897,9 @@ def save_draft_invoice(data: str | dict):
 	payments = data.get("payments", [])
 	if payments:
 		invoice_doc.set("payments", [])
-		for payment in payments:
-			pay_amount = flt(payment.get("amount", 0), 2)
-			invoice_doc.append(
-				"payments",
-				{
-					"mode_of_payment": payment.get("mode_of_payment"),
-					"amount": pay_amount,
-					"account": payment.get("account"),
-					"type": payment.get("type"),
-				},
-			)
+		tender_rows, _total = build_tender_legs(payments, invoice_doc)
+		for row in tender_rows:
+			invoice_doc.append("payments", row)
 
 	_ensure_pos_invoice_payment_row(invoice_doc, pos, doctype == "POS Invoice")
 
@@ -1264,6 +1292,7 @@ def get_invoice_details(invoice_name: str, doctype: str = ""):
 		"total_qty": getattr(doc, "total_qty", 0),
 		"total": getattr(doc, "total", 0),
 		"sales_partner": getattr(doc, "sales_partner", None),
+		"sales_person": doc.sales_team[0].sales_person if doc.get("sales_team") else None,
 		"commission_rate": getattr(doc, "commission_rate", 0),
 		"total_commission": getattr(doc, "total_commission", 0),
 		"loyalty_program": getattr(doc, "loyalty_program", None),

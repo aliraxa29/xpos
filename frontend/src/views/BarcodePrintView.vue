@@ -295,6 +295,7 @@ import { Search, Plus, Minus, X, Printer, Trash2, Barcode } from "lucide-vue-nex
 import Checkbox from "@/components/ui/checkbox/Checkbox.vue";
 import { NumberInput } from "@/components/ui/number-input";
 import { usePosStore } from "@/stores/posStore";
+import { formatWithSymbol } from "@/composables/useCurrency";
 
 interface ItemBarcode {
 	barcode: string;
@@ -539,7 +540,10 @@ async function printLabels() {
 				html += `<div class="label-barcode-text">${escapeHtml(label.item_code)}</div>`;
 			}
 			if (showPrice.value && label.price != null) {
-				html += `<div class="label-price">${label.currency} ${Number(label.price).toFixed(2)}</div>`;
+				html += `<div class="label-price">${formatWithSymbol(
+					label.currency,
+					Number(label.price),
+				)}</div>`;
 			}
 			if (includeQR.value && label.qrcode_uri) {
 				html += `<div class="label-qr"><img src="${label.qrcode_uri}" alt="QR" /></div>`;

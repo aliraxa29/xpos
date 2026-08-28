@@ -23,12 +23,27 @@ vi.mock("@/stores/posStore", () => ({
 			currency: "USD",
 		},
 		currency: "USD",
+		// The receipt snapshot reads the rate date off the mode, not the payment row.
+		tenderModeFor: vi.fn(() => undefined),
 	})),
 }));
 
 // Import after mocking
 import { useCartStore } from "@/stores/cartStore.ts";
 import type { CartItem } from "@/types/pos.types";
+
+function makeItem(overrides: Partial<CartItem> = {}): CartItem {
+	return {
+		item_code: "ITEM-001",
+		item_name: "Test Item",
+		qty: 1,
+		rate: 100,
+		uom: "Nos",
+		discount_percentage: 0,
+		discount_amount: 0,
+		...overrides,
+	};
+}
 
 describe("Cart Store", () => {
 	beforeEach(() => {
@@ -271,6 +286,88 @@ describe("Cart Store", () => {
 
 			const totalPaid = cartStore.payments.reduce((sum: any, p: any) => sum + p.amount, 0);
 			expect(totalPaid).toBe(100);
+		});
+
+		/**
+		 * `setPayments` and friends previously had no callers at all, so `payments` was always empty
+		 * at checkout. `getInvoiceData` never emitted a payment list and `getReceiptSnapshot` always
+		 * reported an empty one with zero change, which is why Electron and cashier backup receipts
+		 * printed no payment or change lines. The payment dialog now routes through these setters.
+		 */
+		it("carries payments set through the store into the invoice payload", () => {
+			const cartStore = useCartStore();
+			cartStore.items.push(makeItem({ rate: 100, qty: 1 }));
+			cartStore.setPayments([{ mode_of_payment: "Cash", amount: 100 }]);
+
+			const data = cartStore.getInvoiceData("POS-PROFILE-1", "SHIFT-1");
+
+			expect(data.payments).toHaveLength(1);
+			expect(data.payments?.[0].mode_of_payment).toBe("Cash");
+		});
+
+		it("carries payments and change into the receipt snapshot", () => {
+			const cartStore = useCartStore();
+			cartStore.items.push(makeItem({ rate: 100, qty: 1 }));
+			cartStore.setPayments([{ mode_of_payment: "Cash", amount: 150 }]);
+
+			const snapshot = cartStore.getReceiptSnapshot("SINV-1", "Cashier");
+
+			expect(snapshot.payments).toHaveLength(1);
+			expect(snapshot.payments[0].amount).toBe(150);
+			expect(snapshot.change).toBe(50);
+		});
+
+		it("emits the change amount and legs when they are set", () => {
+			const cartStore = useCartStore();
+			cartStore.items.push(makeItem({ rate: 100, qty: 1 }));
+			cartStore.setPayments([{ mode_of_payment: "Cash", amount: 150 }]);
+			cartStore.setChangeAmount(50);
+			cartStore.setChangeLegs([
+				{
+					mode_of_payment: "Cash",
+					currency: "USD",
+					amount: 50,
+					base_amount: 50,
+					exchange_rate: 1,
+				},
+			]);
+
+			const data = cartStore.getInvoiceData("POS-PROFILE-1", "SHIFT-1");
+
+			expect(data.change_amount).toBe(50);
+			expect(data.pos_change_legs).toHaveLength(1);
+		});
+
+		it("tags a foreign tender row on the receipt snapshot", () => {
+			const cartStore = useCartStore();
+			cartStore.items.push(makeItem({ rate: 100, qty: 1 }));
+			cartStore.setPayments([
+				{
+					mode_of_payment: "Cash USD",
+					amount: 100,
+					pos_tender_currency: "USD",
+					pos_tender_amount: 1.11,
+					pos_exchange_rate: 90,
+				},
+			]);
+
+			const snapshot = cartStore.getReceiptSnapshot("SINV-1", "Cashier");
+
+			expect(snapshot.payments[0].currency).toBe("USD");
+			expect(snapshot.payments[0].native_amount).toBe(1.11);
+			expect(snapshot.payments[0].exchange_rate).toBe(90);
+		});
+
+		it("clears change state along with payments", () => {
+			const cartStore = useCartStore();
+			cartStore.setPayments([{ mode_of_payment: "Cash", amount: 100 }]);
+			cartStore.setChangeAmount(25);
+
+			cartStore.clearPayments();
+
+			expect(cartStore.payments).toHaveLength(0);
+			expect(cartStore.changeAmount).toBe(0);
+			expect(cartStore.changeLegs).toHaveLength(0);
 		});
 	});
 

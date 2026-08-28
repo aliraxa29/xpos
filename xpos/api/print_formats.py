@@ -1,12 +1,6 @@
 # Copyright (c) 2026, Ali Raza and contributors
 # For license information, please see license.txt
 
-"""
-Print Formats API.
-
-Returns available print format names.
-"""
-
 import frappe
 from frappe import _
 from frappe.utils import cint
@@ -25,46 +19,27 @@ def get_print_formats(doctype: str = "Sales Invoice"):
 	return [p.name for p in print_formats]
 
 
-def _can_reprint(user: str | None = None) -> bool:
-	"""Whether ``user`` may reprint a posted POS invoice (the ``allow_reprint_invoice`` right).
-
-	Resolved from the user's POS Role permission map so it stays in sync with
-	the Role Permissions admin screen. Administrators / System Managers always
-	qualify.
-	"""
+def can_reprint(user: str | None = None) -> bool:
+	"""Whether ``user`` may reprint a posted POS invoice (the ``allow_reprint_invoice`` right)."""
 	from xpos.api.auth import user_has_pos_permission
 
 	return user_has_pos_permission("allow_reprint_invoice", user)
 
 
 def invoice_has_permission(doc, ptype: str, user: str) -> bool:
-	"""``has_permission`` hook restricting reprinting of POS invoices.
-
-	The first receipt (``print_count`` == 0) is always allowed so cashiers
-	can print at the point of sale; every subsequent print is a reprint and
-	requires the ``allow_reprint_invoice`` right. Non-print actions and
-	non-POS invoices defer to Frappe's normal role permissions.
-	"""
+	"""``has_permission`` hook restricting reprinting of POS invoices."""
 	if ptype != "print":
 		return True
 	if not getattr(doc, "is_pos", 0):
 		return True
 	if cint(getattr(doc, "print_count", 0)) < 1:
 		return True
-	return _can_reprint(user)
+	return can_reprint(user)
 
 
 @frappe.whitelist()
 def get_receipt_context(pos_profile: str, print_format: str | None = None) -> dict:
-	"""Resolve everything the desktop app needs to render a receipt offline.
-
-	The thermal print format is server-side Jinja (``frappe.get_doc`` /
-	``frappe.utils`` / ``xpos_barcode`` …) so it cannot run in the Electron
-	renderer. Instead the desktop app caches this bundle while online and
-	renders a faithful offline template against it, reusing the format's CSS
-	verbatim. Company/profile data is pre-resolved here so no server call is
-	needed at print time.
-	"""
+	"""Resolve everything the desktop app needs to render a receipt offline."""
 	profile = frappe.get_cached_doc("POS Profile", pos_profile)
 	company = frappe.get_cached_doc("Company", profile.company)
 
@@ -105,12 +80,7 @@ def get_receipt_context(pos_profile: str, print_format: str | None = None) -> di
 
 @frappe.whitelist()
 def mark_invoice_printed(doctype: str, name: str) -> dict:
-	"""Record that a POS receipt has printed, so later prints count as reprints.
-
-	Called by the POS frontend right after the point-of-sale receipt prints.
-	Uses a direct db write because the counter is an internal marker, not
-	user-editable content; ``update_modified=False`` avoids needless re-sync.
-	"""
+	"""Record that a POS receipt has printed, so later prints count as reprints."""
 	if doctype not in REPRINT_DOCTYPES:
 		frappe.throw(_("Unsupported doctype for print tracking: {0}").format(doctype))
 	current = cint(frappe.db.get_value(doctype, name, "print_count"))

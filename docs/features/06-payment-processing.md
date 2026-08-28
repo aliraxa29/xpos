@@ -98,6 +98,85 @@ Clicking a quick button fills the tendered amount and auto-calculates change.
 
 ---
 
+## Mixed-Currency Cash Payment and Change
+
+Some stores take more than one currency of cash across the same counter: a Beirut shop prices in
+LBP but accepts US dollar notes at a rate the owner sets by hand each morning. Turning on
+`pos_mixed_currency_tender` in the POS Profile lets one invoice be settled with a mix of both, and
+lets the change go back as a mix of both.
+
+**The invoice itself stays single-currency.** Only the payment legs are mixed. This is not the same
+feature as `allow_multi_currency`, which switches the whole invoice into another currency — see
+[Multi-Currency](19-multi-currency.md) for the distinction.
+
+### Setup
+
+| Setting | Where | Why |
+|---|---|---|
+| `pos_tender_currency` | Mode of Payment | Tags the mode as taking foreign notes. Blank means the invoice currency. |
+| `type = Cash` | Mode of Payment | Change can only be handed back through a cash mode. |
+| Mode of Payment Account | Mode of Payment | Must point at a **company-currency** cash account, shared by both modes. |
+| `pos_mixed_currency_tender` | POS Profile | Shows the change allocator. |
+| `cash_mode_of_payment` | POS Profile | The drawer change comes out of by default. |
+| `post_change_gl_entries` | POS Settings | Must stay enabled. A server guard refuses the sale if it is turned off. |
+| Currency Exchange record | Daily | One row per day, with **For Selling** ticked. |
+
+The drawer is a single company-currency account. The dollar figure is reconciliation metadata, not
+a second ledger: there is no FX gain or loss tracking.
+
+### Taking the payment
+
+1. Select the foreign cash mode. The tendered field switches to that currency's own decimals.
+2. Type the note value the customer handed over, e.g. `100`.
+3. A line underneath shows the conversion and the rate's date: `$100.00 at 90,000 = L£9,000,000`.
+   An amber warning appears if the rate was not set today.
+4. The change due is calculated in the invoice currency as usual.
+
+### Splitting the change
+
+When change is due, the allocator lists one row per currency being handed back.
+
+1. A single row in the invoice currency is seeded automatically, so the ordinary case needs no
+   interaction at all.
+2. Edit that row down and click a currency button to add another leg. The button shows what the
+   outstanding change works out to in that currency, so the cashier does not have to divide.
+3. The legs must account for the change exactly, within one minor unit of the invoice currency.
+   The submit button stays disabled until they do.
+
+### Worked example
+
+Invoice 5,892,300 LBP. Customer hands over a $100 note at 90,000.
+
+| Leg | Native | In LBP |
+|---|---|---|
+| Tender — Cash USD | $100.00 | 9,000,000 |
+| Change — Cash USD | $30.00 | 2,700,000 |
+| Change — Cash LBP | 407,700 | 407,700 |
+
+The drawer nets **+$70 and −407,700 LBP**, and `70 × 90,000 − 407,700` is 5,892,300 exactly.
+
+### What gets recorded
+
+| Field | Holds |
+|---|---|
+| `Sales Invoice Payment.amount` | Always the invoice-currency value. ERPNext sums it into `paid_amount`. |
+| `pos_tender_currency` / `pos_tender_amount` | The notes actually handed over. ERPNext never touches these. |
+| `pos_exchange_rate` | The rate at submit time, frozen so a later rate change never restates the invoice. |
+| `POS Change Leg` rows | One per currency handed back, positive, summing to `change_amount`. |
+
+The rate is always resolved **server-side**. A rate sent by the till is treated as a checksum: if
+it disagrees with the server's, the sale is rejected and the cashier is told to reload. That is
+also why a foreign-currency invoice queued offline and replayed after the rate changed will error
+loudly and has to be re-rung.
+
+### At shift close
+
+The count sheet asks for each mode in its own currency — `$270` and `592,300 LBP` as separate
+lines, never one blended figure. Change is subtracted from the mode that actually gave it, not
+spread across every mode used on the invoice.
+
+---
+
 ## Loyalty Point Redemption
 
 If the selected customer is enrolled in a loyalty program and has available points:

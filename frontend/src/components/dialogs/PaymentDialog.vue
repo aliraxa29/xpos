@@ -13,7 +13,7 @@
 			>
 				<div class="flex items-center gap-3">
 					<div
-						class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-sm"
+						class="w-8 h-8 rounded-lg bg-linear-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-sm"
 					>
 						<Wallet class="w-4 h-4 text-white" />
 					</div>
@@ -33,15 +33,13 @@
 							v-if="customerBalance > 0"
 							class="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium"
 						>
-							{{ __("Outstanding") }}: {{ posStore.currencySymbol
-							}}{{ formatPrice(customerBalance) }}
+							{{ __("Outstanding") }}: {{ money(customerBalance) }}
 						</span>
 						<span
 							v-if="customerCreditLimit > 0"
 							class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 font-medium"
 						>
-							{{ __("Credit Limit") }}: {{ posStore.currencySymbol
-							}}{{ formatPrice(customerCreditLimit) }}
+							{{ __("Credit Limit") }}: {{ money(customerCreditLimit) }}
 						</span>
 					</div>
 					<Badge v-if="cartStore.isReturnMode" variant="warning" class="text-[10px]">
@@ -78,7 +76,7 @@
 								class="text-3xl font-extrabold tabular-nums"
 								:class="cartStore.isReturnMode ? 'text-amber-600' : 'text-primary'"
 							>
-								{{ posStore.currencySymbol }}{{ formatPrice(Math.abs(cartStore.grandTotal)) }}
+								{{ money(Math.abs(cartStore.grandTotal)) }}
 							</p>
 						</div>
 						<div
@@ -92,9 +90,7 @@
 						>
 							<div class="flex items-center justify-between text-xs text-muted-foreground mb-1">
 								<span>{{ __("Subtotal") }}</span>
-								<span
-									>{{ posStore.currencySymbol }}{{ formatPrice(cartStore.subtotal) }}</span
-								>
+								<span>{{ money(cartStore.subtotal) }}</span>
 							</div>
 							<div
 								v-for="(tax, idx) in cartStore.calculatedTaxes"
@@ -103,7 +99,7 @@
 							>
 								<span class="flex items-center gap-1">
 									{{ tax.description }}
-									<span class="text-[10px]">({{ tax.rate }}%)</span>
+									<span class="text-[10px]">({{ percent(tax.rate) }})</span>
 									<span
 										v-if="tax.included_in_print_rate"
 										class="text-[9px] text-blue-500"
@@ -111,8 +107,7 @@
 									>
 								</span>
 								<span :class="tax.included_in_print_rate ? 'text-blue-500' : ''">
-									{{ tax.included_in_print_rate ? "" : "+" }}{{ posStore.currencySymbol
-									}}{{ formatPrice(tax.amount) }}
+									{{ tax.included_in_print_rate ? "" : "+" }}{{ money(tax.amount) }}
 								</span>
 							</div>
 							<div
@@ -120,20 +115,18 @@
 								class="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400"
 							>
 								<span>{{ __("Offer Discount") }}</span>
-								<span
-									>-{{ posStore.currencySymbol
-									}}{{ formatPrice(cartStore.offerItemDiscountTotal) }}</span
-								>
+								<span>-{{ money(cartStore.offerItemDiscountTotal) }}</span>
 							</div>
 							<div
 								v-if="cartStore.offerGrandTotalDiscountPct > 0"
 								class="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400"
 							>
-								<span>{{ __("Offer") }} ({{ cartStore.offerGrandTotalDiscountPct }}%)</span>
 								<span
-									>-{{ posStore.currencySymbol
-									}}{{ formatPrice(paymentOfferGrandDiscount) }}</span
+									>{{ __("Offer") }} ({{
+										percent(cartStore.offerGrandTotalDiscountPct)
+									}})</span
 								>
+								<span>-{{ money(paymentOfferGrandDiscount) }}</span>
 							</div>
 							<div
 								v-if="cartStore.appliedCoupon"
@@ -175,11 +168,13 @@
 										if (el) methodRefs[idx] = el as HTMLButtonElement;
 									}
 								"
+								data-testid="payment-method"
+								:data-mode="method.mode_of_payment"
 								@click="selectMethod(method.mode_of_payment)"
 								@keydown.left.prevent="focusMethod(idx - 1)"
 								@keydown.right.prevent="focusMethod(idx + 1)"
 								@keydown.down.prevent="focusAmountInput"
-								class="flex-1 min-w-[80px] p-2.5 rounded-xl border-2 text-center transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring"
+								class="flex-1 min-w-20 p-2.5 rounded-xl border-2 text-center transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring"
 								:class="
 									selectedMethod === method.mode_of_payment
 										? 'border-primary bg-primary/5 text-primary shadow-sm'
@@ -220,13 +215,57 @@
 							ref="amountInput"
 							v-model="tenderedAmount"
 							:min="0"
-							:precision="2"
+							:precision="selectedPrecision"
 							class="text-center text-xl font-bold tracking-wider py-3"
 							:select-on-focus="true"
 							@keydown.enter.stop.prevent="handleAmountInputSubmit"
 							@keydown.up.prevent="focusMethodByIndex"
 							@keydown.down.prevent="focusFirstQuickAmount"
 						/>
+
+						<div v-if="selectedIsForeign" class="mt-1.5 space-y-1">
+							<p v-if="selectedRateMissing" class="text-xs font-medium text-destructive">
+								{{
+									__("No exchange rate for {0}. Set today's rate before accepting it.", [
+										selectedCurrency,
+									])
+								}}
+							</p>
+							<template v-else>
+								<p class="text-xs text-muted-foreground">
+									{{ formatWithSymbol(selectedCurrency, tenderedAmount) }}
+									{{ __("at") }} {{ formatFor(invoiceCurrency, selectedRate) }} =
+									<span class="font-semibold text-foreground">
+										{{
+											formatWithSymbol(
+												invoiceCurrency,
+												convertToBase(
+													selectedCurrency,
+													invoiceCurrency,
+													tenderedAmount,
+													selectedRate,
+												),
+											)
+										}}
+									</span>
+								</p>
+								<p
+									:class="
+										selectedRateIsStale
+											? 'text-xs font-medium text-amber-600 dark:text-amber-500'
+											: 'text-xs text-muted-foreground'
+									"
+								>
+									{{
+										selectedRateIsStale
+											? __("Rate is from {0} and has not been updated today.", [
+													selectedRateDate,
+												])
+											: __("Rate as of {0}", [selectedRateDate])
+									}}
+								</p>
+							</template>
+						</div>
 					</div>
 
 					<div v-if="isSplitPayment" class="space-y-2">
@@ -238,14 +277,14 @@
 							:disabled="!selectedMethod || tenderedAmount <= 0"
 						>
 							<Plus class="w-4 h-4" />
-							Add {{ selectedMethod }} &mdash; {{ posStore.currencySymbol
-							}}{{ formatPrice(tenderedAmount) }}
+							Add {{ selectedMethod }} &mdash;
+							{{ formatWithSymbol(selectedCurrency, tenderedAmount) }}
 						</Button>
 
 						<div v-if="splitPayments.length > 0" class="space-y-1">
 							<div
 								v-for="(sp, idx) in splitPayments"
-								:key="idx"
+								:key="sp.id"
 								class="flex items-center justify-between bg-muted rounded-lg px-3 py-2 text-sm"
 							>
 								<div class="flex items-center gap-2">
@@ -253,9 +292,18 @@
 									<span class="font-medium text-foreground">{{ sp.mode_of_payment }}</span>
 								</div>
 								<div class="flex items-center gap-2">
-									<span class="font-bold text-foreground"
-										>{{ posStore.currencySymbol }}{{ formatPrice(sp.amount) }}</span
-									>
+									<div class="text-right">
+										<span class="font-bold text-foreground">
+											{{ formatWithSymbol(sp.currency, sp.native_amount) }}
+										</span>
+										<span
+											v-if="sp.currency !== invoiceCurrency"
+											class="block text-xs text-muted-foreground"
+										>
+											@ {{ formatFor(invoiceCurrency, sp.exchange_rate) }} =
+											{{ formatWithSymbol(invoiceCurrency, sp.base_amount) }}
+										</span>
+									</div>
 									<button
 										@click="removeSplitPayment(idx)"
 										class="text-muted-foreground hover:text-destructive"
@@ -264,11 +312,26 @@
 									</button>
 								</div>
 							</div>
+
+							<div
+								v-if="hasForeignTender"
+								class="border-t border-border mt-1 pt-1 space-y-0.5 px-3"
+							>
+								<div
+									v-for="group in tenderByCurrency"
+									:key="group.currency"
+									class="flex justify-between text-xs text-muted-foreground"
+								>
+									<span>{{ formatWithSymbol(group.currency, group.native) }}</span>
+									<span>{{ formatWithSymbol(invoiceCurrency, group.base) }}</span>
+								</div>
+							</div>
+
 							<div class="flex justify-between text-sm font-semibold px-3 pt-1">
 								<span class="text-muted-foreground">{{ __("Total Paid") }}</span>
-								<span class="text-primary"
-									>{{ posStore.currencySymbol }}{{ formatPrice(splitTotal) }}</span
-								>
+								<span class="text-primary">
+									{{ formatWithSymbol(invoiceCurrency, splitTotal) }}
+								</span>
 							</div>
 						</div>
 					</div>
@@ -292,7 +355,7 @@
 							@keydown.left.prevent="focusQuickAmount(idx - 1)"
 							@keydown.right.prevent="focusQuickAmount(idx + 1)"
 						>
-							{{ posStore.currencySymbol }}{{ amount }}
+							{{ money(amount) }}
 						</Button>
 					</div>
 
@@ -308,8 +371,9 @@
 								}}</span>
 							</div>
 							<Badge variant="secondary" class="text-[10px]">
-								{{ customerLoyaltyPoints }} {{ __("pts") }} ({{ posStore.currencySymbol
-								}}{{ formatPrice(customerLoyaltyAmount) }})
+								{{ customerLoyaltyPoints }} {{ __("pts") }} ({{
+									money(customerLoyaltyAmount)
+								}})
 							</Badge>
 						</div>
 
@@ -317,7 +381,7 @@
 							<div class="flex items-center justify-between text-xs">
 								<span class="text-violet-700 dark:text-violet-300 font-medium">
 									{{ __("Redeeming") }}: {{ cartStore.loyaltyPoints }} {{ __("pts") }} =
-									{{ posStore.currencySymbol }}{{ formatPrice(cartStore.loyaltyAmount) }}
+									{{ money(cartStore.loyaltyAmount) }}
 								</span>
 								<Button
 									variant="ghost"
@@ -348,8 +412,7 @@
 									>
 								</div>
 								<p class="text-[11px] text-violet-600 dark:text-violet-400">
-									{{ __("Discount") }}: {{ posStore.currencySymbol
-									}}{{ formatPrice(redeemInputAmount) }}
+									{{ __("Discount") }}: {{ money(redeemInputAmount) }}
 								</p>
 								<div class="flex gap-1.5">
 									<Button
@@ -400,16 +463,108 @@
 						<NumberInput
 							v-model="writeOffInput"
 							:min="0"
-							:precision="2"
+							:precision="moneyPrecision"
 							placeholder="0.00"
 							class="text-sm"
 							@change="cartStore.writeOffAmount = writeOffInput || 0"
 						/>
 					</div>
 
-					<div class="flex gap-2 mt-auto">
+					<div
+						v-if="showChangeAllocator"
+						class="mt-auto rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-2"
+					>
+						<div class="flex items-center justify-between">
+							<p class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+								{{ __("Change") }}
+							</p>
+							<p
+								class="text-lg font-extrabold text-emerald-700 dark:text-emerald-300 tabular-nums"
+							>
+								{{ formatWithSymbol(invoiceCurrency, changeAmount) }}
+							</p>
+						</div>
+
 						<div
-							v-if="changeAmount > 0"
+							v-for="(leg, idx) in changeLegs"
+							:key="`${leg.mode_of_payment}-${idx}`"
+							data-testid="change-leg"
+							:data-mode="leg.mode_of_payment"
+							:data-currency="leg.currency"
+						>
+							<div class="flex items-center gap-2">
+								<component
+									:is="getMethodIcon(leg.mode_of_payment)"
+									class="w-4 h-4 shrink-0"
+								/>
+								<span class="text-xs font-medium text-foreground truncate flex-1">
+									{{ leg.mode_of_payment }}
+								</span>
+								<NumberInput
+									:model-value="leg.amount"
+									:min="0"
+									:precision="precisionFor(leg.currency)"
+									class="w-28 text-right text-sm py-1"
+									data-testid="change-leg-input"
+									@update:model-value="updateChangeLeg(idx, Number($event) || 0)"
+								/>
+								<button
+									v-if="changeLegs.length > 1"
+									@click="removeChangeLeg(idx)"
+									class="text-muted-foreground hover:text-destructive"
+								>
+									<X class="w-3.5 h-3.5" />
+								</button>
+							</div>
+							<p
+								v-if="leg.currency !== invoiceCurrency"
+								class="pl-6 text-[10px] text-muted-foreground"
+							>
+								@ {{ formatFor(invoiceCurrency, leg.exchange_rate) }} =
+								{{ formatWithSymbol(invoiceCurrency, leg.base_amount) }}
+							</p>
+						</div>
+
+						<div class="flex flex-wrap gap-1">
+							<Button
+								v-for="mode in posStore.cashTenderModes"
+								:key="mode.mode_of_payment"
+								variant="outline"
+								size="sm"
+								class="text-xs h-7"
+								data-testid="add-change-leg"
+								:data-mode="mode.mode_of_payment"
+								:disabled="changeRemaining <= 0"
+								@click="addChangeLeg(mode.mode_of_payment)"
+							>
+								<Plus class="w-3 h-3" />
+								{{ mode.mode_of_payment }}
+								<span v-if="changeRemaining > 0" class="text-muted-foreground">
+									{{
+										formatWithSymbol(
+											mode.pos_tender_currency,
+											changeRemainingIn(mode.pos_tender_currency),
+										)
+									}}
+								</span>
+							</Button>
+						</div>
+
+						<p
+							v-if="!changeAllocationValid"
+							class="text-xs font-medium text-destructive tabular-nums"
+						>
+							{{
+								__("{0} of change is still unallocated", [
+									formatWithSymbol(invoiceCurrency, changeRemaining),
+								])
+							}}
+						</p>
+					</div>
+
+					<div class="flex gap-2" :class="showChangeAllocator ? 'mt-2' : 'mt-auto'">
+						<div
+							v-if="changeAmount > 0 && !showChangeAllocator"
 							class="flex-1 bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 text-center"
 						>
 							<p class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 mb-0.5">
@@ -418,7 +573,7 @@
 							<p
 								class="text-lg font-extrabold text-emerald-700 dark:text-emerald-300 tabular-nums"
 							>
-								{{ posStore.currencySymbol }}{{ formatPrice(changeAmount) }}
+								{{ formatWithSymbol(invoiceCurrency, changeAmount) }}
 							</p>
 						</div>
 						<div
@@ -429,7 +584,7 @@
 								{{ remainingLabel }}
 							</p>
 							<p class="text-lg font-extrabold text-amber-700 dark:text-amber-300 tabular-nums">
-								{{ posStore.currencySymbol }}{{ formatPrice(remainingAmount) }}
+								{{ money(remainingAmount) }}
 							</p>
 							<p
 								v-if="outstandingSubmissionHint"
@@ -510,6 +665,7 @@
 					<Button
 						variant="outline"
 						class="font-medium"
+						data-testid="save-payment"
 						:disabled="isSubmitting || !canSubmit"
 						@click="submitPayment(false)"
 					>
@@ -546,6 +702,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/authStore";
 import { usePaymentStore } from "@/stores/paymentStore";
@@ -586,7 +743,28 @@ import {
 	DollarSign,
 } from "lucide-vue-next";
 
-import type { InvoiceData, InvoicePayment } from "@/types/pos.types";
+import {
+	convertToBase,
+	formatFor,
+	formatWithSymbol,
+	precisionFor,
+	roundFor,
+} from "@/composables/useCurrency";
+import {
+	buildChangeLeg,
+	buildTenderLeg,
+	changeBaseTotal,
+	changeRemaining as remainingChange,
+	groupTenderByCurrency,
+	isChangeAllocationValid,
+	mergeTenderLeg,
+	negateForReturn,
+	remainingIn,
+	tenderBaseTotal,
+	toInvoicePayments,
+	type TenderContext,
+} from "@/services/tenderLegs";
+import type { InvoiceChangeLeg, InvoiceData, InvoicePayment, TenderLeg } from "@/types/pos.types";
 import { isOnline, extractErrorMessage, isTabConflictError } from "@/utils";
 import { nowDate } from "@/utils/datetime";
 import {
@@ -595,6 +773,7 @@ import {
 } from "@/components/dialogs/paymentDialogShortcuts";
 
 const posStore = usePosStore();
+const { moneyPrecision, percent } = useMoney();
 const { printInvoice, printInvoiceLocal } = usePrintInvoice();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
@@ -614,7 +793,10 @@ const writeOffInput = ref(0);
 const printAfterSave = ref(false);
 
 const isSplitPayment = ref(false);
-const splitPayments = ref<InvoicePayment[]>([]);
+const splitPayments = ref<TenderLeg[]>([]);
+
+const changeLegs = ref<InvoiceChangeLeg[]>([]);
+const changeTouched = ref(false);
 
 const customerLoyaltyPoints = ref(0);
 const customerLoyaltyAmount = ref(0);
@@ -644,7 +826,44 @@ const quickAmounts = computed(() => {
 	return [...new Set(amounts)].sort((a, b) => a - b).slice(0, 4);
 });
 
-const splitTotal = computed(() => splitPayments.value.reduce((sum, p) => sum + (p.amount || 0), 0));
+const invoiceCurrency = computed(() => posStore.invoiceCurrency || posStore.currency || "");
+
+const selectedCurrency = computed(
+	() => posStore.tenderCurrencyFor(selectedMethod.value) || invoiceCurrency.value,
+);
+const selectedRate = computed(() => posStore.tenderRateFor(selectedMethod.value));
+const selectedPrecision = computed(() => precisionFor(selectedCurrency.value));
+const selectedIsForeign = computed(() => selectedCurrency.value !== invoiceCurrency.value);
+const selectedRateDate = computed(() => posStore.tenderModeFor(selectedMethod.value)?.rate_date || "");
+
+const selectedRateIsStale = computed(
+	() => selectedIsForeign.value && !!selectedRateDate.value && selectedRateDate.value < nowDate(),
+);
+const selectedRateMissing = computed(() => selectedIsForeign.value && !selectedRate.value);
+
+const tenderContext = computed<TenderContext>(() => ({
+	invoiceCurrency: invoiceCurrency.value,
+	modeInfo: (mode: string) => posStore.tenderModeFor(mode),
+}));
+
+function buildLeg(mode: string, nativeAmount: number, id?: string): TenderLeg {
+	return buildTenderLeg(mode, nativeAmount, tenderContext.value, id);
+}
+
+const activeLegs = computed<TenderLeg[]>(() => {
+	if (isSplitPayment.value) return splitPayments.value;
+	if (!selectedMethod.value || tenderedAmount.value <= 0) return [];
+	return [buildLeg(selectedMethod.value, tenderedAmount.value, "single")];
+});
+
+const splitTotal = computed(() => tenderBaseTotal(splitPayments.value, invoiceCurrency.value));
+const legsBaseTotal = computed(() => tenderBaseTotal(activeLegs.value, invoiceCurrency.value));
+
+const tenderByCurrency = computed(() => groupTenderByCurrency(activeLegs.value, invoiceCurrency.value));
+
+const hasForeignTender = computed(() =>
+	activeLegs.value.some((leg) => leg.currency !== invoiceCurrency.value),
+);
 
 const maxRedeemablePoints = computed(() => {
 	const total = Math.abs(cartStore.grandTotal);
@@ -666,7 +885,7 @@ const paymentOfferGrandDiscount = computed(() => {
 	return (base * cartStore.offerGrandTotalDiscountPct) / 100;
 });
 
-const effectiveTendered = computed(() => (isSplitPayment.value ? splitTotal.value : tenderedAmount.value));
+const effectiveTendered = computed(() => legsBaseTotal.value);
 
 const changeAmount = computed(() => {
 	const total = Math.abs(cartStore.grandTotal);
@@ -680,10 +899,71 @@ const remainingAmount = computed(() => {
 	return diff > 0 ? diff : 0;
 });
 
-const hasRecordedPayment = computed(() => {
-	const amount = isSplitPayment.value ? splitTotal.value : tenderedAmount.value;
-	return roundCurrency(amount) > 0;
+const hasRecordedPayment = computed(() => roundCurrency(effectiveTendered.value) > 0);
+
+const defaultChangeMode = computed(() => {
+	const modes = posStore.cashTenderModes;
+	const configured = modes.find((mode) => mode.mode_of_payment === posStore.cashModeOfPayment);
+	if (configured) return configured.mode_of_payment;
+	const inInvoiceCurrency = modes.find((mode) => mode.pos_tender_currency === invoiceCurrency.value);
+	return (inInvoiceCurrency || modes[0])?.mode_of_payment || posStore.cashModeOfPayment;
 });
+
+function buildChangeLegFor(mode: string, nativeAmount: number): InvoiceChangeLeg {
+	return buildChangeLeg(mode, nativeAmount, tenderContext.value);
+}
+
+const changeAllocatedBase = computed(() => changeBaseTotal(changeLegs.value, invoiceCurrency.value));
+
+const changeRemaining = computed(() =>
+	remainingChange(changeAmount.value, changeLegs.value, invoiceCurrency.value),
+);
+
+const changeAllocationValid = computed(() =>
+	isChangeAllocationValid(changeAmount.value, changeLegs.value, invoiceCurrency.value),
+);
+
+const showChangeAllocator = computed(
+	() => changeAmount.value > 0 && posStore.allowMixedCurrencyTender && !cartStore.isReturnMode,
+);
+
+watch(
+	changeAmount,
+	(amount) => {
+		if (amount <= 0 || cartStore.isReturnMode) {
+			changeLegs.value = [];
+			changeTouched.value = false;
+			return;
+		}
+		if (!changeTouched.value) {
+			changeLegs.value = [buildChangeLegFor(defaultChangeMode.value, amount)];
+		}
+	},
+	{ immediate: true },
+);
+
+function addChangeLeg(mode: string) {
+	const native = changeRemainingIn(posStore.tenderCurrencyFor(mode));
+	changeTouched.value = true;
+	changeLegs.value.push(buildChangeLegFor(mode, native));
+}
+
+function updateChangeLeg(index: number, nativeAmount: number) {
+	const leg = changeLegs.value[index];
+	if (!leg) return;
+	changeTouched.value = true;
+	changeLegs.value[index] = buildChangeLegFor(leg.mode_of_payment, nativeAmount);
+}
+
+function removeChangeLeg(index: number) {
+	changeTouched.value = true;
+	changeLegs.value.splice(index, 1);
+}
+
+function changeRemainingIn(currency: string): number {
+	const mode = posStore.cashTenderModes.find((m) => m.pos_tender_currency === currency);
+	return remainingIn(changeRemaining.value, currency, invoiceCurrency.value, mode?.exchange_rate || 0);
+}
 
 const canSubmitOutstanding = computed(() => {
 	if (cartStore.isReturnMode || remainingAmount.value <= 0) return false;
@@ -705,15 +985,15 @@ const outstandingSubmissionHint = computed(() => {
 
 const canSubmit = computed(() => {
 	if (cartStore.isEmpty) return false;
+	if (selectedRateMissing.value) return false;
 	const total = roundCurrency(Math.abs(cartStore.grandTotal));
 	if (total <= 0) return true;
 	if (remainingAmount.value > 0) {
 		return canSubmitOutstanding.value;
 	}
-	if (isSplitPayment.value) {
-		return roundCurrency(splitTotal.value) >= total;
-	}
-	return selectedMethod.value !== "" && roundCurrency(tenderedAmount.value) >= total;
+	if (!changeAllocationValid.value) return false;
+	if (!isSplitPayment.value && !selectedMethod.value) return false;
+	return roundCurrency(effectiveTendered.value) >= total;
 });
 
 onMounted(async () => {
@@ -873,24 +1153,28 @@ function enableSplitPayment() {
 	tenderedAmount.value = 0;
 }
 
+function refillTenderRemainder() {
+	const owed = Math.max(0, roundCurrency(Math.abs(cartStore.grandTotal) - splitTotal.value));
+	const rate = posStore.tenderRateFor(selectedMethod.value) || 1;
+	tenderedAmount.value = roundFor(selectedCurrency.value, owed / rate);
+}
+
 function addSplitPayment() {
 	if (!selectedMethod.value || tenderedAmount.value <= 0) return;
-	const existing = splitPayments.value.find((p) => p.mode_of_payment === selectedMethod.value);
-	if (existing) {
-		existing.amount = roundCurrency(existing.amount + tenderedAmount.value);
-	} else {
-		splitPayments.value.push({
-			mode_of_payment: selectedMethod.value,
-			amount: roundCurrency(tenderedAmount.value),
-		});
-	}
-	tenderedAmount.value = roundCurrency(Math.max(0, Math.abs(cartStore.grandTotal) - splitTotal.value));
+	const leg = buildLeg(selectedMethod.value, tenderedAmount.value);
+	mergeTenderLeg(splitPayments.value, leg, tenderContext.value);
+	refillTenderRemainder();
 }
 
 function removeSplitPayment(idx: number) {
 	splitPayments.value.splice(idx, 1);
-	tenderedAmount.value = roundCurrency(Math.max(0, Math.abs(cartStore.grandTotal) - splitTotal.value));
+	refillTenderRemainder();
 }
+
+watch(selectedCurrency, (next, prev) => {
+	if (!prev || next === prev) return;
+	refillTenderRemainder();
+});
 
 function openLoyaltyInput() {
 	if (maxRedeemablePoints.value <= 0) {
@@ -938,11 +1222,10 @@ function handleNumpad(key: string) {
 	const current = String(tenderedAmount.value || "");
 	if (key === "C") {
 		tenderedAmount.value = 0;
-	} else if (key === "⌫") {
-		tenderedAmount.value = parseFloat(current.slice(0, -1)) || 0;
-	} else {
-		tenderedAmount.value = parseFloat(current + key) || 0;
+		return;
 	}
+	const next = key === "⌫" ? parseFloat(current.slice(0, -1)) : parseFloat(current + key);
+	tenderedAmount.value = roundFor(selectedCurrency.value, next || 0);
 }
 
 function validateForSubmission(): { valid: boolean; message?: string } {
@@ -974,48 +1257,60 @@ function validateForSubmission(): { valid: boolean; message?: string } {
 		}
 	}
 
+	if (selectedRateMissing.value) {
+		return {
+			valid: false,
+			message: __("No exchange rate is available for {0}. Set today's rate before accepting it.", [
+				selectedCurrency.value,
+			]),
+		};
+	}
+
+	if (!cartStore.isReturnMode && remainingAmount.value > 0 && !canSubmitOutstanding.value) {
+		return {
+			valid: false,
+			message: __("Tendered {0} covers {1}. {2} is still due.", [
+				formatWithSymbol(invoiceCurrency.value, effectiveTendered.value),
+				formatWithSymbol(invoiceCurrency.value, Math.abs(cartStore.grandTotal)),
+				formatWithSymbol(invoiceCurrency.value, remainingAmount.value),
+			]),
+		};
+	}
+
+	if (!changeAllocationValid.value) {
+		return {
+			valid: false,
+			message: __("Change of {0} is not fully allocated. {1} is unaccounted for.", [
+				formatWithSymbol(invoiceCurrency.value, changeAmount.value),
+				formatWithSymbol(invoiceCurrency.value, changeRemaining.value),
+			]),
+		};
+	}
+
 	return { valid: true };
 }
 
 function buildSubmissionPayments(): InvoicePayment[] {
-	if (isSplitPayment.value) {
-		return splitPayments.value
-			.filter((payment) => roundCurrency(payment.amount || 0) > 0)
-			.map((payment) => ({
-				...payment,
-				amount: roundCurrency(payment.amount || 0),
-			}));
-	}
-
-	if (!selectedMethod.value || roundCurrency(tenderedAmount.value) <= 0) {
-		return [];
-	}
-
-	return [
-		{
-			mode_of_payment: selectedMethod.value,
-			amount: roundCurrency(tenderedAmount.value),
-		},
-	];
+	return toInvoicePayments(activeLegs.value, invoiceCurrency.value);
 }
 
-function applySubmissionPayments(invoiceData: InvoiceData): void {
-	let payments = buildSubmissionPayments();
+function buildInvoicePayload(): InvoiceData {
+	const shiftName = posStore.posOpeningShift?.name || "";
+	const payments = cartStore.isReturnMode
+		? negateForReturn(buildSubmissionPayments())
+		: buildSubmissionPayments();
 
-	if (cartStore.isReturnMode) {
-		payments = payments.map((payment) => ({
-			...payment,
-			amount: -Math.abs(payment.amount),
-		}));
-	}
+	cartStore.setPayments(payments);
+	cartStore.setChangeAmount(cartStore.isReturnMode ? 0 : changeAmount.value);
+	cartStore.setChangeLegs(cartStore.isReturnMode ? [] : changeLegs.value.filter((leg) => leg.amount > 0));
 
-	if (payments.length > 0) {
-		invoiceData.payments = payments;
-	}
+	const invoiceData = cartStore.getInvoiceData(posStore.profileName, shiftName);
 
 	if (!cartStore.isReturnMode && remainingAmount.value > 0 && posStore.allowCreditSale) {
 		invoiceData.is_credit_sale = true;
 	}
+
+	return invoiceData;
 }
 
 async function submitPayment(withPrint: boolean = true) {
@@ -1044,13 +1339,7 @@ async function submitPayment(withPrint: boolean = true) {
 
 	try {
 		const shiftName = posStore.posOpeningShift?.name || "";
-		const invoiceData = cartStore.getInvoiceData(posStore.profileName, shiftName);
-
-		applySubmissionPayments(invoiceData);
-
-		if (changeAmount.value > 0) {
-			invoiceData.change_amount = changeAmount.value;
-		}
+		const invoiceData = buildInvoicePayload();
 
 		if (isElectron() && window.electronAPI?.db) {
 			const result = await window.electronAPI.db.addPendingInvoice({
@@ -1129,14 +1418,7 @@ async function submitPayment(withPrint: boolean = true) {
 			close();
 			cartStore.openDraftDialog();
 		} else if (isNetworkError(error)) {
-			const invoiceData = cartStore.getInvoiceData(
-				posStore.profileName,
-				posStore.posOpeningShift?.name || "",
-			);
-			applySubmissionPayments(invoiceData);
-			if (changeAmount.value > 0) {
-				invoiceData.change_amount = changeAmount.value;
-			}
+			const invoiceData = buildInvoicePayload();
 			const result = await offlineStore.saveOffline(
 				invoiceData,
 				cartStore.customerName,
@@ -1200,10 +1482,15 @@ function close() {
 }
 
 function roundCurrency(value: number): number {
-	return Math.round((value + Number.EPSILON) * 100) / 100;
+	return roundFor(invoiceCurrency.value, value);
 }
 
 function formatPrice(price: number | string) {
-	return roundCurrency(parseFloat(String(price) || "0")).toFixed(2);
+	return formatFor(invoiceCurrency.value, parseFloat(String(price) || "0"));
+}
+
+/** The same amount with the currency symbol, on the side the Currency doctype asks for. */
+function money(price: number | string) {
+	return formatWithSymbol(invoiceCurrency.value, parseFloat(String(price) || "0"));
 }
 </script>

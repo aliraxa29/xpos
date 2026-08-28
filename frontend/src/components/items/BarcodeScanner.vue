@@ -11,6 +11,7 @@
 			}"
 			:placeholder="__('Scan barcode...')"
 			autocomplete="off"
+			data-testid="barcode-input"
 			@keydown.enter.prevent="onScan"
 			@paste="onPaste"
 		/>

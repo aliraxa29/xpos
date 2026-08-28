@@ -5,13 +5,20 @@ from unittest.mock import MagicMock, patch
 from xpos.x_pos.api import invoice
 
 
+class FakeDoc(SimpleNamespace):
+	"""Namespace that also answers `doc.get(...)`, as Frappe documents do."""
+
+	def get(self, key, default=None):
+		return getattr(self, key, default)
+
+
 class TestAutoSetDeliveryCharges(unittest.TestCase):
 	"""Tests for delivery-charge auto-application hooks."""
 
 	@patch("xpos.x_pos.api.invoice.get_applicable_delivery_charges")
 	def test_auto_set_delivery_charges_skips_xpos_managed_docs(self, mock_get_applicable):
 		"""xpos-managed invoices should not get surprise delivery charges from validate hooks."""
-		doc = SimpleNamespace(
+		doc = FakeDoc(
 			pos_profile="POS-1",
 			flags=SimpleNamespace(xpos_skip_auto_delivery_charges=True),
 		)
@@ -33,7 +40,7 @@ class TestCalcDeliveryCharges(unittest.TestCase):
 		def append_row(_table_name, row):
 			taxes.append(SimpleNamespace(**row))
 
-		doc = SimpleNamespace(
+		doc = FakeDoc(
 			pos_profile="POS-1",
 			pos_delivery_charges="Home Delivery",
 			pos_delivery_charges_rate=0,

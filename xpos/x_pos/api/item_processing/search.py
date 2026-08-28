@@ -10,11 +10,12 @@ from frappe import _
 from frappe.utils import cstr, get_datetime
 from frappe.utils.caching import redis_cache
 
+from xpos.api.utilities import get_item_search_settings
 from xpos.x_pos.api.item_processing.barcode import search_serial_or_batch_or_barcode_number
 from xpos.x_pos.api.item_processing.details import get_items_details
 from xpos.x_pos.api.utils import (
 	HAS_VARIANTS_EXCLUSION,
-	_ensure_pos_profile,
+	ensure_pos_profile,
 	expand_item_groups,
 	get_item_groups,
 	log_perf_event,
@@ -59,7 +60,6 @@ class SearchPlan:
 	word_filter_active: bool
 	include_description: bool
 	include_image: bool
-	display_items_in_stock: bool
 	show_template_items: bool
 
 
@@ -92,11 +92,10 @@ def _build_search_plan(
 ) -> SearchPlan:
 	"""Assemble filters, pagination rules and search metadata."""
 
-	use_limit_search = pos_profile.get("use_limit_search")
-	search_serial_no = pos_profile.get("search_serial_no")
-	search_batch_no = pos_profile.get("search_batch_no")
+	config = get_item_search_settings()
+	search_serial_no = config["search_serial_no"]
+	search_batch_no = config["search_batch_no"]
 	show_template_items = pos_profile.get("show_template_items")
-	display_items_in_stock = pos_profile.get("display_items_in_stock")
 
 	limit = _to_positive_int(limit)
 	offset = _to_positive_int(offset)
@@ -141,21 +140,12 @@ def _build_search_plan(
 
 		resolved_item_code = data.get("item_code")
 		base_search_term = resolved_item_code or (longest_search_token or raw_search_value)
-		min_search_len = 2
 
-		if use_limit_search:
-			if len(raw_search_value) >= min_search_len:
-				or_filters = [
-					["name", "like", f"{base_search_term}%"],
-					["item_name", "like", f"{base_search_term}%"],
-					["item_code", "like", f"%{base_search_term}%"],
-				]
-				item_code_for_search = base_search_term
-
-			if len(raw_search_value) < min_search_len:
-				filters["item_code"] = base_search_term
-		elif resolved_item_code:
+		if resolved_item_code:
 			filters["item_code"] = resolved_item_code
+		else:
+			or_filters = [[fieldname, "like", f"%{base_search_term}%"] for fieldname in config["fields"]]
+			item_code_for_search = base_search_term
 
 	if item_group and item_group.upper() != "ALL":
 		filters["item_group"] = ["like", f"%{item_group}%"]
@@ -166,10 +156,7 @@ def _build_search_plan(
 	if pos_profile.get("hide_variants_items"):
 		filters["variant_of"] = ["is", "not set"]
 
-	search_limit = 0
-	if use_limit_search:
-		raw_search_limit = pos_profile.get("item_search_limit")
-		search_limit = _to_positive_int(raw_search_limit) or 500
+	search_limit = _to_positive_int(config["item_search_limit"]) or 0
 
 	limit_page_length: int | None = None
 	limit_start: int | None = None
@@ -179,11 +166,8 @@ def _build_search_plan(
 		limit_page_length = limit
 		if offset and not start_after:
 			limit_start = offset
-	elif use_limit_search and not pos_profile.get("force_reload_items"):
+	elif search_value and search_limit:
 		limit_page_length = search_limit
-
-	if search_value and not use_limit_search and limit is None:
-		limit_page_length = None
 
 	fields = [
 		"name",
@@ -226,7 +210,6 @@ def _build_search_plan(
 		word_filter_active=word_filter_active,
 		include_description=include_description,
 		include_image=include_image,
-		display_items_in_stock=bool(display_items_in_stock),
 		show_template_items=bool(show_template_items),
 	)
 
@@ -318,13 +301,6 @@ def _shape_item_row(
 	item_attributes: Any = ""
 	if plan.show_template_items and item.get("variant_of"):
 		item_attributes = (variant_attributes_map or {}).get(item.get("name"), [])
-
-	if (
-		plan.display_items_in_stock
-		and (not detail.get("actual_qty") or detail.get("actual_qty") < 0)
-		and not item.get("has_variants")
-	):
-		return None
 
 	row: dict[str, Any] = {}
 	row.update(item)
@@ -513,7 +489,7 @@ def _execute_item_search(
 def _normalize_profile_context(pos_profile: str | dict) -> ProfileContext:
 	"""Return the active profile metadata required by :func:`get_items`."""
 
-	profile_dict, profile_json = _ensure_pos_profile(pos_profile)
+	profile_dict, profile_json = ensure_pos_profile(pos_profile)
 	ttl = profile_dict.get("server_cache_duration")
 	try:
 		ttl = int(ttl) * 60 if ttl else None
@@ -669,7 +645,7 @@ def get_items_groups():
 
 @frappe.whitelist()
 def get_items_count(pos_profile: str | dict, item_groups: str | Sequence[str] | None = None):
-	pos_profile, _ = _ensure_pos_profile(pos_profile)
+	pos_profile, _ = ensure_pos_profile(pos_profile)
 	if isinstance(item_groups, str):
 		try:
 			item_groups = json.loads(item_groups)

@@ -30,6 +30,7 @@ const props = withDefaults(
 		emptyText?: string;
 		class?: HTMLAttributes["class"];
 		doctype?: string;
+		query?: string;
 		pageLength?: number;
 		filters?: Record<string, unknown>;
 		referenceDoctype?: string;
@@ -227,6 +228,7 @@ async function searchLink(text: string) {
 	try {
 		const response = await call<unknown[]>("frappe.desk.search.search_link", {
 			doctype: props.doctype,
+			query: props.query,
 			txt: trimmed,
 			page_length: props.pageLength,
 			filters: props.filters,
@@ -373,7 +375,7 @@ defineExpose({ focus, select, getInputEl, inputRef });
 				<div class="relative">
 					<Search
 						v-if="effectiveShowSearchIcon"
-						class="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"
+						class="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"
 					/>
 					<input
 						ref="inputRef"
@@ -395,7 +397,7 @@ defineExpose({ focus, select, getInputEl, inputRef });
 						@keydown="onKeydown"
 					/>
 
-					<div class="absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+					<div class="absolute inset-e-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
 						<button
 							v-if="effectiveClearable && modelValue"
 							type="button"
@@ -430,7 +432,7 @@ defineExpose({ focus, select, getInputEl, inputRef });
 					align="start"
 					side="bottom"
 					:side-offset="4"
-					class="z-[99999] w-[var(--radix-popover-trigger-width)] min-w-[220px] max-h-[280px] overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2"
+					class="z-99999 w-(--radix-popover-trigger-width) min-w-55 max-h-70 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2"
 					@open-auto-focus.prevent
 					@focus-outside.prevent
 				>
@@ -465,7 +467,7 @@ defineExpose({ focus, select, getInputEl, inputRef });
 									flatVisibleOptions.indexOf(option) === highlightedIndex
 										? 'bg-accent text-accent-foreground'
 										: 'hover:bg-accent/50',
-									option.disabled && '!opacity-50 !cursor-not-allowed',
+									option.disabled && 'opacity-50! cursor-not-allowed!',
 									option.value === modelValue && 'font-medium text-primary',
 								]"
 								role="option"
@@ -500,7 +502,7 @@ defineExpose({ focus, select, getInputEl, inputRef });
 								flatVisibleOptions.indexOf(option) === highlightedIndex
 									? 'bg-accent text-accent-foreground'
 									: 'hover:bg-accent/50',
-								option.disabled && '!opacity-50 !cursor-not-allowed',
+								option.disabled && 'opacity-50! cursor-not-allowed!',
 								option.value === modelValue && 'font-medium text-primary',
 							]"
 							role="option"

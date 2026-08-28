@@ -26,6 +26,7 @@ X POS is a feature-rich, offline-first Point of Sale application built on Frappe
 | **Multi-Payment** | Split payments across cash, card, mobile money, and custom modes in one transaction. |
 | **Hub & Spoke** | Multi-terminal architecture for networked stores with centralized sync. |
 | **Full Purchasing** | Purchase orders, purchase invoices, and stock receiving, all from the POS. |
+| **Customizing** | Customize the theme of the X POS as per your brand for look and feel |
 
 ---
 
@@ -86,6 +87,13 @@ X POS is a feature-rich, offline-first Point of Sale application built on Frappe
 - **Print format rules** – Conditional printing based on payment type or other criteria
 - **Barcode printing** – Generate and print item barcodes and QR codes
 - **Thermal printer support** – Optimized for ESC/POS printers
+
+### Payments
+
+- **Mixed Currency Cash Tender** – Allow user to tender mixed currencies. e.g. USD -> PKR
+- **Multi Currency** – Featuring multi currency in one system
+- **Cash Movemenet Tracking** – Generating Cash Movement (Expense or Bank Drop) based on profiles
+- **Credit Mode** – Enables the credit sales and credit payments
 
 ### User Interface
 
@@ -160,7 +168,7 @@ Then open your site and launch **X POS** from the app launcher.
 | Frontend | Vue 3, TypeScript, Pinia, Tailwind CSS, Radix Vue |
 | Build | Vite, vite-plugin-pwa, vite-plugin-electron |
 | Backend | Frappe Framework (Python) |
-| Desktop | Electron with local SQLite |
+| Desktop | Electron with local MariaDB |
 | Linting | Ruff, ESLint, Prettier |
 | Testing | Vitest |
 | CI/CD | GitHub Actions, Semantic Release |
@@ -207,6 +215,11 @@ docs: update installation instructions
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ---
+
+
+
+
+> **Note:** Desktop app is currently under development and not ready for production. Please use web version for better results
 
 ## License
 

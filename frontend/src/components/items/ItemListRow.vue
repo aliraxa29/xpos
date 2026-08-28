@@ -43,7 +43,7 @@
 
 		<TooltipWrapper
 			v-if="showStock && !isNonStockItem && item.actual_qty !== undefined"
-			:content="String(isOutOfStock ? __('Out of Stock') : item.actual_qty)"
+			:content="isOutOfStock ? __('Out of Stock') : formatQty(item.actual_qty)"
 		>
 			<Badge :variant="stockVariant" class="shrink-0 text-[10px]">
 				<template v-if="isOutOfStock">
@@ -58,7 +58,7 @@
 
 		<div class="shrink-0 text-end">
 			<span class="text-sm font-bold text-primary tabular-nums">
-				{{ currencySymbol }}{{ formatPrice(item.rate) }}
+				{{ money(item.rate) }}
 			</span>
 		</div>
 
@@ -87,6 +87,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
+import { formatQty } from "@/utils/numberFormat";
 import { Badge } from "@/components/ui/badge";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { Package, Plus, AlertCircle, Ban, Info } from "lucide-vue-next";
@@ -101,8 +103,9 @@ const props = defineProps({
 const emit = defineEmits(["click", "showDetail"]);
 
 const posStore = usePosStore();
+const { money } = useMoney();
 
-const showStock = computed(() => posStore.displayItemsInStock);
+const showStock = computed(() => true);
 const showItemCode = computed(() => posStore.displayItemCode);
 const allowNegativeStock = computed(() => posStore.stockSettings?.allow_negative_stock);
 const hideImages = computed(() => posStore.hideImages);
@@ -123,9 +126,9 @@ const stockVariant = computed(() => {
 });
 
 const stockLabel = computed(() => {
-	const qty = props.item.actual_qty || 0;
-	if (qty <= 0) return "Out";
-	return qty > 999 ? "999+" : qty;
+	const stock = props.item.actual_qty || 0;
+	if (stock <= 0) return "Out";
+	return stock > 999 ? "999+" : formatQty(stock);
 });
 
 function handleClick() {
@@ -133,9 +136,5 @@ function handleClick() {
 		return;
 	}
 	emit("click", props.item);
-}
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
 }
 </script>

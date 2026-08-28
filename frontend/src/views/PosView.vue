@@ -26,7 +26,7 @@
 				{{ __("Cart") }}
 				<span
 					v-if="cartStore.itemCount > 0"
-					class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold rounded-full"
+					class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full"
 					:class="
 						activeTab === 'cart'
 							? 'bg-primary text-primary-foreground'
@@ -40,7 +40,7 @@
 					class="text-[10px] font-medium leading-none"
 					:class="activeTab === 'cart' ? 'text-primary' : 'text-muted-foreground'"
 				>
-					{{ posStore.currencySymbol }}{{ mobileCartTotal }}
+					{{ mobileCartTotal }}
 				</span>
 			</button>
 		</div>
@@ -141,7 +141,7 @@
 			</div>
 			<div
 				ref="cartPanelRef"
-				class="hidden md:flex w-[560px] xl:w-[520px] flex-col bg-background dark:bg-card shrink-0"
+				class="hidden md:flex w-140 xl:w-130 flex-col bg-background dark:bg-card shrink-0"
 				@focusin="activeZone = 'cart'"
 				@click="activeZone = 'cart'"
 			>
@@ -179,6 +179,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { useItemStore } from "@/stores/itemStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useOfferStore } from "@/stores/offerStore";
@@ -191,7 +192,6 @@ import CommandSearch from "@/components/items/CommandSearch.vue";
 import Cart from "@/components/cart/Cart.vue";
 import { Button } from "@/components/ui/button";
 import { Autocomplete } from "@/components/ui/autocomplete";
-import { TooltipWrapper } from "@/components/ui/tooltip";
 import { LayoutGrid, List, Search, ShoppingCart, Package, ScanLine } from "lucide-vue-next";
 
 import CameraBarcodeDialog from "@/components/dialogs/CameraBarcodeDialog.vue";
@@ -199,6 +199,7 @@ import type { POSItem } from "@/types/pos.types";
 import __ from "@/lib/translate";
 
 const posStore = usePosStore();
+const { money } = useMoney();
 const itemStore = useItemStore();
 const cartStore = useCartStore();
 const offerStore = useOfferStore();
@@ -206,7 +207,7 @@ const offerStore = useOfferStore();
 const viewMode = ref<"grid" | "list">("grid");
 const activeTab = ref<"items" | "cart">("items");
 const showCameraScanner = ref(false);
-const mobileCartTotal = computed(() => Math.abs(cartStore.grandTotal).toFixed(2));
+const mobileCartTotal = computed(() => money(Math.abs(cartStore.grandTotal)));
 
 watch(
 	() => posStore.defaultView,
@@ -348,7 +349,7 @@ async function onBarcodeScan(barcode: string) {
 	try {
 		const result = await itemStore.searchByBarcode(barcode, posStore.profileName);
 		if (result && result.item_code) {
-			handleAddItem({
+			const item = {
 				item_code: result.item_code,
 				item_name: result.item_name,
 				rate: result.rate || 0,
@@ -358,7 +359,16 @@ async function onBarcodeScan(barcode: string) {
 				has_batch_no: result.has_batch_no,
 				has_serial_no: result.has_serial_no,
 				actual_qty: result.actual_qty ?? 9999,
-			} as POSItem);
+				batch_no: result.batch_no,
+				serial_no: result.serial_no,
+			} as POSItem;
+
+			const scaleQty = Number(result.qty) || 0;
+			if (result.is_scale_barcode && scaleQty > 0) {
+				addScaleItem(item, scaleQty);
+			} else {
+				handleAddItem(item);
+			}
 			barcodeScannerRef.value?.showSuccess();
 		} else {
 			showError(__(`Item not found for barcode: ${barcode}`));
@@ -453,6 +463,18 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 function selectGroup(group: string) {
 	itemStore.setSelectedGroup(group);
 	itemStore.fetchItems(posStore.profileName);
+}
+
+function addScaleItem(item: POSItem, qty: number) {
+	if (!cartStore.customer) {
+		showError(__("Please select a customer before adding items to the cart"));
+		return;
+	}
+
+	const result = cartStore.addItemWithDetails(item, qty, item.rate || 0, item.uom || item.stock_uom);
+	if (!result.success) {
+		showError(result.message || __("Could not add item to cart"));
+	}
 }
 
 function handleAddItem(item: POSItem) {

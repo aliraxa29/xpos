@@ -37,7 +37,7 @@
 						{{ __("Amount") }}
 					</div>
 					<div class="text-2xl font-bold text-emerald-500">
-						{{ posStore.currencySymbol }}{{ formatAmount(bankDrop.amount) }}
+						{{ money(bankDrop.amount) }}
 					</div>
 				</div>
 
@@ -52,7 +52,7 @@
 						<span class="text-xs text-muted-foreground uppercase tracking-wide">
 							{{ __("Deposit To") }}
 						</span>
-						<p class="font-medium text-foreground break-words">
+						<p class="font-medium text-foreground wrap-break-word">
 							{{ bankDrop.target_account || bankDrop.to_account || "-" }}
 						</p>
 					</div>
@@ -66,19 +66,19 @@
 						<span class="text-xs text-muted-foreground uppercase tracking-wide">
 							{{ __("Company") }}
 						</span>
-						<p class="font-medium text-foreground break-words">{{ bankDrop.company }}</p>
+						<p class="font-medium text-foreground wrap-break-word">{{ bankDrop.company }}</p>
 					</div>
 					<div v-if="bankDrop.pos_profile" class="space-y-1">
 						<span class="text-xs text-muted-foreground uppercase tracking-wide">
 							{{ __("POS Profile") }}
 						</span>
-						<p class="font-medium text-foreground break-words">{{ bankDrop.pos_profile }}</p>
+						<p class="font-medium text-foreground wrap-break-word">{{ bankDrop.pos_profile }}</p>
 					</div>
 					<div v-if="bankDrop.user" class="space-y-1">
 						<span class="text-xs text-muted-foreground uppercase tracking-wide">
 							{{ __("User") }}
 						</span>
-						<p class="font-medium text-foreground break-words">{{ bankDrop.user }}</p>
+						<p class="font-medium text-foreground wrap-break-word">{{ bankDrop.user }}</p>
 					</div>
 				</div>
 
@@ -86,7 +86,7 @@
 					<span class="text-xs text-muted-foreground uppercase tracking-wide">
 						{{ __("Reason / Notes") }}
 					</span>
-					<p class="text-sm text-foreground whitespace-pre-wrap break-words">
+					<p class="text-sm text-foreground whitespace-pre-wrap wrap-break-word">
 						{{ bankDrop.remarks }}
 					</p>
 				</div>
@@ -97,7 +97,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowUpCircle } from "lucide-vue-next";
@@ -124,7 +124,7 @@ const emit = defineEmits<{
 	(e: "close"): void;
 }>();
 
-const posStore = usePosStore();
+const { money } = useMoney();
 
 const bankDropTitle = computed(() => {
 	if (!props.bankDrop) {
@@ -166,9 +166,5 @@ function formatDate(date?: string) {
 		month: "short",
 		day: "numeric",
 	});
-}
-
-function formatAmount(amount: number | string) {
-	return parseFloat(String(amount) || "0").toFixed(2);
 }
 </script>

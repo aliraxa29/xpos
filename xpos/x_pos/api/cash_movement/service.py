@@ -205,7 +205,6 @@ def duplicate_cash_movement(name: str, posting_date: str | None = None):
 		"pos_profile": movement_doc.pos_profile,
 		"pos_opening_shift": movement_doc.pos_opening_shift,
 		"amount": movement_doc.amount,
-		"journal_entry": movement_doc.get("journal_entry"),
 		"source_account": movement_doc.source_account,
 		"remarks": movement_doc.remarks,
 	}

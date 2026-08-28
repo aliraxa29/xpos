@@ -3,6 +3,7 @@ import { ref, onMounted, computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { usePurchaseStore } from "@/stores/purchaseStore";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table } from "@/components/ui/table";
@@ -32,6 +33,7 @@ import { DateTimePicker } from "@/components/ui/datetime-picker";
 const router = useRouter();
 const purchaseStore = usePurchaseStore();
 const posStore = usePosStore();
+const { money, qty, percent, decimal } = useMoney();
 
 function today(): string {
 	return new Date().toISOString().split("T")[0];
@@ -169,7 +171,7 @@ const invoiceLevelDiscount = computed(() => {
 const grandTotal = computed(() => subtotalWithTax.value - invoiceLevelDiscount.value);
 
 function formatCurrency(value: number): string {
-	return `${posStore.currencySymbol}${value.toFixed(2)}`;
+	return money(value);
 }
 
 async function onBarcodeScan(): Promise<void> {
@@ -422,7 +424,7 @@ const invoiceColumns = computed<TableColumn[]>(() => {
 			width: "w-[50px]",
 			align: "center" as const,
 			editable: false,
-			format: (val: any) => `${Number(val || 1).toFixed(0)}`,
+			format: (val: any) => qty(Number(val || 1), 0),
 		},
 		{
 			fieldname: "rate",
@@ -482,7 +484,7 @@ const invoiceColumns = computed<TableColumn[]>(() => {
 				min: 0,
 				max: 100,
 				precision: 1,
-				format: (_: any, row: any) => `${((row.taxes || {})[tax.tax_type] || 0).toFixed(1)}`,
+				format: (_: any, row: any) => decimal((row.taxes || {})[tax.tax_type] || 0, 1),
 			});
 		}
 	} else {
@@ -533,7 +535,7 @@ const invoiceColumns = computed<TableColumn[]>(() => {
 			width: "w-[65px]",
 			align: "right" as const,
 			editable: false,
-			format: (_: any, row: any) => `${getMarginPercent(row).toFixed(1)}%`,
+			format: (_: any, row: any) => percent(getMarginPercent(row), 1),
 			cellClass: (_: any, row: any) => (getMarginPercent(row) >= 0 ? "text-green-600" : "text-red-500"),
 		},
 	);
@@ -1090,8 +1092,9 @@ onMounted(() => {
 							{{ po.transaction_date }} &middot; {{ (po.items || []).length }} {{ __("items") }}
 						</div>
 						<div class="text-muted-foreground mb-1.5">
-							{{ __("Billed") }}: {{ po.per_billed || 0 }}% &middot; {{ __("Received") }}:
-							{{ po.per_received || 0 }}%
+							{{ __("Billed") }}: {{ percent(po.per_billed || 0) }} &middot;
+							{{ __("Received") }}:
+							{{ percent(po.per_received || 0) }}
 						</div>
 						<Button
 							@click="loadFromPO(po)"
@@ -1134,11 +1137,11 @@ onMounted(() => {
 						<div class="flex w-full flex-wrap items-center gap-1.5 sm:w-auto">
 							<div class="relative w-full sm:w-auto">
 								<ScanBarcode
-									class="absolute start-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
+									class="absolute inset-s-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
 								/>
 								<Input
 									v-model="barcodeValue"
-									class="ps-7 h-7 w-full text-xs sm:w-[160px]"
+									class="ps-7 h-7 w-full text-xs sm:w-40"
 									:class="{
 										'ring-2 ring-green-500/50 border-green-500':
 											barcodeFlash === 'success',
@@ -1150,7 +1153,7 @@ onMounted(() => {
 								/>
 								<Loader2
 									v-if="isBarcodeScan"
-									class="absolute end-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin"
+									class="absolute inset-e-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin"
 								/>
 							</div>
 							<Button

@@ -4,9 +4,10 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
-xpos.patches.add_composite_indexes
-xpos.patches.add_item_fulltext_index
 xpos.patches.remove_unused_pos_profile_discount_fields
-execute:frappe.db.delete("Custom Field", filters={"fieldname": ["IN", ["create_pos_invoice_instead_of_sales_invoice", "auto_delete_draft_invoice", "allow_delete", "display_authorization_code", "fetch_items_directly_from_server"]]})
+xpos.patches.remove_retired_pos_profile_fields
 xpos.patches.seed_pos_role_permissions
 xpos.patches.add_open_tab_permissions
+xpos.patches.add_pos_query_indexes
+xpos.patches.enable_pos_change_gl_entries
+xpos.patches.move_item_search_settings_to_pos_settings

@@ -50,55 +50,31 @@ def expand_item_groups(item_groups: list[str] | None):
 	return list(expanded_groups)
 
 
-def _ensure_pos_profile(pos_profile: str | dict | None):
-	"""Return a ``(profile_dict, profile_json)`` tuple for the given input.
+def ensure_pos_profile(pos_profile: str | None):
+	"""Return a ``(profile_dict, profile_json)`` tuple for the given profile name.
 
-	The POS profile parameter can arrive as a JSON string, a python ``dict``,
-	a bare profile name or even ``None`` (when the frontend has not yet loaded
-	the active profile). This helper normalises those inputs so downstream code
-	can rely on a fully populated dictionary and a JSON serialised
-	representation of the same profile. If no valid profile can be resolved a
-	user-facing validation error is raised.
+	Only a profile **name** is accepted (or ``None``, which resolves the
+	session user's own profile). The returned profile decides which item
+	groups, warehouse and price list the caller may see, so accepting a
+	caller-supplied profile object -- previously allowed, including a JSON
+	string that decoded to one -- let any user redefine their own scope.
 	"""
-	from frappe import _, as_json
+	from frappe import as_json
 
-	profile_dict = None
-	profile_json = None
+	from xpos.api.profiles import resolve_pos_profile
 
-	if isinstance(pos_profile, dict):
-		profile_dict = pos_profile
-		profile_json = as_json(pos_profile)
-	elif isinstance(pos_profile, str):
-		raw_value = pos_profile.strip()
-		if raw_value:
+	name = pos_profile
+	if isinstance(name, str):
+		stripped = name.strip()
+		if stripped.startswith('"') and stripped.endswith('"'):
 			try:
-				decoded_value = json.loads(raw_value)
-			except Exception:
-				decoded_value = raw_value
+				stripped = json.loads(stripped)
+			except ValueError:
+				pass
+		name = stripped
 
-			if isinstance(decoded_value, dict):
-				profile_dict = decoded_value
-				profile_json = raw_value
-			elif isinstance(decoded_value, str):
-				if decoded_value:
-					profile_doc = frappe.get_doc("POS Profile", decoded_value)
-					profile_dict = profile_doc.as_dict()
-				else:
-					profile_dict = get_active_pos_profile()
-			elif decoded_value is None:
-				profile_dict = get_active_pos_profile()
-		else:
-			profile_dict = get_active_pos_profile()
-	elif pos_profile is None:
-		profile_dict = get_active_pos_profile()
-
-	if profile_dict and not profile_json:
-		profile_json = as_json(profile_dict)
-
-	if not profile_dict or not profile_json:
-		frappe.throw(_("POS profile data is missing or invalid."))
-
-	return profile_dict, profile_json
+	profile_dict = resolve_pos_profile(name).as_dict()
+	return profile_dict, as_json(profile_dict)
 
 
 @frappe.whitelist()
@@ -115,14 +91,15 @@ def get_active_pos_profile(user: str | None = None):
 
 @frappe.whitelist()
 def get_default_warehouse(company: str | None = None):
-	"""Return the default warehouse for the given company."""
-	company = company or frappe.defaults.get_default("company")
-	if not company:
-		return None
-	warehouse = frappe.db.get_value("Company", company, "default_warehouse")
-	if not warehouse:
-		warehouse = frappe.db.get_single_value("Stock Settings", "default_warehouse")
-	return warehouse
+	"""Return the default warehouse for the given company.
+
+	Delegates to `xpos.api.utilities.get_default_warehouse` so the two API
+	layers cannot drift apart again; the local copy previously queried a
+	`Company.default_warehouse` column that does not exist.
+	"""
+	from xpos.api.utilities import get_default_warehouse as resolve_default_warehouse
+
+	return resolve_default_warehouse(company)
 
 
 def fetch_sales_person_names():

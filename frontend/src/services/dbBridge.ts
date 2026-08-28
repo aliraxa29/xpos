@@ -812,15 +812,20 @@ export async function getCachedItemByCode(itemCode: string): Promise<POSItem | u
 	return idb.getCachedItemByCode(itemCode);
 }
 
-export async function searchCachedItems(term: string, group: string): Promise<POSItem[]> {
+export async function searchCachedItems(
+	term: string,
+	group: string,
+	searchFields?: string[],
+): Promise<POSItem[]> {
 	if (isElectron()) {
 		return (await getDb().getItems({
 			search: term || undefined,
+			searchFields,
 			group: group && group !== "All Item Groups" ? group : undefined,
 		})) as unknown as POSItem[];
 	}
 	const idb = await import("./idbService");
-	return idb.searchCachedItems(term, group);
+	return idb.searchCachedItems(term, group, searchFields);
 }
 
 export async function cacheItemGroups(groups: ItemGroup[], parentGroups: ItemGroup[]): Promise<void> {
@@ -1153,6 +1158,34 @@ export async function getCachedCurrencies(): Promise<string[]> {
 	}
 	const idb = await import("./idbService");
 	return idb.getCachedCurrencies();
+}
+
+export interface CachedCurrencyMeta {
+	name: string;
+	symbol?: string;
+	number_format?: string;
+	smallest_currency_fraction_value?: number;
+	symbol_on_right?: number;
+}
+
+export async function cacheCurrencyMeta(currencies: CachedCurrencyMeta[]): Promise<void> {
+	if (isElectron()) {
+		await getDb().setMeta("currency_meta", JSON.stringify(currencies));
+		return;
+	}
+	const idb = await import("./idbService");
+	await idb.setMeta("currency_meta", currencies);
+}
+
+export async function getCachedCurrencyMeta(): Promise<CachedCurrencyMeta[]> {
+	if (isElectron()) {
+		const rows = (await getDb().getCurrencies()) as unknown as CachedCurrencyMeta[] | undefined;
+		if (rows?.length) return rows;
+		const val = await getDb().getMeta("currency_meta");
+		return val ? JSON.parse(val) : [];
+	}
+	const idb = await import("./idbService");
+	return ((await idb.getMeta("currency_meta")) as CachedCurrencyMeta[]) || [];
 }
 
 export async function cacheLanguages(languages: string[]): Promise<void> {

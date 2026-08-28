@@ -9,6 +9,7 @@ import type {
 	POSItem,
 	InvoiceData,
 	InvoiceItem,
+	InvoiceChangeLeg,
 	InvoicePayment,
 	POSOffer,
 	POSCoupon,
@@ -94,6 +95,8 @@ export const useCartStore = defineStore("cart", () => {
 	const appliedCoupon = ref<POSCoupon | null>(null);
 	const couponCode = ref("");
 	const payments = ref<InvoicePayment[]>([]);
+	const changeLegs = ref<InvoiceChangeLeg[]>([]);
+	const changeAmount = ref(0);
 	const currentDraftName = ref("");
 	const currentDraftModified = ref("");
 	const isSavingDraft = ref(false);
@@ -1056,6 +1059,16 @@ export const useCartStore = defineStore("cart", () => {
 
 	function clearPayments(): void {
 		payments.value = [];
+		changeLegs.value = [];
+		changeAmount.value = 0;
+	}
+
+	function setChangeLegs(legs: InvoiceChangeLeg[]): void {
+		changeLegs.value = legs;
+	}
+
+	function setChangeAmount(amount: number): void {
+		changeAmount.value = amount;
 	}
 
 	function setCurrency(curr: string, rate: number): void {
@@ -1082,6 +1095,8 @@ export const useCartStore = defineStore("cart", () => {
 		postingDate.value = nowDate();
 		salesPerson.value = "";
 		payments.value = [];
+		changeLegs.value = [];
+		changeAmount.value = 0;
 		currentDraftName.value = "";
 		currentDraftModified.value = "";
 		currency.value = "";
@@ -1219,6 +1234,9 @@ export const useCartStore = defineStore("cart", () => {
 			}
 			if (result.pos_delivery_date) {
 				deliveryDate.value = result.pos_delivery_date;
+			}
+			if (result.sales_person) {
+				salesPerson.value = result.sales_person;
 			}
 			if (result.pos_delivery_charges) {
 				selectedDeliveryCharge.value = {
@@ -1358,6 +1376,14 @@ export const useCartStore = defineStore("cart", () => {
 			data.payments = payments.value;
 		}
 
+		if (changeAmount.value > 0) {
+			data.change_amount = changeAmount.value;
+		}
+
+		if (changeLegs.value.length > 0) {
+			data.pos_change_legs = changeLegs.value;
+		}
+
 		if (orderNotes.value) data.pos_notes = orderNotes.value;
 		if (deliveryDate.value) data.pos_delivery_date = deliveryDate.value;
 		if (salesPerson.value) data.sales_person = salesPerson.value;
@@ -1463,13 +1489,26 @@ export const useCartStore = defineStore("cart", () => {
 			})),
 			payments: payments.value
 				.filter((p) => p.amount)
-				.map((p) => ({ mode_of_payment: p.mode_of_payment, amount: p.amount })),
+				.map((p) => ({
+					mode_of_payment: p.mode_of_payment,
+					amount: p.amount,
+					...(p.pos_tender_currency
+						? {
+								currency: p.pos_tender_currency,
+								native_amount: p.pos_tender_amount,
+								exchange_rate: p.pos_exchange_rate,
+								rate_date: posStore.tenderModeFor(p.mode_of_payment)?.rate_date || "",
+							}
+						: {}),
+				})),
 			subtotal: Math.round(subtotal.value * 100) / 100,
 			total_discount: totalDiscount,
 			net_total: Math.round((subtotal.value + includedTaxAmount.value) * 100) / 100,
 			grand_total: grandTotal.value,
 			total_qty: totalQty,
 			change: change > 0.01 && !isReturnMode.value ? Math.round(change * 100) / 100 : 0,
+			change_legs: changeLegs.value.length ? changeLegs.value : undefined,
+			currency: currency.value || posStore.currency || undefined,
 			notes: orderNotes.value || undefined,
 		};
 	}
@@ -1499,6 +1538,8 @@ export const useCartStore = defineStore("cart", () => {
 		appliedCoupon,
 		couponCode,
 		payments,
+		changeLegs,
+		changeAmount,
 		selectedCartIndex,
 		currentDraftName,
 		currentDraftModified,
@@ -1558,6 +1599,8 @@ export const useCartStore = defineStore("cart", () => {
 		addPayment,
 		setPayments,
 		clearPayments,
+		setChangeLegs,
+		setChangeAmount,
 		setCurrency,
 		clearCart,
 		clearAll,

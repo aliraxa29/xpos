@@ -105,8 +105,32 @@ def get_closing_shift_overview(pos_opening_shift: str | dict):
 			if rate:
 				container[key]["exchange_rates"].add(rate)
 
+	def accumulate_change(container, currency, amount, base_amount, conversion_rate=None):
+		currency = currency or company_currency
+		entry = container.setdefault(
+			currency,
+			{
+				"currency": currency,
+				"total": 0,
+				"company_currency_total": 0,
+				"exchange_rates": set(),
+			},
+		)
+		entry["total"] += flt(amount)
+		entry["company_currency_total"] += flt(base_amount)
+
+		if currency != company_currency:
+			rate = None
+			if flt(amount):
+				rate = abs(flt(base_amount)) / abs(flt(amount)) if base_amount else None
+			if not rate and conversion_rate:
+				rate = flt(conversion_rate)
+			if rate:
+				entry["exchange_rates"].add(rate)
+
 	def resolve_payment_currency(payment_row, invoice_currency):
 		for fieldname in (
+			"pos_tender_currency",
 			"currency",
 			"account_currency",
 			"payment_currency",
@@ -259,44 +283,40 @@ def get_closing_shift_overview(pos_opening_shift: str | dict):
 		has_overpayment_entry = invoice.get("name") in overpayment_invoice_names
 
 		if change_amount and not has_overpayment_entry:
-			change_entry = change_totals_by_currency.setdefault(
-				invoice_currency,
-				{
-					"currency": invoice_currency,
-					"total": 0,
-					"company_currency_total": 0,
-					"exchange_rates": set(),
-				},
-			)
-			change_entry["total"] += change_amount
-
 			change_base_amount = flt(
 				get_base_value(invoice, "change_amount", "base_change_amount", conversion_rate)
 			)
 			change_company_currency_total += change_base_amount
-			change_entry["company_currency_total"] += change_base_amount
 
-			total_change_entry = total_change_totals_by_currency.setdefault(
-				invoice_currency,
-				{
-					"currency": invoice_currency,
-					"total": 0,
-					"company_currency_total": 0,
-					"exchange_rates": set(),
-				},
+			legs = invoice.get("pos_change_legs") or []
+			splits = (
+				[
+					(
+						leg.get("currency") or invoice_currency,
+						flt(leg.get("amount")),
+						flt(leg.get("base_amount")),
+					)
+					for leg in legs
+				]
+				if legs
+				else [(invoice_currency, change_amount, change_base_amount)]
 			)
-			total_change_entry["total"] += change_amount
-			total_change_entry["company_currency_total"] += change_base_amount
 
-			if invoice_currency != company_currency:
-				rate = None
-				if change_amount:
-					rate = abs(change_base_amount) / abs(change_amount) if change_base_amount else None
-				if not rate and conversion_rate:
-					rate = flt(conversion_rate)
-				if rate:
-					change_entry["exchange_rates"].add(rate)
-					total_change_entry["exchange_rates"].add(rate)
+			for leg_currency, leg_amount, leg_base_amount in splits:
+				accumulate_change(
+					change_totals_by_currency,
+					leg_currency,
+					leg_amount,
+					leg_base_amount,
+					conversion_rate,
+				)
+				accumulate_change(
+					total_change_totals_by_currency,
+					leg_currency,
+					leg_amount,
+					leg_base_amount,
+					conversion_rate,
+				)
 
 		outstanding_company_currency = invoice.get("base_outstanding_amount")
 		if outstanding_company_currency in (None, ""):
@@ -375,6 +395,8 @@ def get_closing_shift_overview(pos_opening_shift: str | dict):
 			payment_currency = resolve_payment_currency(payment, invoice_currency)
 			amount = flt(payment.get("amount") or 0)
 			base_amount = get_base_value(payment, "amount", "base_amount", conversion_rate)
+			if payment.get("pos_tender_currency"):
+				amount = flt(payment.get("pos_tender_amount") or 0)
 			accumulate_payment(
 				payments_by_mode,
 				mode,
@@ -606,7 +628,7 @@ def get_closing_shift_overview(pos_opening_shift: str | dict):
 			if include_count:
 				record["invoice_count"] = row.get("invoice_count", 0)
 			output.append(record)
-		return sorted(output, key=lambda r: (r.get("currency") or ""))
+		return sorted(output, key=lambda r: r.get("currency") or "")
 
 	def prepare_payment_rows(container):
 		output = []
@@ -642,7 +664,7 @@ def get_closing_shift_overview(pos_opening_shift: str | dict):
 					"total": flt(row.get("total")),
 				}
 			)
-		output.sort(key=lambda r: (r.get("movement_type") or ""))
+		output.sort(key=lambda r: r.get("movement_type") or "")
 		return output
 
 	return {
@@ -686,7 +708,7 @@ def get_closing_shift_overview(pos_opening_shift: str | dict):
 			"company_currency_total": flt(cash_expected_company_currency_total),
 			"by_currency": sorted(
 				cash_expected_totals,
-				key=lambda row: (row.get("currency") or ""),
+				key=lambda row: row.get("currency") or "",
 			),
 		},
 		"cash_movements": {
@@ -746,15 +768,25 @@ def get_payment_reconciliation_details(closing_shift_doc: frappe._dict):
 		net_breakdown[currency] += flt(invoice_doc.get("net_total") or 0)
 
 		for payment in invoice_doc.get("payments", []):
+			tender_currency = payment.get("pos_tender_currency")
 			update_payment_breakdown(
 				payment.mode_of_payment,
 				get_base_value(payment, "amount", "base_amount", conversion_rate),
-				currency,
-				payment.amount,
+				tender_currency or currency,
+				flt(payment.get("pos_tender_amount")) if tender_currency else payment.amount,
 			)
 
 		change_amount = invoice_doc.get("change_amount") or 0
-		if change_amount:
+		change_legs = invoice_doc.get("pos_change_legs") or []
+		if change_legs:
+			for leg in change_legs:
+				update_payment_breakdown(
+					leg.mode_of_payment,
+					-flt(leg.base_amount),
+					leg.currency or currency,
+					-flt(leg.amount),
+				)
+		elif change_amount:
 			update_payment_breakdown(
 				cash_mode_of_payment,
 				-get_base_value(

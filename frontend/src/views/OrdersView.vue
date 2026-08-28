@@ -28,7 +28,7 @@
 						<div
 							class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
 						>
-							<span class="truncate max-w-[140px] sm:max-w-none">LOCAL-{{ inv.id }}</span>
+							<span class="truncate max-w-35 sm:max-w-none">LOCAL-{{ inv.id }}</span>
 							<span v-if="inv.created_at" class="flex items-center gap-1 whitespace-nowrap">
 								<Clock class="h-3 w-3 shrink-0" />
 								{{ formatDateTime(inv.created_at) }}
@@ -40,7 +40,7 @@
 					</div>
 					<div class="text-end shrink-0">
 						<div class="font-bold text-foreground text-base sm:text-lg leading-tight">
-							{{ posStore.currencySymbol }}{{ formatNumber(inv.grand_total || 0) }}
+							{{ money(inv.grand_total || 0) }}
 						</div>
 					</div>
 					<ChevronRight class="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground/40 shrink-0" />
@@ -100,7 +100,7 @@
 									class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
 								>
 									<span
-										class="flex items-center gap-1 min-w-0 truncate max-w-[120px] sm:max-w-none"
+										class="flex items-center gap-1 min-w-0 truncate max-w-30 sm:max-w-none"
 									>
 										{{ order.name }}
 									</span>
@@ -120,19 +120,17 @@
 
 							<div class="text-end shrink-0">
 								<div class="font-bold text-foreground text-base sm:text-lg leading-tight">
-									{{ posStore.currencySymbol }}{{ formatNumber(order.grand_total) }}
+									{{ money(order.grand_total) }}
 								</div>
 								<div class="flex flex-col items-end gap-0 text-xs">
 									<span class="text-muted-foreground whitespace-nowrap">
-										Paid: {{ posStore.currencySymbol
-										}}{{ formatNumber(order.paid_amount) }}
+										Paid: {{ money(order.paid_amount) }}
 									</span>
 									<span
 										v-if="order.total_taxes_and_charges"
 										class="text-muted-foreground hidden sm:inline whitespace-nowrap"
 									>
-										Tax: {{ posStore.currencySymbol
-										}}{{ formatNumber(Number(order.total_taxes_and_charges) || 0) }}
+										Tax: {{ money(Number(order.total_taxes_and_charges) || 0) }}
 									</span>
 								</div>
 							</div>
@@ -154,6 +152,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import type { Invoice } from "@/types/pos.types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -176,6 +175,7 @@ interface LocalInvoice {
 }
 
 const posStore = usePosStore();
+const { money } = useMoney();
 const selectedOrder = ref<Invoice | null>(null);
 const showDetails = ref(false);
 const localInvoices = ref<LocalInvoice[]>([]);
@@ -289,10 +289,6 @@ function formatTime(time: string) {
 	const ampm = h >= 12 ? "PM" : "AM";
 	const hour12 = h % 12 || 12;
 	return `${hour12}:${minutes} ${ampm}`;
-}
-
-function formatNumber(num: number | string) {
-	return parseFloat(String(num) || "0").toFixed(2);
 }
 
 function statusVariant(

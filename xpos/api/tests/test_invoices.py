@@ -8,8 +8,30 @@ from unittest.mock import MagicMock, patch
 from xpos.api import invoices
 
 
+def tender_legs_from_payments(payments, invoice_doc, rate_cache=None):
+	"""Stand in for build_tender_legs, deriving rows from payments without a database."""
+	rows = [
+		{"mode_of_payment": payment["mode_of_payment"], "amount": float(payment["amount"])}
+		for payment in payments
+		if payment.get("mode_of_payment")
+	]
+	return rows, sum(row["amount"] for row in rows)
+
+
 class TestCreateInvoice(unittest.TestCase):
 	"""Tests for create_invoice function."""
+
+	def setUp(self):
+		self.stub("build_tender_legs", side_effect=tender_legs_from_payments)
+		self.stub("build_change_legs", return_value=([], 0.0))
+		self.stub("invoice_currency_of", return_value="USD")
+		self.stub("get_currency_precision", return_value=2)
+
+	def stub(self, name, **kwargs):
+		"""Patch `name` in the xpos.api.invoices namespace for the current test."""
+		patcher = patch(f"xpos.api.invoices.{name}", **kwargs)
+		patcher.start()
+		self.addCleanup(patcher.stop)
 
 	@patch("xpos.api.invoices.frappe")
 	def test_create_invoice_requires_pos_profile(self, mock_frappe):
@@ -41,9 +63,10 @@ class TestCreateInvoice(unittest.TestCase):
 
 		mock_frappe.throw.assert_called()
 
+	@patch("xpos.api.invoices.get_invoice_type", return_value="Sales Invoice")
 	@patch("xpos.api.invoices._validate_return_invoice")
 	@patch("xpos.api.invoices.frappe")
-	def test_create_invoice_creates_sales_invoice(self, mock_frappe, mock_validate_return):
+	def test_create_invoice_creates_sales_invoice(self, mock_frappe, mock_validate_return, mock_invoice_type):
 		"""Test that create_invoice creates a Sales Invoice document."""
 		mock_pos = MagicMock()
 		mock_pos.company = "Test Company"

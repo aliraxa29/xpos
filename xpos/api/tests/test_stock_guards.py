@@ -181,7 +181,7 @@ class TestConsolidationStockGuard(unittest.TestCase):
 		self.addCleanup(patcher.stop)
 
 		negative_patcher = patch(
-			"xpos.x_pos.overrides.pos_invoice_merge_log._negative_stock_allowed", return_value=False
+			"xpos.x_pos.overrides.pos_invoice_merge_log.negative_stock_allowed", return_value=False
 		)
 		negative_patcher.start()
 		self.addCleanup(negative_patcher.stop)
@@ -240,7 +240,7 @@ class TestConsolidationStockGuard(unittest.TestCase):
 
 		with (
 			patch(
-				"xpos.x_pos.overrides.pos_invoice_merge_log._negative_stock_allowed",
+				"xpos.x_pos.overrides.pos_invoice_merge_log.negative_stock_allowed",
 				return_value=True,
 			),
 			patch("xpos.x_pos.overrides.pos_invoice_merge_log.get_stock_availability", return_value=0.0),

@@ -21,7 +21,9 @@
 
 			<div class="flex-1 overflow-y-auto p-5 space-y-4 xpos-scrollbar">
 				<div class="relative">
-					<Search class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+					<Search
+						class="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+					/>
 					<Input
 						ref="searchInputRef"
 						v-model="searchTerm"
@@ -55,11 +57,11 @@
 									<span>&bull;</span>
 									<span>{{ inv.posting_date }}</span>
 									<span>&bull;</span>
-									<span>{{ inv.total_qty }} items</span>
+									<span>{{ qty(inv.total_qty) }} items</span>
 								</div>
 							</div>
 							<span class="font-bold text-foreground text-sm shrink-0 ms-3">
-								{{ formatPrice(inv.grand_total) }}
+								{{ money(inv.grand_total) }}
 							</span>
 						</button>
 					</div>
@@ -90,6 +92,7 @@
 import { ref, watch, nextTick } from "vue";
 import { useCartStore } from "@/stores/cartStore";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { call, showError } from "@/services/api";
 import {
 	Dialog,
@@ -133,6 +136,7 @@ const emit = defineEmits<{ (e: "close"): void }>();
 
 const cartStore = useCartStore();
 const posStore = usePosStore();
+const { money, qty } = useMoney();
 
 const searchInputRef = ref<InstanceType<typeof Input> | null>(null);
 const searchTerm = ref("");
@@ -243,9 +247,5 @@ function close() {
 	currentPage.value = 1;
 	isLoading.value = false;
 	emit("close");
-}
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
 }
 </script>

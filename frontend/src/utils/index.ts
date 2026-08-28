@@ -130,12 +130,18 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 	};
 }
 
-/**
- * Format a number as currency
- */
-export function formatNumber(value: number, decimals = 2): string {
-	return value.toFixed(decimals);
-}
+export {
+	formatFloat,
+	formatInt,
+	formatNumber,
+	formatPercent,
+	formatQty,
+	getNumberFormatInfo,
+	numberFormatSettings,
+	parseNumber,
+	roundTo,
+	systemNumberFormat,
+} from "./numberFormat";
 
 /**
  * Generate a unique local ID for offline records

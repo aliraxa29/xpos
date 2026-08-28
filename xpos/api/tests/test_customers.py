@@ -5,6 +5,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import frappe
+
 from xpos.api import customers
 
 
@@ -82,13 +84,17 @@ class TestGetCustomerInfo(unittest.TestCase):
 	"""Tests for get_customer_info function."""
 
 	@patch("xpos.api.customers.get_loyalty_points")
+	@patch("erpnext.selling.doctype.customer.customer.get_credit_limit", return_value=0)
 	@patch("xpos.api.customers.get_customer_balance")
 	@patch("xpos.api.customers.frappe")
-	def test_get_customer_info_returns_full_details(self, mock_frappe, mock_balance, mock_loyalty):
+	def test_get_customer_info_returns_full_details(
+		self, mock_frappe, mock_balance, mock_credit_limit, mock_loyalty
+	):
 		"""Test that get_customer_info returns complete customer data."""
 		mock_customer = MagicMock()
 		mock_customer.name = "CUST-001"
 		mock_customer.customer_name = "John Doe"
+		mock_customer.loyalty_program = None
 		mock_frappe.get_cached_doc.return_value = mock_customer
 		mock_balance.return_value = {"balance": 500}
 		mock_loyalty.return_value = {"points": 100}
@@ -97,33 +103,44 @@ class TestGetCustomerInfo(unittest.TestCase):
 		result = customers.get_customer_info("CUST-001")
 
 		self.assertIsNotNone(result)
+		self.assertEqual(result["name"], "CUST-001")
+		self.assertEqual(result["customer_name"], "John Doe")
+		self.assertEqual(result["balance"], {"balance": 500})
 		mock_balance.assert_called_once_with("CUST-001")
 		mock_loyalty.assert_called_once_with("CUST-001")
 
-	@patch("xpos.api.customers.frappe")
-	def test_get_customer_info_returns_none_for_missing_customer(self, mock_frappe):
-		"""Test that get_customer_info returns None for invalid customer."""
-		result = customers.get_customer_info(None)
-
-		self.assertIsNone(result)
+	def test_get_customer_info_returns_none_for_missing_customer(self):
+		"""Test that get_customer_info returns None for a blank customer."""
+		self.assertIsNone(customers.get_customer_info(""))
 
 	@patch("xpos.api.customers.get_loyalty_points")
+	@patch("erpnext.selling.doctype.customer.customer.get_credit_limit", return_value=0)
 	@patch("xpos.api.customers.get_customer_balance")
 	@patch("xpos.api.customers.frappe")
-	def test_get_customer_info_includes_addresses(self, mock_frappe, mock_balance, mock_loyalty):
-		"""Test that get_customer_info includes customer addresses."""
+	def test_get_customer_info_includes_addresses(
+		self, mock_frappe, mock_balance, mock_credit_limit, mock_loyalty
+	):
+		"""Test that get_customer_info resolves Dynamic Links into full address rows."""
 		mock_customer = MagicMock()
+		mock_customer.loyalty_program = None
 		mock_frappe.get_cached_doc.return_value = mock_customer
 		mock_balance.return_value = {}
 		mock_loyalty.return_value = {}
-		mock_frappe.get_all.return_value = [
-			{"parent": "ADDR-001"},
-			{"parent": "ADDR-002"},
+		# First get_all resolves Dynamic Links, second fetches the Address rows.
+		mock_frappe.get_all.side_effect = [
+			[{"parent": "ADDR-001"}, {"parent": "ADDR-002"}],
+			[
+				frappe._dict({"name": "ADDR-001", "address_title": "Home", "city": "Lahore"}),
+				frappe._dict({"name": "ADDR-002", "address_title": "Work", "city": "Karachi"}),
+			],
 		]
 
-		customers.get_customer_info("CUST-001")
+		result = customers.get_customer_info("CUST-001")
 
-		mock_frappe.get_all.assert_called()
+		self.assertEqual(len(result["addresses"]), 2)
+		self.assertEqual(result["addresses"][0]["name"], "ADDR-001")
+		self.assertEqual(result["addresses"][1]["city"], "Karachi")
+		self.assertEqual(mock_frappe.get_all.call_count, 2)
 
 
 class TestCreateCustomer(unittest.TestCase):
@@ -137,13 +154,11 @@ class TestCreateCustomer(unittest.TestCase):
 		mock_customer.as_dict.return_value = {"name": "CUST-NEW-001", "customer_name": "New Customer"}
 		mock_frappe.get_doc.return_value = mock_customer
 
-		data = {
-			"customer_name": "New Customer",
-			"mobile_no": "1234567890",
-			"email_id": "new@example.com",
-		}
-
-		customers.create_customer(data)
+		customers.create_customer(
+			customer_name="New Customer",
+			mobile_no="1234567890",
+			email_id="new@example.com",
+		)
 
 		mock_frappe.get_doc.assert_called()
 		mock_customer.insert.assert_called_once()
@@ -156,11 +171,7 @@ class TestCreateCustomer(unittest.TestCase):
 		mock_frappe.get_doc.return_value = mock_customer
 		mock_frappe.db.get_single_value.return_value = "All Customer Groups"
 
-		data = {
-			"customer_name": "New Customer",
-		}
-
-		customers.create_customer(data)
+		customers.create_customer(customer_name="New Customer")
 
 		mock_frappe.get_doc.assert_called()
 

@@ -18,6 +18,7 @@ import {
 	type ReceiptContext,
 } from "@/types/pos.types";
 import { isOnline } from "@/utils";
+import { symbolFor } from "@/composables/useCurrency";
 
 export const usePosStore = defineStore("pos", () => {
 	const isLoading = ref(true);
@@ -50,26 +51,44 @@ export const usePosStore = defineStore("pos", () => {
 		await loadPermissions(useAuthStore().userName, name);
 	});
 
-	const currencySymbol = computed(() => {
-		if (window.xpos) {
-			const _currency = (xpos as any).boot?.currencies?.find(
-				(c: any) => c.name === posProfile.value?.currency,
-			);
-			if (_currency) {
-				return _currency.symbol || _currency.name;
-			}
-			return currency.value || "$";
-		}
-		return "$";
-	});
+	const currencySymbol = computed(() => symbolFor(currency.value) || currency.value || "$");
+
+	const invoiceCurrency = computed(
+		() => posProfile.value?.currency || company.value?.default_currency || "",
+	);
 
 	const paymentMethods = computed(() => {
 		if (!posProfile.value?.payments) return [];
 		return posProfile.value.payments.map((p) => ({
 			mode_of_payment: p.mode_of_payment,
 			default: p.default,
+			pos_tender_currency: p.pos_tender_currency || invoiceCurrency.value,
+			type: p.type || "",
+			is_foreign_tender: !!p.is_foreign_tender,
+			exchange_rate: p.exchange_rate ?? 1,
+			rate_date: p.rate_date || "",
 		}));
 	});
+
+	const foreignTenderModes = computed(() => paymentMethods.value.filter((m) => m.is_foreign_tender));
+
+	const cashTenderModes = computed(() => paymentMethods.value.filter((m) => m.type === "Cash"));
+
+	const allowMixedCurrencyTender = computed(
+		() => !!posProfile.value?.pos_mixed_currency_tender && foreignTenderModes.value.length > 0,
+	);
+
+	function tenderModeFor(modeOfPayment: string) {
+		return paymentMethods.value.find((m) => m.mode_of_payment === modeOfPayment);
+	}
+
+	function tenderRateFor(modeOfPayment: string): number {
+		return tenderModeFor(modeOfPayment)?.exchange_rate ?? 1;
+	}
+
+	function tenderCurrencyFor(modeOfPayment: string): string {
+		return tenderModeFor(modeOfPayment)?.pos_tender_currency || invoiceCurrency.value;
+	}
 
 	const companyName = computed(() => company.value?.name || "");
 
@@ -101,8 +120,6 @@ export const usePosStore = defineStore("pos", () => {
 
 	const allowChangePostingDate = computed(() => !!posProfile.value?.allow_change_posting_date);
 
-	const displayItemsInStock = computed(() => !!posProfile.value?.display_items_in_stock);
-
 	const allowPartialPayment = computed(() => !!posProfile.value?.allow_partial_payment);
 
 	const allowCreditSale = computed(() => !!posProfile.value?.allow_credit_sale);
@@ -116,6 +133,12 @@ export const usePosStore = defineStore("pos", () => {
 	const allowDeleteOfflineInvoice = computed(() => !!posProfile.value?.allow_delete_offline_invoice);
 
 	const displayAdditionalNotes = computed(() => !!posProfile.value?.display_additional_notes);
+
+	const allowedSalesPersons = computed(() =>
+		(posProfile.value?.allowed_sales_persons ?? []).map((row) => row.sales_person).filter(Boolean),
+	);
+
+	const salesPersonEnabled = computed(() => allowedSalesPersons.value.length > 0);
 
 	const allowWriteOffChange = computed(() => !!posProfile.value?.allow_write_off_change);
 
@@ -144,8 +167,6 @@ export const usePosStore = defineStore("pos", () => {
 	const hideVariantsItems = computed(() => !!posProfile.value?.hide_variants_items);
 
 	const autoSetBatch = computed(() => !!posProfile.value?.auto_set_batch);
-
-	const searchSerialNo = computed(() => !!posProfile.value?.search_serial_no);
 
 	const enableReturnValidity = computed(() => !!posProfile.value?.enable_return_validity);
 
@@ -514,12 +535,18 @@ export const usePosStore = defineStore("pos", () => {
 		warehouse,
 		currency,
 		currencySymbol,
+		invoiceCurrency,
 		paymentMethods,
+		foreignTenderModes,
+		cashTenderModes,
+		allowMixedCurrencyTender,
+		tenderModeFor,
+		tenderRateFor,
+		tenderCurrencyFor,
 		companyName,
 		sellingPriceList,
 		defaultCustomer,
 		allowChangePostingDate,
-		displayItemsInStock,
 		allowPartialPayment,
 		allowCreditSale,
 		allowReturn,
@@ -527,6 +554,8 @@ export const usePosStore = defineStore("pos", () => {
 		allowSalesOrder,
 		allowDeleteOfflineInvoice,
 		displayAdditionalNotes,
+		allowedSalesPersons,
+		salesPersonEnabled,
 		allowWriteOffChange,
 		displayItemCode,
 		allowZeroRatedItems,
@@ -541,7 +570,6 @@ export const usePosStore = defineStore("pos", () => {
 		showTemplateItems,
 		hideVariantsItems,
 		autoSetBatch,
-		searchSerialNo,
 		enableReturnValidity,
 		returnValidityDays,
 		useCustomerCredit,

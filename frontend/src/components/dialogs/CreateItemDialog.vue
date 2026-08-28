@@ -8,6 +8,7 @@ import { Autocomplete } from "@/components/ui/autocomplete";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { SearchItem } from "@/types/pos.types";
 import __ from "@/lib/translate";
+import { useMoney } from "@/composables/useMoney";
 import { getBootProperty } from "@/utils";
 
 const props = defineProps<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 }>();
 
 const purchaseStore = usePurchaseStore();
+const { ratePrecision } = useMoney();
 
 const newItem = ref({
 	item_name: "",
@@ -114,11 +116,11 @@ async function handleCreate(): Promise<void> {
 					</div>
 					<div>
 						<label class="text-sm font-medium mb-1 block">{{ __("Buying Price") }}</label>
-						<NumberInput v-model="newItem.buying_price" :min="0" :precision="2" />
+						<NumberInput v-model="newItem.buying_price" :min="0" :precision="ratePrecision" />
 					</div>
 					<div>
 						<label class="text-sm font-medium mb-1 block">{{ __("Selling Price") }}</label>
-						<NumberInput v-model="newItem.selling_price" :min="0" :precision="2" />
+						<NumberInput v-model="newItem.selling_price" :min="0" :precision="ratePrecision" />
 					</div>
 				</div>
 				<div class="flex justify-end gap-2 pt-4">

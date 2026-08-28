@@ -192,13 +192,8 @@ def get_unallocated_payments(
 	return payments
 
 
-@frappe.whitelist()
 def create_payment_entry(data: str | dict) -> dict:
-	"""
-	Create a payment entry for a customer.
-
-	Creates a Payment Entry document for manual payments outside the invoice flow.
-	"""
+	"""Create (and optionally submit) a Payment Entry for a customer."""
 	if isinstance(data, str):
 		data = json.loads(data)
 

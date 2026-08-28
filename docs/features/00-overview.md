@@ -25,7 +25,7 @@
 | 15 | [Printing & Receipts](15-printing-receipts.md) | Thermal receipts, barcodes, QR codes |
 | 16 | [Offline Mode](16-offline-mode.md) | Full offline operation with auto-sync |
 | 17 | [Purchasing Module](17-purchasing.md) | Purchase orders, stock receiving, in-transit |
-| 19 | [Multi-Currency](19-multi-currency.md) | Foreign currency transactions |
+| 19 | [Multi-Currency](19-multi-currency.md) | Invoice currency vs payment-mode currency |
 | 20 | [Delivery Charges](20-delivery-charges.md) | Configurable delivery/shipping charges |
 | 21 | [Referral Program](21-referral-program.md) | Customer referral codes and rewards |
 | 22 | [Scale Barcode Support](22-scale-barcodes.md) | Weighted item barcode parsing |
@@ -34,6 +34,7 @@
 | 25 | [Keyboard Shortcuts](25-keyboard-shortcuts.md) | Full keyboard shortcut reference |
 | 26 | [Cashier Settlement](26-cashier-settlement.md) | Create bills at the terminal, collect payment at a separate cashier |
 | 27 | [Open Tabs](27-open-tabs.md) | Recall a customer's tab across shifts, and settle past credit sales |
+| 28 | [Mixed-Currency Tender Setup](28-mixed-currency-setup.md) | Configure a store that prices in one currency and takes cash in another |
 
 ---
 

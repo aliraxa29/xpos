@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { usePurchaseStore, type PurchaseCartItem } from "@/stores/purchaseStore";
 import { Select } from "@/components/ui/select";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ import { CreateItemDialog, CreateSupplierDialog } from "@/components/purchase";
 const router = useRouter();
 const purchaseStore = usePurchaseStore();
 const posStore = usePosStore();
+const { money, qty } = useMoney();
 
 const barcodeValue = ref("");
 const isBarcodeScan = ref(false);
@@ -67,7 +69,7 @@ const showCategoryButton = computed(() => {
 });
 
 function formatCurrency(value: number): string {
-	return `${posStore.currencySymbol}${value.toFixed(2)}`;
+	return money(value);
 }
 
 function getItemAmount(item: PurchaseCartItem): number {
@@ -244,7 +246,7 @@ const poColumns = computed<TableColumn[]>(() => [
 		width: "w-[70px]",
 		align: "right" as const,
 		editable: false,
-		format: (val: any) => (val || 0).toFixed(0),
+		format: (val: any) => qty(val || 0, 0),
 	},
 	{
 		fieldname: "transit_stock",
@@ -253,7 +255,7 @@ const poColumns = computed<TableColumn[]>(() => [
 		width: "w-[70px]",
 		align: "right" as const,
 		editable: false,
-		format: (val: any) => (val || 0).toFixed(0),
+		format: (val: any) => qty(val || 0, 0),
 	},
 	{
 		fieldname: "qty",
@@ -285,7 +287,7 @@ const poColumns = computed<TableColumn[]>(() => [
 		width: "w-[55px]",
 		align: "right" as const,
 		editable: false,
-		format: (val: any) => (val || 0).toFixed(0),
+		format: (val: any) => qty(val || 0, 0),
 	},
 	{
 		fieldname: "rate",
@@ -392,7 +394,7 @@ onMounted(() => {
 
 		<div class="bg-card border-b border-border px-3 py-3 shrink-0 sm:px-4">
 			<div class="flex flex-wrap gap-3">
-				<div class="w-full sm:w-auto sm:min-w-[220px] sm:flex-1">
+				<div class="w-full sm:w-auto sm:min-w-55 sm:flex-1">
 					<label class="text-xs text-muted-foreground mb-1 block">{{ __("Supplier") }} *</label>
 					<div class="flex gap-1">
 						<div class="flex-1">
@@ -412,7 +414,7 @@ onMounted(() => {
 						</Button>
 					</div>
 				</div>
-				<div class="w-full sm:w-[180px]">
+				<div class="w-full sm:w-45">
 					<label class="text-xs text-muted-foreground mb-1 block">{{ __("P/O Category") }}</label>
 					<Select
 						v-model="purchaseStore.poCategory"
@@ -424,7 +426,7 @@ onMounted(() => {
 				<template
 					v-if="purchaseStore.poCategory === 'Projection Period' && purchaseStore.selectedSupplier"
 				>
-					<div class="w-[calc(50%-6px)] sm:w-[150px]">
+					<div class="w-[calc(50%-6px)] sm:w-37.5">
 						<label class="text-xs text-muted-foreground mb-1 block">{{ __("From Date") }}</label>
 						<DateTimePicker
 							v-model="projectionFromDate"
@@ -433,7 +435,7 @@ onMounted(() => {
 							class="h-8"
 						/>
 					</div>
-					<div class="w-[calc(50%-6px)] sm:w-[150px]">
+					<div class="w-[calc(50%-6px)] sm:w-37.5">
 						<label class="text-xs text-muted-foreground mb-1 block">{{ __("To Date") }}</label>
 						<DateTimePicker
 							v-model="projectionToDate"
@@ -485,7 +487,7 @@ onMounted(() => {
 				</template>
 				<div
 					v-if="!showCategoryButton || purchaseStore.poCategory !== 'Projection Period'"
-					class="w-full sm:w-[120px]"
+					class="w-full sm:w-30"
 				>
 					<label class="text-xs text-muted-foreground mb-1 block">{{ __("Zero Qty") }}</label>
 					<Select
@@ -530,11 +532,11 @@ onMounted(() => {
 						<div class="flex w-full flex-wrap items-center gap-1.5 sm:w-auto">
 							<div class="relative w-full sm:w-auto">
 								<ScanBarcode
-									class="absolute start-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
+									class="absolute inset-s-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"
 								/>
 								<Input
 									v-model="barcodeValue"
-									class="ps-7 h-7 w-full text-xs sm:w-[160px]"
+									class="ps-7 h-7 w-full text-xs sm:w-40"
 									:class="{
 										'ring-2 ring-green-500/50 border-green-500':
 											barcodeFlash === 'success',
@@ -546,7 +548,7 @@ onMounted(() => {
 								/>
 								<Loader2
 									v-if="isBarcodeScan"
-									class="absolute end-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin"
+									class="absolute inset-e-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin"
 								/>
 							</div>
 							<Button

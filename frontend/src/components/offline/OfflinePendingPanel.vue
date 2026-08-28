@@ -16,8 +16,8 @@
 						class="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
 						:class="
 							offlineStore.isOnline
-								? 'bg-gradient-to-br from-emerald-500 to-emerald-600'
-								: 'bg-gradient-to-br from-red-500 to-red-600'
+								? 'bg-linear-to-br from-emerald-500 to-emerald-600'
+								: 'bg-linear-to-br from-red-500 to-red-600'
 						"
 					>
 						<WifiOff v-if="!offlineStore.isOnline" class="w-4 h-4 text-white" />
@@ -92,7 +92,7 @@
 						</div>
 						<div class="text-end">
 							<p class="text-sm font-bold">
-								{{ formatAmount(inv.grand_total) }}
+								{{ money(inv.grand_total) }}
 							</p>
 							<Badge :variant="statusVariant(inv.status)" class="text-[10px]">
 								{{ statusLabel(inv.status) }}
@@ -172,6 +172,7 @@
 import { onMounted } from "vue";
 import { useOfflineStore } from "@/stores/offlineStore";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { useCartStore } from "@/stores/cartStore";
 import { showSuccess, showError } from "@/services/api";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -195,6 +196,7 @@ const emit = defineEmits<{ close: [] }>();
 
 const offlineStore = useOfflineStore();
 const posStore = usePosStore();
+const { money } = useMoney();
 const cartStore = useCartStore();
 
 onMounted(() => {
@@ -271,11 +273,6 @@ function formatTime(isoString: string) {
 	} catch {
 		return isoString;
 	}
-}
-
-function formatAmount(val?: number) {
-	if (val == null) return "—";
-	return val.toFixed(2);
 }
 
 function getItemCount(data: unknown): number {

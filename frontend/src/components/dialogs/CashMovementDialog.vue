@@ -66,7 +66,7 @@
 						<NumberInput
 							v-model="amount"
 							:min="0"
-							:precision="2"
+							:precision="moneyPrecision"
 							class="text-lg font-bold"
 							placeholder="0.00"
 						/>
@@ -106,8 +106,7 @@
 										mov.movement_type === 'Expense' ? 'text-red-500' : 'text-emerald-500'
 									"
 								>
-									{{ mov.movement_type === "Expense" ? "-" : "+"
-									}}{{ formatPrice(mov.amount) }}
+									{{ mov.movement_type === "Expense" ? "-" : "+" }}{{ money(mov.amount) }}
 								</span>
 							</div>
 						</div>
@@ -146,6 +145,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { usePaymentStore } from "@/stores/paymentStore";
 import { showSuccess, showError } from "@/services/api";
 import {
@@ -163,6 +163,7 @@ import __ from "@/lib/translate";
 import { Select } from "../ui/select";
 
 const posStore = usePosStore();
+const { money, moneyPrecision } = useMoney();
 const paymentStore = usePaymentStore();
 
 const amount = ref(0);
@@ -310,9 +311,5 @@ async function submit() {
 
 function close() {
 	paymentStore.closeCashMovement();
-}
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
 }
 </script>

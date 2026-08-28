@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="fixed inset-0 bg-gradient-to-br from-primary via-primary/90 to-primary/95 z-50 flex flex-col items-center overflow-y-auto p-4"
+		class="fixed inset-0 bg-linear-to-br from-primary via-primary/90 to-primary/95 z-50 flex flex-col items-center overflow-y-auto p-4"
 	>
 		<div class="w-full max-w-md animate-in fade-in zoom-in-95 duration-300 my-auto">
 			<div class="text-center mb-8">
@@ -94,7 +94,7 @@
 									<NumberInput
 										v-model="method.opening_amount"
 										:min="0"
-										:precision="2"
+										:precision="moneyPrecision"
 										class="flex-1"
 										placeholder="0.00"
 									/>
@@ -104,7 +104,7 @@
 
 						<Button
 							size="xl"
-							class="w-full font-bold bg-gradient-to-r from-primary to-primary/90"
+							class="w-full font-bold bg-linear-to-r from-primary to-primary/90"
 							:disabled="!selectedProfile || isOpening"
 							@click="handleOpenShift"
 						>
@@ -136,6 +136,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { showError } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/ui/number-input";
@@ -165,6 +166,7 @@ interface PaymentMethodEntry {
 }
 
 const posStore = usePosStore();
+const { moneyPrecision } = useMoney();
 const syncStatus = useSyncStatus();
 
 const isLoadingData = ref(true);

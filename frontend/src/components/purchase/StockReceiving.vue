@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { usePurchaseStore } from "@/stores/purchaseStore";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import {
 	PackageCheck,
 	ArrowLeft,
@@ -24,6 +25,7 @@ import __ from "@/lib/translate";
 
 const purchaseStore = usePurchaseStore();
 const posStore = usePosStore();
+const { money, ratePrecision, percent, qty } = useMoney();
 
 interface TransitFormItem {
 	ste_detail: string;
@@ -46,10 +48,6 @@ const isSubmittingTransit = ref(false);
 const hasTransitFormData = computed(() => transitFormItems.value.some((i) => i.receive_qty > 0));
 
 const hasShortageData = computed(() => transitFormItems.value.some((i) => i.return_qty > 0));
-
-function formatCurrency(value: number): string {
-	return `${posStore.currencySymbol}${value.toFixed(2)}`;
-}
 
 function formatDate(d: string): string {
 	if (!d) return "";
@@ -182,7 +180,7 @@ onMounted(() => {
 						variant="secondary"
 						class="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
 					>
-						{{ Math.round(purchaseStore.selectedTransit.per_transferred) }}%
+						{{ percent(purchaseStore.selectedTransit.per_transferred, 0) }}
 						{{ __("transferred") }}
 					</Badge>
 				</div>
@@ -213,7 +211,7 @@ onMounted(() => {
 							</div>
 							<div class="text-end shrink-0">
 								<p class="text-sm font-medium text-foreground">
-									{{ formatCurrency(item.basic_rate) }}
+									{{ money(item.basic_rate) }}
 								</p>
 								<p class="text-xs text-muted-foreground">
 									{{ __("In Transit") }}:
@@ -234,7 +232,7 @@ onMounted(() => {
 										@change="onTransitReceiveChange(index)"
 										:min="0"
 										:max="item.pending_qty"
-										:precision="2"
+										:precision="ratePrecision"
 										class="h-8"
 									/>
 									<Button
@@ -257,7 +255,7 @@ onMounted(() => {
 										@change="onTransitReturnChange(index)"
 										:min="0"
 										:max="item.pending_qty"
-										:precision="2"
+										:precision="ratePrecision"
 										class="h-8"
 									/>
 									<Button
@@ -277,7 +275,7 @@ onMounted(() => {
 						>
 							<CornerDownLeft class="w-3 h-3" />
 							<span
-								>{{ item.return_qty }} {{ item.uom }} {{ __("will be returned to") }}
+								>{{ qty(item.return_qty) }} {{ item.uom }} {{ __("will be returned to") }}
 								{{ item.s_warehouse }}</span
 							>
 						</div>
@@ -288,8 +286,8 @@ onMounted(() => {
 						>
 							<AlertTriangle class="w-3 h-3" />
 							<span
-								>{{ item.pending_qty - item.receive_qty - item.return_qty }} {{ item.uom }}
-								{{ __("unaccounted") }}</span
+								>{{ qty(item.pending_qty - item.receive_qty - item.return_qty) }}
+								{{ item.uom }} {{ __("unaccounted") }}</span
 							>
 						</div>
 					</div>
@@ -387,8 +385,8 @@ onMounted(() => {
 							</p>
 							<div class="flex items-center gap-3 mt-1 text-xs text-muted-foreground/70">
 								<span>{{ formatDate(entry.posting_date) }}</span>
-								<span>{{ formatCurrency(entry.total_amount) }}</span>
-								<span>{{ Math.round(entry.per_transferred) }}% {{ __("received") }}</span>
+								<span>{{ money(entry.total_amount) }}</span>
+								<span>{{ percent(entry.per_transferred, 0) }} {{ __("received") }}</span>
 							</div>
 						</div>
 						<ChevronRight class="w-4 h-4 text-muted-foreground shrink-0" />

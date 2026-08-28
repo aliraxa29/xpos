@@ -37,8 +37,8 @@ The **Scale Barcode Settings** screen configures how to parse scale barcodes:
 | Field | Description |
 |---|---|
 | Weight Starting Position | Position where weight starts |
-| Weight Total Digits | Number of integer digits in the weight |
-| Weight Decimals | Number of decimal digits in the weight |
+| Weight digits (`weight_total_digits`) | Number of digits **before** the decimal point |
+| Weight decimals (`weight_decimals`) | Number of digits after the decimal point |
 
 ### Price Segment (Optional)
 | Field | Description |
@@ -50,34 +50,58 @@ The **Scale Barcode Settings** screen configures how to parse scale barcodes:
 
 ---
 
+## How the weight segment is measured
+
+**Weight digits counts the digits before the decimal point, not the length of the whole field.**
+The weight segment therefore spans `Weight digits + Weight decimals` characters. Getting this
+backwards is the most common configuration mistake, and it yields a quantity wrong by a factor of
+ten or more rather than an error.
+
+With Weight starting position 8, Weight digits 2 and Weight decimals 3, the parser reads positions
+8-9 as the whole part and positions 10-12 as the decimals, then joins them: `"00" + "." + "205"`.
+
+---
+
 ## Example
 
-### Barcode Format: `331 IIIII WWWWW PP`
+### Barcode format: `P IIIIII WWWWW C`
 ```
-Barcode:  3310012301234500
-          ├─┤├────┤├────┤├┤
-          │  │     │     └── Price: ignored or "00"
-          │  │     └── Weight: 01234.5 → 1.2345 kg
-          │  └── Item Code: 00123
-          └── Prefix: 331
+Barcode:  2001001002053
+          │├────┤├───┤│
+          ││     │    └── Check digit: not read by the parser
+          ││     └── Weight: 00.205 → 0.205 kg
+          │└── Item code: 001001
+          └── Prefix: 2
 ```
 
 ### Settings
 ```
-Prefix Included:           Yes
-Number of Prefix Characters: 3
-Prefix:                    "331"
-Item Code Starting Position: 4
-Item Code Total Digits:    5
-Weight Starting Position:  9
-Weight Total Digits:       4
-Weight Decimals:           1
+Prefix included in barcode:   Yes
+Prefix length:                1
+Prefix:                       2
+Item code starting position:  2
+Item code digits:             6
+Weight starting position:     8
+Weight digits:                2
+Weight decimals:              3
+Price included in barcode:    No
 ```
 
 ### Result
-- Item code: "00123" → matched to the item in the system
-- Quantity: 1234.5 (interpreted as 1234 + 0.5 decimal) → 1.2345 kg
-- Item is added to the cart with quantity 1.2345
+- Item code: `001001`, matched against the Item name first, then Item Barcode records
+- Quantity: `0.205` kg
+- Rate comes from the price list, so the line total is rate x 0.205
+
+Leading zeros are significant: the item code is matched as the string `001001`, not as `1001`.
+
+### A note on positions
+
+Positions are 1-indexed against the full barcode, including the prefix. This layout is gap-free for
+a 13-digit EAN: 1 prefix + 6 item code + 5 weight + 1 check digit.
+
+One sample barcode cannot always prove where the item code ends and the weight begins, because a
+boundary digit is often `0` either way. Confirm the layout against the scale's own PLU configuration
+software before going live.
 
 ---
 
@@ -106,6 +130,21 @@ Weight Decimals:           1
 4. Map the digit positions for item code, weight, and optionally price
 5. Save the settings
 6. Test with a sample barcode to verify parsing
+
+---
+
+## Testing
+
+| Suite | Covers |
+|---|---|
+| `xpos/api/tests/test_scale_barcode.py` | The decoding itself: prefixes, digit windows, implied decimals, malformed input |
+| `frontend/tests/e2e/specs/scale-barcodes.cy.ts` | What the screen does with the result: the weight reaching the cart line, the price, the quantity prompt being skipped, and the not-found path |
+
+Watch the e2e run at human speed with:
+
+```bash
+node scripts/run-cypress.mjs run --with-server --demo --spec tests/e2e/specs/scale-barcodes.cy.ts
+```
 
 ---
 

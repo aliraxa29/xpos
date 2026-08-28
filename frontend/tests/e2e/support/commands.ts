@@ -18,6 +18,15 @@ export interface BootOptions {
 	skipCustomer?: boolean;
 	/** Customer to select once the POS is up. */
 	customer?: string;
+	/** Item whose tile signals the grid has rendered. Override when the fixture swaps the catalogue. */
+	readyItem?: string;
+	/**
+	 * Currency masters for `window.xpos.boot`.
+	 *
+	 * `number_format` is what decides an amount's decimals, so a spec covering a zero-decimal
+	 * currency has to supply it or every figure comes out at two.
+	 */
+	currencies?: Array<Record<string, unknown>>;
 }
 
 /**
@@ -54,7 +63,9 @@ Cypress.Commands.add("bootPos", (options: BootOptions = {}) => {
 							image: "",
 						},
 					},
-					currencies: [{ name: "USD", symbol: "$" }],
+					currencies: options.currencies || [
+						{ name: "USD", symbol: "$", number_format: "#,###.##" },
+					],
 					xpos_role: "Cashier",
 					xpos_permissions: {},
 					__messages: {},
@@ -64,9 +75,9 @@ Cypress.Commands.add("bootPos", (options: BootOptions = {}) => {
 	});
 
 	// The item grid rendering is the signal that the shift/profile boot landed.
-	cy.contains("[data-item-index], .cursor-pointer, button", "Espresso Beans", { timeout: 20000 }).should(
-		"exist",
-	);
+	cy.contains("[data-item-index], .cursor-pointer, button", options.readyItem || "Espresso Beans", {
+		timeout: 20000,
+	}).should("exist");
 
 	if (!options.skipCustomer) {
 		cy.selectCustomer(options.customer || "Ada Lovelace");
@@ -83,6 +94,10 @@ Cypress.Commands.add("selectCustomer", (customerName: string) => {
 /** Add an item to the cart by clicking it in the grid. */
 Cypress.Commands.add("addItemToCart", (itemName: string) => {
 	cy.contains(itemName).click();
+});
+
+Cypress.Commands.add("scanBarcode", (barcode: string) => {
+	cy.get("[data-testid='barcode-input']").clear().type(`${barcode}{enter}`);
 });
 
 /**
@@ -132,6 +147,7 @@ declare global {
 			bootPos(options?: BootOptions): Chainable<void>;
 			selectCustomer(customerName: string): Chainable<void>;
 			addItemToCart(itemName: string): Chainable<void>;
+			scanBarcode(barcode: string): Chainable<void>;
 			goOffline(): Chainable<void>;
 			goOnline(): Chainable<void>;
 			openRecallDialog(): Chainable<void>;

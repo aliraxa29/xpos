@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { getDoc } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import ListView from "@/components/core/ListView.vue";
 import PurchaseInvoiceDetailDialog from "@/components/dialogs/PurchaseInvoiceDetailDialog.vue";
 
 const router = useRouter();
-const posStore = usePosStore();
+const { money } = useMoney();
 
 const selectedInvoice = ref<PurchaseInvoice | null>(null);
 const isLoadingDetail = ref(false);
@@ -33,10 +33,6 @@ async function viewInvoice(invoice: PurchaseInvoice): Promise<void> {
 
 function createNewInvoice(): void {
 	router.push("/purchase-invoice");
-}
-
-function formatCurrency(value: number): string {
-	return `${posStore.currencySymbol}${(value || 0).toFixed(2)}`;
 }
 
 function formatDate(date: string): string {
@@ -134,11 +130,11 @@ function statusVariant(
 
 						<div class="text-end shrink-0">
 							<div class="font-bold text-foreground text-base sm:text-lg leading-tight">
-								{{ formatCurrency(invoice.grand_total || 0) }}
+								{{ money(invoice.grand_total || 0) }}
 							</div>
 							<div class="text-xs text-muted-foreground">
 								{{ __("Outstanding") }}:
-								{{ formatCurrency(invoice.outstanding_amount || 0) }}
+								{{ money(invoice.outstanding_amount || 0) }}
 							</div>
 						</div>
 						<ChevronRight class="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground/40 shrink-0" />

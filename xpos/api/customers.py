@@ -7,11 +7,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt
 
-
-def _row_value(row: dict | object, key: str, default=None):
-	if isinstance(row, dict):
-		return row.get(key, default)
-	return getattr(row, key, default)
+from xpos.api.profiles import resolve_pos_profile
+from xpos.utils import row_value
 
 
 @frappe.whitelist()
@@ -30,7 +27,7 @@ def get_customers(search_term: str = "", limit: int = 20, pos_profile: str = Non
 			if customer_groups:
 				allowed_groups = []
 				for cg in customer_groups:
-					group_name = _row_value(cg, "customer_group")
+					group_name = row_value(cg, "customer_group")
 					if group_name:
 						allowed_groups.extend(_get_child_groups("Customer Group", group_name))
 				if allowed_groups:
@@ -102,7 +99,7 @@ def get_customer_info(customer: str):
 		},
 		fields=["parent"],
 	)
-	address_names = [_row_value(addr, "parent") for addr in addresses if _row_value(addr, "parent")]
+	address_names = [row_value(addr, "parent") for addr in addresses if row_value(addr, "parent")]
 	address_list = []
 	if address_names:
 		address_docs = frappe.get_all(
@@ -484,14 +481,55 @@ def get_customer_credit(customer: str, company: str):
 	return credits
 
 
+def get_allowed_sales_persons(pos_profile: str | None = None) -> list[str]:
+	"""Sales Person names allow-listed on the POS Profile."""
+	profile = resolve_pos_profile(pos_profile)
+	return [
+		name
+		for name in (row_value(row, "sales_person") for row in profile.get("allowed_sales_persons") or [])
+		if name
+	]
+
+
 @frappe.whitelist()
-def get_sales_person_names():
-	"""
-	Returns the list of enabled sales persons.
-	"""
+def sales_person_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict | str, **kwargs
+):
+	"""Link query behind the POS sales person field."""
+	filters = filters or {}
+	if isinstance(filters, str):
+		filters = json.loads(filters)
+	pos_profile = filters.get("pos_profile") if isinstance(filters, dict) else None
+
+	allowed = get_allowed_sales_persons(pos_profile)
+	if not allowed:
+		return []
+
+	txt = (txt or "").strip()
 	return frappe.get_all(
 		"Sales Person",
-		filters={"enabled": 1},
+		filters={"enabled": 1, "name": ["in", allowed]},
+		or_filters=(
+			{"name": ["like", f"%{txt}%"], "sales_person_name": ["like", f"%{txt}%"]} if txt else None
+		),
+		fields=["name"],
+		order_by="name asc",
+		offset=cint(start),
+		limit=cint(page_len) or 20,
+		as_list=True,
+	)
+
+
+@frappe.whitelist()
+def get_sales_person_names(pos_profile: str | None = None):
+	"""Enabled sales persons allowed for the given POS Profile."""
+	allowed = get_allowed_sales_persons(pos_profile)
+	if not allowed:
+		return []
+
+	return frappe.get_all(
+		"Sales Person",
+		filters={"enabled": 1, "name": ["in", allowed]},
 		fields=["name", "sales_person_name"],
 		order_by="name asc",
 	)
@@ -599,7 +637,7 @@ def register_customer_loyalty(customer: str, loyalty_program: str):
 		else:
 			frappe.throw(
 				_(
-					"Customer is already enrolled in {0}. " "Please unenroll from the current program first."
+					"Customer is already enrolled in {0}. Please unenroll from the current program first."
 				).format(cust_doc.loyalty_program)
 			)
 

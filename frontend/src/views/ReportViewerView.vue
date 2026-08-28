@@ -25,7 +25,7 @@ import ReportTable, { type ReportSortState } from "@/components/reports/ReportTa
 import __ from "@/lib/translate";
 import { showError, showSuccess } from "@/services/api";
 import { usePosStore } from "@/stores/posStore";
-import { extractErrorMessage, isOnline } from "@/utils";
+import { extractErrorMessage, formatQty, isOnline } from "@/utils";
 import { printThermalReport } from "@/services/reportPrint";
 import {
 	buildInitialReportFilters,
@@ -50,6 +50,8 @@ import {
 const route = useRoute();
 const router = useRouter();
 const posStore = usePosStore();
+
+const reportCurrency = computed(() => posStore.invoiceCurrency || posStore.currency || "");
 
 const activeReport = computed(() => getReportDefinition(route.params.reportSlug));
 const isReportVisible = computed(() => Boolean(activeReport.value));
@@ -93,7 +95,7 @@ const filteredRows = computed(() => {
 	const rows = dataRows.value.filter((row) => {
 		if (!query) return true;
 		return visibleColumns.value.some((column) =>
-			formatReportCell(column, row[column.fieldname], posStore.currencySymbol)
+			formatReportCell(column, row[column.fieldname], reportCurrency.value)
 				.toLowerCase()
 				.includes(query),
 		);
@@ -301,7 +303,7 @@ async function copyReport() {
 		return;
 	}
 	const rows = [...filteredRows.value, ...totalRowsList.value];
-	await copyText(buildReportDelimitedRows(visibleColumns.value, rows, posStore.currencySymbol, "\t"));
+	await copyText(buildReportDelimitedRows(visibleColumns.value, rows, reportCurrency.value, "\t"));
 	showSuccess(__("Copied {0} rows to clipboard.", [String(filteredRows.value.length)]));
 }
 
@@ -318,7 +320,7 @@ function exportCsv() {
 		return;
 	}
 	const rows = [...filteredRows.value, ...totalRowsList.value];
-	const csv = buildReportDelimitedRows(visibleColumns.value, rows, posStore.currencySymbol, ",");
+	const csv = buildReportDelimitedRows(visibleColumns.value, rows, reportCurrency.value, ",");
 	const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
 	const downloadUrl = URL.createObjectURL(blob);
 	const anchor = document.createElement("a");
@@ -350,7 +352,7 @@ function printThermal() {
 function formatSummaryValue(value: unknown): string {
 	if (value === null || value === undefined || value === "") return "—";
 	if (Array.isArray(value)) return value.map((item) => String(item)).join(", ");
-	if (typeof value === "number") return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+	if (typeof value === "number") return formatQty(value);
 	return String(value);
 }
 
@@ -470,7 +472,7 @@ function goBack() {
 						<p class="text-xs uppercase tracking-[0.18em] text-muted-foreground">
 							{{ item.label || __("Summary") }}
 						</p>
-						<p class="mt-1 break-words text-lg font-semibold text-foreground">
+						<p class="mt-1 wrap-break-word text-lg font-semibold text-foreground">
 							{{ formatSummaryValue(item.value) }}
 						</p>
 					</Card>
@@ -481,7 +483,7 @@ function goBack() {
 						<div class="flex w-full items-center gap-2 lg:max-w-xl">
 							<div class="relative flex-1">
 								<Search
-									class="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+									class="pointer-events-none absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
 								/>
 								<Input
 									v-model="searchTerm"
@@ -535,7 +537,7 @@ function goBack() {
 							:columns="visibleColumns"
 							:rows="pagedRows"
 							:totals="totalRowsList"
-							:currency-symbol="posStore.currencySymbol"
+							:currency="reportCurrency"
 							:sort-state="sortState"
 							:empty-title="__('No rows found')"
 							:empty-description="__('Try adjusting the filters, search term, or sort order.')"

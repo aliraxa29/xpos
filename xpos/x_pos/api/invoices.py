@@ -63,23 +63,6 @@ def get_draft_invoice_doc(invoice_name: str, doctype: str = "Sales Invoice"):
 
 
 @frappe.whitelist()
-def delete_invoice(invoice: str):
-	doctype = "Sales Invoice"
-	if frappe.db.exists("POS Invoice", invoice):
-		doctype = "POS Invoice"
-	elif not frappe.db.exists("Sales Invoice", invoice):
-		frappe.throw(_("Invoice {0} does not exist").format(invoice))
-
-	if frappe.db.has_column(doctype, "pos_is_printed") and frappe.get_value(
-		doctype, invoice, "pos_is_printed"
-	):
-		frappe.throw(_("This invoice {0} cannot be deleted").format(invoice))
-
-	frappe.delete_doc(doctype, invoice, force=1)
-	return _("Invoice {0} Deleted").format(invoice)
-
-
-@frappe.whitelist()
 def fetch_exchange_rate_pair(from_currency: str, to_currency: str):
 	"""Return exchange rate payload expected by POS multi-currency UI."""
 
@@ -116,18 +99,6 @@ def create_sales_invoice_from_order(sales_order: str):
 	invoice_doc.run_method("set_missing_values")
 	invoice_doc.run_method("calculate_taxes_and_totals")
 	return invoice_doc
-
-
-@frappe.whitelist()
-def delete_sales_invoice(sales_invoice: str):
-	"""Backward-compatible facade for legacy frontend method path."""
-
-	if not sales_invoice:
-		frappe.throw(_("sales_invoice is required"))
-
-	if frappe.db.exists("Sales Invoice", sales_invoice):
-		frappe.delete_doc("Sales Invoice", sales_invoice, force=1)
-	return True
 
 
 @frappe.whitelist()

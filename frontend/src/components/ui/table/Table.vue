@@ -22,6 +22,7 @@ import {
 } from "lucide-vue-next";
 import __ from "@/lib/translate";
 import type { TableColumn as ChildTableColumn, TableRow as ChildTableRow, SelectOption } from "./types";
+import { formatNumber } from "@/utils/numberFormat";
 import Checkbox from "../checkbox/Checkbox.vue";
 
 const props = withDefaults(
@@ -705,6 +706,10 @@ function getSelectOptions(col: ChildTableColumn, row: ChildTableRow, index: numb
 function formatValue(col: ChildTableColumn, value: any, row: ChildTableRow, index: number): string {
 	if (col.format) return col.format(value, row, index);
 	if (value === null || value === undefined) return "-";
+	if (col.type === "number" && value !== "") {
+		const parsed = Number(value);
+		if (Number.isFinite(parsed)) return formatNumber(parsed, null, col.precision ?? null);
+	}
 	return String(value);
 }
 
@@ -786,10 +791,7 @@ function handleTableKeyDown(event: KeyboardEvent): void {
 		</div>
 
 		<div ref="tableContainerRef" class="ct-table-container flex-1 min-h-0 overflow-auto">
-			<div
-				v-if="rows.length === 0"
-				class="flex h-full min-h-[180px] items-center justify-center px-8 py-12"
-			>
+			<div v-if="rows.length === 0" class="flex h-full min-h-45 items-center justify-center px-8 py-12">
 				<div class="text-center text-muted-foreground">
 					<Package class="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
 					<p class="font-medium text-sm">{{ __(emptyMessage) }}</p>
@@ -1109,7 +1111,7 @@ function handleTableKeyDown(event: KeyboardEvent): void {
 			<Transition name="ct-modal">
 				<div
 					v-if="showColumnSettingsModal"
-					class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+					class="fixed inset-0 z-9999 flex items-center justify-center p-4"
 					@click.self="showColumnSettingsModal = false"
 				>
 					<div class="absolute inset-0 bg-black/50" @click="showColumnSettingsModal = false" />
@@ -1165,7 +1167,7 @@ function handleTableKeyDown(event: KeyboardEvent): void {
 			<Transition name="ct-modal">
 				<div
 					v-if="editorOpen"
-					class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+					class="fixed inset-0 z-9999 flex items-center justify-center p-4"
 					@click.self="closeRowEditor"
 				>
 					<div class="absolute inset-0 bg-black/50" @click="closeRowEditor" />

@@ -4,6 +4,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from frappe.utils import getdate
+
 from xpos.api import offers
 
 
@@ -90,13 +92,18 @@ class TestGetPosCoupon(unittest.TestCase):
 			"name": "COUPON-001",
 			"coupon_code": "SUMMER10",
 			"coupon_type": "Discount",
-			"discount_percentage": 10,
 			"valid_from": None,
 			"valid_upto": None,
 			"customer": None,
+			"pos_offer": None,
 		}
 
-		mock_frappe.db.get_value.assert_called()
+		result = offers.get_pos_coupon("SUMMER10", "CUST-001", "Test Company")
+
+		mock_frappe.db.get_value.assert_called_once()
+		self.assertEqual(result["coupon"]["coupon_code"], "SUMMER10")
+		self.assertIsNone(result["offer"])
+		self.assertEqual(result["msg"], "Apply")
 
 	@patch("xpos.api.offers.frappe")
 	def test_get_pos_coupon_throws_for_invalid_coupon(self, mock_frappe):
@@ -173,151 +180,63 @@ class TestGetActiveGiftCoupons(unittest.TestCase):
 		self.assertEqual(len(result), 1)
 
 
-class TestGetDeliveryCharges(unittest.TestCase):
-	"""Tests for get_delivery_charges function."""
+class TestNormalizeDiscountFields(unittest.TestCase):
+	"""Tests for _normalize_discount_fields."""
 
-	@patch("xpos.api.offers.frappe")
-	def test_get_delivery_charges_returns_charges(self, mock_frappe):
-		"""Test that get_delivery_charges returns delivery charge rules."""
-		mock_frappe.get_all.return_value = [
-			{
-				"name": "DC-001",
-				"delivery_type": "Standard",
-				"charge_amount": 50,
-			},
-			{
-				"name": "DC-002",
-				"delivery_type": "Express",
-				"charge_amount": 100,
-			},
-		]
+	def test_string_amounts_are_coerced_to_float(self):
+		"""Values arriving as strings from the client are coerced to numbers."""
+		offer = {"discount_percentage": "12.5", "discount_amount": "30", "rate": "99.99"}
 
-		mock_frappe.get_all.assert_called()
+		offers._normalize_discount_fields(offer)
 
-	@patch("xpos.api.offers.frappe")
-	def test_get_delivery_charges_filters_by_profile(self, mock_frappe):
-		"""Test that delivery charges are filtered by POS profile."""
-		mock_frappe.get_all.return_value = []
+		self.assertEqual(offer["discount_percentage"], 12.5)
+		self.assertEqual(offer["discount_amount"], 30.0)
+		self.assertEqual(offer["rate"], 99.99)
 
-		call_args = mock_frappe.get_all.call_args
-		# Verify the filter includes pos_profile
-		self.assertIsNotNone(call_args)
+	def test_none_becomes_zero(self):
+		"""None must not survive into arithmetic downstream."""
+		offer = {"discount_percentage": None, "discount_amount": None}
 
+		offers._normalize_discount_fields(offer)
 
-class TestOfferApplicationLogic(unittest.TestCase):
-	"""Tests for offer application logic."""
+		self.assertEqual(offer["discount_percentage"], 0)
+		self.assertEqual(offer["discount_amount"], 0)
 
-	def test_percentage_discount_calculation(self):
-		"""Test percentage discount calculation."""
-		subtotal = 100
-		discount_percentage = 10
+	def test_absent_fields_are_not_invented(self):
+		"""Only fields already present are normalized."""
+		offer = {"name": "OFFER-1"}
 
-		discount = subtotal * (discount_percentage / 100)
-		final = subtotal - discount
+		offers._normalize_discount_fields(offer)
 
-		self.assertEqual(discount, 10)
-		self.assertEqual(final, 90)
-
-	def test_fixed_discount_calculation(self):
-		"""Test fixed amount discount calculation."""
-		subtotal = 100
-		discount_amount = 15
-
-		final = subtotal - discount_amount
-
-		self.assertEqual(final, 85)
-
-	def test_min_qty_requirement(self):
-		"""Test minimum quantity requirement for offer."""
-		offer = {"min_qty": 3}
-		cart_qty = 5
-
-		meets_requirement = cart_qty >= offer["min_qty"]
-		self.assertTrue(meets_requirement)
-
-	def test_min_amount_requirement(self):
-		"""Test minimum amount requirement for offer."""
-		offer = {"min_amt": 100}
-		cart_total = 150
-
-		meets_requirement = cart_total >= offer["min_amt"]
-		self.assertTrue(meets_requirement)
-
-	def test_max_qty_limit(self):
-		"""Test maximum quantity limit for offer."""
-		offer = {"max_qty": 5, "discount_percentage": 10}
-		cart_qty = 10
-
-		# Only up to max_qty items get the discount
-		discounted_qty = min(cart_qty, offer["max_qty"])
-		self.assertEqual(discounted_qty, 5)
-
-	def test_buy_x_get_y_logic(self):
-		"""Test buy X get Y offer logic."""
-		offer = {
-			"buy_qty": 2,
-			"get_qty": 1,
-			"free_item": "ITEM-FREE",
-		}
-		cart_qty = 6  # Buy 6, get 3 free
-
-		free_items = (cart_qty // offer["buy_qty"]) * offer["get_qty"]
-		self.assertEqual(free_items, 3)
+		self.assertEqual(offer, {"name": "OFFER-1"})
 
 
-class TestOfferPriority(unittest.TestCase):
-	"""Tests for offer priority and stacking."""
+class TestIsCouponActive(unittest.TestCase):
+	"""Tests for _is_coupon_active date-window logic."""
 
-	def test_offers_sorted_by_priority(self):
-		"""Test that offers are sorted by priority."""
-		offers_list = [
-			{"name": "OFFER-1", "priority": 3},
-			{"name": "OFFER-2", "priority": 1},
-			{"name": "OFFER-3", "priority": 2},
-		]
+	def test_coupon_without_dates_is_active(self):
+		"""A coupon with no validity window is always active."""
+		self.assertTrue(
+			offers._is_coupon_active({"valid_from": None, "valid_upto": None}, getdate("2026-06-15"))
+		)
 
-		sorted_offers = sorted(offers_list, key=lambda x: x.get("priority", 999))
+	def test_coupon_not_yet_valid_is_inactive(self):
+		"""valid_from in the future excludes the coupon."""
+		coupon = {"valid_from": "2026-07-01", "valid_upto": None}
 
-		self.assertEqual(sorted_offers[0]["name"], "OFFER-2")
-		self.assertEqual(sorted_offers[2]["name"], "OFFER-1")
+		self.assertFalse(offers._is_coupon_active(coupon, getdate("2026-06-15")))
 
-	def test_non_stackable_offers(self):
-		"""Test that non-stackable offers don't combine."""
-		applied_offers = []
-		new_offer = {"name": "OFFER-X", "stackable": 0}
+	def test_expired_coupon_is_inactive(self):
+		"""valid_upto in the past excludes the coupon."""
+		coupon = {"valid_from": None, "valid_upto": "2026-06-01"}
 
-		# If offer is non-stackable and we already have offers, shouldn't apply
-		if applied_offers or not new_offer.get("stackable", 1):
-			can_apply = len(applied_offers) == 0 or new_offer.get("stackable", 1) == 1
-		else:
-			can_apply = True
+		self.assertFalse(offers._is_coupon_active(coupon, getdate("2026-06-15")))
 
-		self.assertTrue(can_apply)  # Can apply since no existing offers
+	def test_boundary_dates_are_inclusive(self):
+		"""A coupon is active on both its first and last day."""
+		coupon = {"valid_from": "2026-06-15", "valid_upto": "2026-06-15"}
 
-
-class TestPromotionalSchemeOffers(unittest.TestCase):
-	"""Tests for promotional scheme offer conversion."""
-
-	def test_promotional_scheme_to_pos_offer_mapping(self):
-		"""Test conversion of promotional scheme to POS offer format."""
-		promo_rule = {
-			"name": "PROMO-RULE-001",
-			"discount_percentage": 15,
-			"min_qty": 2,
-			"apply_on": "Item Code",
-		}
-
-		# Convert to POS offer format
-		pos_offer = {
-			"name": promo_rule["name"],
-			"discount_percentage": promo_rule["discount_percentage"],
-			"min_qty": promo_rule["min_qty"],
-			"from_promotional_scheme": 1,
-			"auto": 1,
-		}
-
-		self.assertEqual(pos_offer["discount_percentage"], 15)
-		self.assertEqual(pos_offer["from_promotional_scheme"], 1)
+		self.assertTrue(offers._is_coupon_active(coupon, getdate("2026-06-15")))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 import { call } from "@/services/api";
 import { __ } from "@/lib/utils";
 import { hasPermission, type PosPermissions } from "@/services/userRights";
+import { formatWithSymbol } from "@/composables/useCurrency";
+import { formatFloat, formatInt } from "@/utils/numberFormat";
 
 export type ReportCategory = "Inventory" | "Sales" | "Purchasing" | "Operations";
 export type ReportFilterType = "link" | "multi-link" | "date" | "integer" | "float" | "select" | "text";
@@ -462,18 +464,30 @@ function escapeDelimited(value: string, delimiter: string): string {
 export function buildReportDelimitedRows(
 	columns: ReportColumn[],
 	rows: Record<string, unknown>[],
-	currencySymbol: string,
+	currency: string,
 	delimiter: "," | "\t",
 ): string {
 	const header = columns.map((column) => escapeDelimited(column.label, delimiter)).join(delimiter);
 	const body = rows.map((row) =>
 		columns
 			.map((column) =>
-				escapeDelimited(formatReportCell(column, row[column.fieldname], currencySymbol), delimiter),
+				escapeDelimited(formatReportCell(column, row[column.fieldname], currency), delimiter),
 			)
 			.join(delimiter),
 	);
 	return [header, ...body].join("\n");
+}
+
+function optionalPrecision(column: ReportColumn): number | null {
+	const raw = column.precision as number | string | null | undefined;
+	if (raw === null || raw === undefined || raw === "") return null;
+	const parsed = Number(raw);
+	return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function columnCurrency(column: ReportColumn): string {
+	const options = String(column.options || "").trim();
+	return /^[A-Za-z]{3}$/.test(options) ? options.toUpperCase() : "";
 }
 
 function formatReportDateTime(value: unknown): string {
@@ -489,7 +503,7 @@ function formatReportDateTime(value: unknown): string {
 	}).format(date);
 }
 
-export function formatReportCell(column: ReportColumn, value: unknown, currencySymbol = "$"): string {
+export function formatReportCell(column: ReportColumn, value: unknown, currency = ""): string {
 	if (value === null || value === undefined || value === "") return "—";
 
 	if (Array.isArray(value)) {
@@ -498,28 +512,23 @@ export function formatReportCell(column: ReportColumn, value: unknown, currencyS
 
 	switch (column.fieldtype) {
 		case "Currency": {
-			const precision = Number(column.precision ?? 2);
 			const parsed = Number(value ?? 0);
 			if (Number.isNaN(parsed)) return String(value);
-			return `${currencySymbol}${parsed.toLocaleString(undefined, {
-				minimumFractionDigits: precision,
-				maximumFractionDigits: precision,
-			})}`;
+			const cellCurrency = columnCurrency(column) || currency;
+			const precision = optionalPrecision(column);
+			return formatWithSymbol(cellCurrency, parsed, precision);
 		}
 		case "Float":
 		case "Percent": {
-			const precision = Number(column.precision ?? 2);
 			const parsed = Number(value ?? 0);
 			if (Number.isNaN(parsed)) return String(value);
-			return parsed.toLocaleString(undefined, {
-				minimumFractionDigits: precision,
-				maximumFractionDigits: precision,
-			});
+			const formatted = formatFloat(parsed, optionalPrecision(column));
+			return column.fieldtype === "Percent" ? `${formatted}%` : formatted;
 		}
 		case "Int": {
 			const parsed = Number(value ?? 0);
 			if (Number.isNaN(parsed)) return String(value);
-			return Math.trunc(parsed).toLocaleString();
+			return formatInt(Math.trunc(parsed));
 		}
 		case "Check":
 			return value ? __("Yes") : __("No");

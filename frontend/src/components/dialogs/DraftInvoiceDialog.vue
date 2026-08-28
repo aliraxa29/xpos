@@ -144,15 +144,13 @@
 											{{ plural(draft.total_qty || 0, __("item"), __("items")) }}
 										</span>
 										<span class="font-medium text-primary">
-											{{ posStore.currencySymbol
-											}}{{ formatPrice(draft.grand_total || 0) }}
+											{{ money(draft.grand_total || 0) }}
 										</span>
 										<span
 											v-if="Number(draft.paid_amount) > 0"
 											class="text-muted-foreground"
 										>
-											{{ __("Paid") }}: {{ posStore.currencySymbol
-											}}{{ formatPrice(draft.paid_amount || 0) }}
+											{{ __("Paid") }}: {{ money(draft.paid_amount || 0) }}
 										</span>
 									</div>
 								</div>
@@ -224,11 +222,10 @@
 
 								<div class="text-end shrink-0">
 									<div class="text-xs text-muted-foreground">
-										{{ posStore.currencySymbol }}{{ formatPrice(invoice.grand_total) }}
+										{{ money(invoice.grand_total) }}
 									</div>
 									<div class="text-sm font-semibold text-primary">
-										{{ posStore.currencySymbol
-										}}{{ formatPrice(invoice.outstanding_amount) }}
+										{{ money(invoice.outstanding_amount) }}
 									</div>
 								</div>
 							</div>
@@ -260,6 +257,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useCartStore } from "@/stores/cartStore";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
 import { call, showSuccess, showError } from "@/services/api";
 import {
 	Dialog,
@@ -294,6 +292,7 @@ type Tab = "tabs" | "unpaid";
 
 const cartStore = useCartStore();
 const posStore = usePosStore();
+const { money } = useMoney();
 
 const drafts = ref<OpenTab[]>([]);
 const outstanding = ref<OutstandingInvoice[]>([]);
@@ -446,10 +445,6 @@ function onSettled() {
 
 function close() {
 	cartStore.closeDraftDialog();
-}
-
-function formatPrice(price: number | string | undefined) {
-	return parseFloat(String(price ?? 0) || "0").toFixed(2);
 }
 
 function formatDateTime(isoString: string | undefined) {

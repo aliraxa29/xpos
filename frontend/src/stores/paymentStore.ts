@@ -68,16 +68,6 @@ export const usePaymentStore = defineStore("payment", () => {
 		}
 	}
 
-	async function createPaymentEntry(data: Record<string, unknown>): Promise<unknown> {
-		try {
-			const result = await call("xpos.api.payments.create_payment_entry", data);
-			return result;
-		} catch (error) {
-			console.error("Error creating payment entry:", error);
-			throw error;
-		}
-	}
-
 	async function createPaymentRequest(data: Record<string, unknown>): Promise<unknown> {
 		try {
 			const result = await call("xpos.api.payments.create_payment_request", data);
@@ -184,7 +174,6 @@ export const usePaymentStore = defineStore("payment", () => {
 		fetchAvailableCredit,
 		fetchOutstandingInvoices,
 		fetchUnallocatedPayments,
-		createPaymentEntry,
 		createPaymentRequest,
 		clearCredit,
 		// Cash Movements

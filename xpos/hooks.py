@@ -88,6 +88,9 @@ jinja = {
 		"xpos.x_pos.api.jinja_helpers.xpos_qrcode",
 		"xpos.x_pos.api.jinja_helpers.xpos_qrcode_uri",
 		"xpos.x_pos.api.jinja_helpers.xpos_item_barcode",
+		"xpos.x_pos.api.jinja_helpers.xpos_tender_rate",
+		"xpos.x_pos.api.jinja_helpers.xpos_number",
+		"xpos.x_pos.api.jinja_helpers.xpos_qty",
 	],
 }
 
@@ -96,6 +99,11 @@ jinja = {
 
 # before_install = "xpos.install.before_install"
 after_install = "xpos.install.after_install"
+
+# Migration
+# ---------
+
+after_migrate = ["xpos.patches.add_pos_query_indexes.execute"]
 
 # Uninstallation
 # ------------

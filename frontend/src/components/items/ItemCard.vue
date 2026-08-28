@@ -72,7 +72,7 @@
 			</p>
 			<div class="flex items-center justify-between">
 				<span class="text-sm font-bold text-primary dark:text-primary-foreground tabular-nums">
-					{{ currencySymbol }}{{ formatPrice(item.rate) }}
+					{{ money(item.rate) }}
 				</span>
 				<span class="text-[10px] text-muted-foreground dark:text-muted-foreground/90 truncate ms-1">
 					{{ item.item_group }}
@@ -85,6 +85,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { useMoney } from "@/composables/useMoney";
+import { formatQty } from "@/utils/numberFormat";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package, Plus, Info, AlertCircle } from "lucide-vue-next";
@@ -99,8 +101,9 @@ const props = defineProps({
 const emit = defineEmits(["click", "showDetail"]);
 
 const posStore = usePosStore();
+const { money } = useMoney();
 
-const showStock = computed(() => posStore.displayItemsInStock);
+const showStock = computed(() => true);
 const showItemCode = computed(() => posStore.displayItemCode);
 const allowNegativeStock = computed(() => posStore.stockSettings?.allow_negative_stock);
 const hideImages = computed(() => posStore.hideImages);
@@ -121,9 +124,9 @@ const stockVariant = computed(() => {
 });
 
 const stockLabel = computed(() => {
-	const qty = props.item.actual_qty || 0;
-	if (qty <= 0) return "Out";
-	return qty > 999 ? "999+" : qty;
+	const stock = props.item.actual_qty || 0;
+	if (stock <= 0) return "Out";
+	return stock > 999 ? "999+" : formatQty(stock);
 });
 
 function handleClick() {
@@ -131,9 +134,5 @@ function handleClick() {
 		return;
 	}
 	emit("click", props.item);
-}
-
-function formatPrice(price: number | string) {
-	return parseFloat(String(price) || "0").toFixed(2);
 }
 </script>
