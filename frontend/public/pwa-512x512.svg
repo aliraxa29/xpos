@@ -1,4 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="64" fill="#f97316"/>
-  <text x="256" y="340" font-family="Arial, sans-serif" font-size="240" font-weight="bold" fill="white" text-anchor="middle">X</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="512" height="512" role="img" aria-label="X POS">
+  <title>X POS</title>
+  <rect width="512" height="512" rx="28" fill="#F97316"/>
+  <path d="M38 56 H90 V96 H38 Z" fill="#FFFFFF" fill-opacity="0.6"/>
+  <path d="M55 74 H73 V96 H55 Z" fill="#F97316"/>
+  <path d="M30 42 H98 V56 q-8.5 9 -17 0 q-8.5 9 -17 0 q-8.5 9 -17 0 q-8.5 9 -17 0 Z" fill="#FFFFFF"/>
 </svg>

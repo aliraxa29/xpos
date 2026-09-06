@@ -26,7 +26,7 @@
 			</div>
 
 			<Badge
-				v-if="showStock && item.actual_qty !== undefined"
+				v-if="showStock && !isNonStockItem && item.actual_qty !== undefined"
 				:variant="stockVariant"
 				class="absolute top-2 end-2 text-[10px]"
 			>
@@ -105,7 +105,10 @@ const showItemCode = computed(() => posStore.displayItemCode);
 const allowNegativeStock = computed(() => posStore.stockSettings?.allow_negative_stock);
 const hideImages = computed(() => posStore.hideImages);
 
+const isNonStockItem = computed(() => Number(props.item.is_stock_item) === 0);
+
 const isOutOfStock = computed(() => {
+	if (isNonStockItem.value) return false;
 	const qty = props.item.actual_qty;
 	return qty !== undefined && qty <= 0;
 });

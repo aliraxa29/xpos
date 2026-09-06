@@ -10,6 +10,9 @@ from frappe.utils import cint, cstr, flt, now_datetime
 
 FBR_SANDBOX_URL = "https://esp.fbr.gov.pk:8244/FBR/v1/api/Live/PostData"
 FBR_PRODUCTION_URL = "https://gw.fbr.gov.pk/imsp/v1/api/Live/PostData"
+DEFAULT_LOCAL_SERVICE_URL = "http://localhost:8524"
+LOCAL_SERVICE_PATH = "/api/IMSFiscal/GetInvoiceNumberByModel"
+FBR_REQUEST_TIMEOUT = (5, 25)
 FBR_SUCCESS_CODES = {"100", 100}
 PERCENTAGE_CHARGE_TYPES = {"On Net Total", "On Previous Row Amount", "On Previous Row Total"}
 _CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
@@ -21,6 +24,14 @@ class FBRIntegrationError(frappe.ValidationError):
 	"""Raised when FBR fiscalization cannot be completed."""
 
 
+class FBRConnectionError(FBRIntegrationError):
+	"""Raised specifically when the FBR cloud API is unreachable (internet down).
+
+	Distinct from a business rejection so callers can fall back to the local
+	fiscalization service instead of failing the sale.
+	"""
+
+
 @dataclass(frozen=True)
 class FBRSettings:
 	enabled: bool
@@ -29,26 +40,57 @@ class FBRSettings:
 	bearer_token: str
 	api_url: str
 	skip_ssl_verification: bool
+	local_service_url: str
 
 
-def fiscalize_invoice(doc: Any) -> None:
-	"""Submit a POS invoice to FBR and write the fiscal response back to the document."""
+@dataclass(frozen=True)
+class FiscalizationOutcome:
+	"""Result of attempting to obtain an FBR fiscal invoice number.
+
+	status:
+	  - "disabled"       — FBR is off, not a POS invoice, or already fiscalized.
+	  - "cloud"          — number obtained from the FBR cloud API.
+	  - "local_required" — cloud is unreachable; the client should call the local
+	                       fiscalization service with ``payload`` and finalize.
+	"""
+
+	status: str
+	fbr_invoice_number: str | None = None
+	payload: dict[str, Any] | None = None
+	local_service_url: str | None = None
+	posted_on: Any = None
+
+
+def prepare_fiscalization(doc: Any) -> FiscalizationOutcome:
+	"""Attempt cloud fiscalization; report whether a local fallback is needed.
+
+	Does not mutate the document. When the FBR cloud API is unreachable, returns a
+	``local_required`` outcome carrying the built payload and the configured local
+	service URL so the client can obtain the invoice number from the local service.
+	"""
 	if not cint(_get_doc_value(doc, "is_pos", 0)):
-		return
+		return FiscalizationOutcome("disabled")
 
 	pos_profile = cstr(_get_doc_value(doc, "pos_profile", "")).strip()
 	if not pos_profile:
-		return
+		return FiscalizationOutcome("disabled")
 
 	if cstr(_get_doc_value(doc, "fbr_invoice_number", "")).strip():
-		return
+		return FiscalizationOutcome("disabled")
 
 	settings = _get_fbr_settings(pos_profile)
 	if not settings.enabled:
-		return
+		return FiscalizationOutcome("disabled")
 
 	payload = _build_payload(doc, settings)
-	response_data = _post_invoice(doc, payload, settings)
+
+	try:
+		response_data = _post_invoice(doc, payload, settings)
+	except FBRConnectionError:
+		return FiscalizationOutcome(
+			"local_required", payload=payload, local_service_url=settings.local_service_url
+		)
+
 	invoice_number = _extract_value(response_data, "FBRInvoiceNumber", "InvoiceNumber")
 	response_code = cstr(_extract_value(response_data, "Code", default="")).strip()
 	response_message = cstr(
@@ -61,8 +103,36 @@ def fiscalize_invoice(doc: Any) -> None:
 		message = response_message or _("FBR did not return a fiscal invoice number.")
 		raise FBRIntegrationError(message)
 
+	return FiscalizationOutcome(
+		"cloud", fbr_invoice_number=cstr(invoice_number).strip(), posted_on=now_datetime()
+	)
+
+
+def apply_fiscal_number(doc: Any, invoice_number: str, posted_on: Any = None) -> None:
+	"""Write a fiscal invoice number (from cloud or local service) onto the document."""
 	_set_field_if_available(doc, "fbr_invoice_number", cstr(invoice_number).strip())
-	_set_field_if_available(doc, "fbr_posted_on", now_datetime())
+	_set_field_if_available(doc, "fbr_posted_on", posted_on or now_datetime())
+
+
+def fiscalize_invoice(doc: Any) -> None:
+	"""Fiscalize a POS invoice at submit time (cloud channel).
+
+	Used by the ``before_submit`` hook. The interactive POS flow pre-fiscalizes in
+	``create_invoice`` (which can fall back to the local service), setting the number
+	first — so this becomes a no-op there. For any other submit path (e.g. background
+	submit) it fiscalizes against the FBR cloud and hard-fails if unreachable, since
+	no client is present to drive the local fallback.
+	"""
+	outcome = prepare_fiscalization(doc)
+	if outcome.status == "cloud":
+		apply_fiscal_number(doc, outcome.fbr_invoice_number, outcome.posted_on)
+	elif outcome.status == "local_required":
+		raise FBRConnectionError(
+			_(
+				"FBR cloud API is unreachable and the local fiscalization service can only be "
+				"reached from the POS terminal. Complete this sale from the POS screen."
+			)
+		)
 
 
 def _get_fbr_settings(pos_profile: str) -> FBRSettings:
@@ -76,6 +146,7 @@ def _get_fbr_settings(pos_profile: str) -> FBRSettings:
 			bearer_token="",
 			api_url=FBR_SANDBOX_URL,
 			skip_ssl_verification=False,
+			local_service_url=DEFAULT_LOCAL_SERVICE_URL,
 		)
 
 	environment = cstr(getattr(profile_doc, "fbr_environment", "Sandbox") or "Sandbox").strip()
@@ -83,6 +154,10 @@ def _get_fbr_settings(pos_profile: str) -> FBRSettings:
 	bearer_token = cstr(profile_doc.get_password("fbr_bearer_token") or "").strip()
 	api_url = cstr(getattr(profile_doc, "fbr_api_url", "") or "").strip() or _default_api_url(environment)
 	skip_ssl_verification = cint(getattr(profile_doc, "fbr_skip_ssl_verification", 0)) == 1
+	local_service_url = (
+		cstr(getattr(profile_doc, "fbr_local_service_url", "") or "").strip().rstrip("/")
+		or DEFAULT_LOCAL_SERVICE_URL
+	)
 
 	missing = []
 	if not pos_id:
@@ -104,6 +179,7 @@ def _get_fbr_settings(pos_profile: str) -> FBRSettings:
 		bearer_token=bearer_token,
 		api_url=api_url,
 		skip_ssl_verification=skip_ssl_verification,
+		local_service_url=local_service_url,
 	)
 
 
@@ -177,7 +253,10 @@ def _build_payload(doc: Any, settings: FBRSettings) -> dict[str, Any]:
 	return {
 		"InvoiceNumber": "",
 		"POSID": _coerce_pos_id(settings.pos_id),
-		"USIN": _sanitize_text(_get_doc_value(doc, "name", ""), max_length=50),
+		"USIN": _sanitize_text(
+			_get_doc_value(doc, "xpos_local_id", "") or _get_doc_value(doc, "name", ""),
+			max_length=50,
+		),
 		"DateTime": _build_posting_datetime(doc),
 		"BuyerNTN": buyer_ntn,
 		"BuyerCNIC": buyer_cnic,
@@ -209,7 +288,7 @@ def _post_invoice(doc: Any, payload: dict[str, Any], settings: FBRSettings) -> d
 			settings.api_url,
 			json=payload,
 			headers=headers,
-			timeout=30,
+			timeout=FBR_REQUEST_TIMEOUT,
 			verify=not settings.skip_ssl_verification,
 		)
 	except requests.RequestException as exc:
@@ -217,7 +296,7 @@ def _post_invoice(doc: Any, payload: dict[str, Any], settings: FBRSettings) -> d
 			f"Invoice: {_get_doc_value(doc, 'name', '')}\nURL: {settings.api_url}\nError: {exc}\nPayload: {json.dumps(payload, default=str)}",
 			"X POS FBR Request Error",
 		)
-		raise FBRIntegrationError(_("FBR API call failed: {0}").format(cstr(exc))) from exc
+		raise FBRConnectionError(_("FBR API call failed: {0}").format(cstr(exc))) from exc
 
 	response_data = _parse_response(response)
 	if response.status_code >= 400:

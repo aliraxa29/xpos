@@ -11,6 +11,7 @@ from frappe.utils import (
 )
 from frappe.utils.background_jobs import enqueue
 
+from xpos.api.utilities import get_invoice_type
 from xpos.x_pos.api.invoice_processing.stock import (
 	_apply_item_name_overrides,
 	_auto_set_return_batches,
@@ -18,8 +19,8 @@ from xpos.x_pos.api.invoice_processing.stock import (
 	_merge_duplicate_taxes,
 	_should_block,
 	_strip_client_freebies_from_payload,
-	_validate_stock_on_invoice,
 	collect_stock_errors,
+	validate_stock_on_invoice,
 )
 from xpos.x_pos.api.invoice_processing.utils import (
 	_build_invoice_remarks,
@@ -195,11 +196,7 @@ def update_invoice(data: str) -> dict:
 	data.pop("offers", None)
 
 	pos_profile = data.get("pos_profile")
-	doctype = "Sales Invoice"
-	if pos_profile and frappe.db.get_value(
-		"POS Profile", pos_profile, "create_pos_invoice_instead_of_sales_invoice"
-	):
-		doctype = "POS Invoice"
+	doctype = get_invoice_type()
 
 	data.setdefault("doctype", doctype)
 
@@ -417,12 +414,7 @@ def submit_invoice(invoice: str, data: str | dict, submit_in_background: bool = 
 	invoice.pop("offers", None)
 
 	pos_profile = invoice.get("pos_profile")
-	doctype = "Sales Invoice"
-	if pos_profile and frappe.db.get_value(
-		"POS Profile", pos_profile, "create_pos_invoice_instead_of_sales_invoice"
-	):
-		doctype = "POS Invoice"
-
+	doctype = get_invoice_type()
 	invoice_name = invoice.get("name")
 	if not invoice_name or not frappe.db.exists(doctype, invoice_name):
 		# Re-inject detail rows so update_invoice can process them.
@@ -518,7 +510,7 @@ def submit_invoice(invoice: str, data: str | dict, submit_in_background: bool = 
 
 	set_batch_nos_for_bundles(invoice_doc, "warehouse", throw=True)
 
-	_validate_stock_on_invoice(invoice_doc)
+	validate_stock_on_invoice(invoice_doc)
 
 	_apply_write_off_settings(invoice_doc, data)
 
@@ -587,7 +579,7 @@ def submit_in_background_job(*args, **kwargs):
 		invoice_doc.flags.ignore_permissions = True
 		frappe.flags.ignore_account_permission = True
 
-		_validate_stock_on_invoice(invoice_doc)
+		validate_stock_on_invoice(invoice_doc)
 		if hasattr(invoice_doc, "validate_credit_limit"):
 			invoice_doc.validate_credit_limit()
 

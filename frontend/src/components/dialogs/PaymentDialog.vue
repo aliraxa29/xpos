@@ -407,30 +407,6 @@
 						/>
 					</div>
 
-					<div class="space-y-1">
-						<div class="flex items-center justify-between">
-							<label
-								class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-							>
-								{{ __("Posting Date") }}
-							</label>
-							<span
-								v-if="!posStore.allowChangePostingDate"
-								class="text-xs text-muted-foreground"
-							>
-								{{ __("Locked by POS Profile") }}
-							</span>
-						</div>
-						<DateTimePicker
-							v-model="cartStore.postingDate"
-							mode="date"
-							:disabled="!posStore.allowChangePostingDate"
-							:clearable="false"
-							placeholder="Posting date"
-							class="text-sm"
-						/>
-					</div>
-
 					<div class="flex gap-2 mt-auto">
 						<div
 							v-if="changeAmount > 0"
@@ -462,6 +438,30 @@
 								{{ outstandingSubmissionHint }}
 							</p>
 						</div>
+					</div>
+
+					<div class="space-y-1">
+						<div class="flex items-center justify-between">
+							<label
+								class="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+							>
+								{{ __("Posting Date") }}
+							</label>
+							<span
+								v-if="!posStore.allowChangePostingDate"
+								class="text-xs text-muted-foreground"
+							>
+								{{ __("Locked by POS Profile") }}
+							</span>
+						</div>
+						<DateTimePicker
+							v-model="cartStore.postingDate"
+							mode="date"
+							:disabled="!posStore.allowChangePostingDate"
+							:clearable="false"
+							placeholder="Posting date"
+							class="text-sm"
+						/>
 					</div>
 				</div>
 
@@ -547,11 +547,14 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { usePosStore } from "@/stores/posStore";
 import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/authStore";
 import { usePaymentStore } from "@/stores/paymentStore";
 import { call, showSuccess, showError, showInfo, isNetworkError } from "@/services/api";
 import { useOfflineStore } from "@/stores/offlineStore";
 import { __ } from "@/lib/translate";
+import { usePrintInvoice } from "@/composables/usePrintInvoice";
 import { isElectron } from "@/services/electronBridge";
+import { fiscalizeViaLocalService } from "@/services/fbrLocalService";
 import {
 	Dialog,
 	DialogContent,
@@ -592,7 +595,9 @@ import {
 } from "@/components/dialogs/paymentDialogShortcuts";
 
 const posStore = usePosStore();
+const { printInvoice, printInvoiceLocal } = usePrintInvoice();
 const cartStore = useCartStore();
+const authStore = useAuthStore();
 const paymentStore = usePaymentStore();
 const offlineStore = useOfflineStore();
 
@@ -1054,6 +1059,7 @@ async function submitPayment(withPrint: boolean = true) {
 					pos_opening_shift_local_id: shiftName,
 					is_draft: false,
 					is_return: cartStore.isReturnMode,
+					receipt: cartStore.getReceiptSnapshot("", authStore.userFullName),
 				},
 				customer_name: cartStore.customerName,
 				grand_total: cartStore.grandTotal,
@@ -1096,9 +1102,12 @@ async function submitPayment(withPrint: boolean = true) {
 			}
 			return;
 		}
-		const result = await call<{ name: string }>("xpos.api.invoices.create_invoice", {
+		let result = await call<CreateInvoiceResult>("xpos.api.invoices.create_invoice", {
 			data: JSON.stringify(invoiceData),
 		});
+		if (result.status === "fbr_local_required") {
+			result = await finalizeWithLocalFbr(result);
+		}
 
 		posStore.lastInvoiceName = result.name;
 
@@ -1146,62 +1155,37 @@ async function submitPayment(withPrint: boolean = true) {
 	}
 }
 
-async function printInvoice(invoiceName: string) {
-	try {
-		const printFormat = posStore?.defaultPrintFormat || "XPOS Thermal Receipt";
-		const letterHead = posStore.printSettings?.letter_head || "";
-
-		const usePosInvoice = posStore.posProfile?.create_pos_invoice_instead_of_sales_invoice;
-		const doctype = usePosInvoice ? "POS Invoice" : "Sales Invoice";
-
-		const baseUrl = window.location.origin;
-		const printUrl = `${baseUrl}/printview?doctype=${doctype}&name=${invoiceName}&format=${printFormat}&no_letterhead=${letterHead ? "0" : "1"}`;
-		const printWindow = window.open(printUrl, "_blank");
-
-		if (printWindow) {
-			printWindow.onload = () => {
-				printWindow.onafterprint = () => {
-					printWindow.close();
-				};
-				setTimeout(() => {
-					printWindow.print();
-				}, 500);
-			};
-		} else {
-			window.open(printUrl, "_blank");
-		}
-	} catch (error) {
-		console.error("Print error:", error);
-		showError(__("Failed to print invoice"));
-	}
+interface CreateInvoiceResult {
+	name: string;
+	status?: string;
+	doctype?: string;
+	fbr_payload?: Record<string, unknown>;
+	fbr_local_service_url?: string;
 }
 
-async function printInvoiceLocal(localId: number) {
+async function finalizeWithLocalFbr(pending: CreateInvoiceResult): Promise<CreateInvoiceResult> {
 	try {
-		if (!window.electronAPI?.db || !window.electronAPI?.print) {
-			showError(__("Print not available"));
-			return;
-		}
-
-		const invoice = await window.electronAPI.db.getPendingInvoice(localId);
-		if (!invoice) {
-			showError(__("Invoice not found for printing"));
-			return;
-		}
-
-		await window.electronAPI.print.printInvoice({
-			localId,
-			data: invoice.data,
-			customerName: invoice.customer_name || "",
-			grandTotal: invoice.grand_total,
-			isReturn: invoice.is_return,
-			printFormat: posStore.printSettings?.print_format || "POS Invoice",
-			letterHead: posStore.printSettings?.letter_head || "",
-			companyName: posStore.posProfile?.company || "",
+		const { invoiceNumber } = await fiscalizeViaLocalService(
+			pending.fbr_payload || {},
+			pending.fbr_local_service_url || "",
+		);
+		return await call<CreateInvoiceResult>("xpos.api.invoices.finalize_fiscal_invoice", {
+			name: pending.name,
+			fbr_invoice_number: invoiceNumber,
+			doctype: pending.doctype,
 		});
-	} catch (error) {
-		console.error("Local print error:", error);
-		showError(__("Failed to print invoice locally"));
+	} catch (err) {
+		await call("xpos.api.invoices.discard_draft_invoice", {
+			name: pending.name,
+			doctype: pending.doctype,
+		}).catch(() => {
+			/* best-effort cleanup */
+		});
+		throw new Error(
+			__("FBR fiscalization failed — both the FBR cloud and the local service are unavailable.") +
+				" " +
+				extractErrorMessage(err),
+		);
 	}
 }
 

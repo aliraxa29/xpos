@@ -5,7 +5,7 @@ from frappe.utils import cint, cstr, flt, getdate, nowdate
 
 from xpos.api.items import (
 	_get_pending_pos_qty_map,
-	_is_pos_invoice_mode,
+	get_invoice_type,
 	get_pending_pos_batch_qty_map,
 )
 from xpos.x_pos.api.invoice_processing.utils import _sanitize_item_name
@@ -87,7 +87,7 @@ def collect_stock_errors(items, pos_profile=None):
 	pending_map: dict[tuple[str, str], float] = {}
 	pending_batch_map: dict[tuple[str, str], float] = {}
 	if pos_profile:
-		if _is_pos_invoice_mode(pos_profile):
+		if get_invoice_type() == "POS Invoice":
 			wh_items: dict[str, list[str]] = {}
 			wh_batches: dict[str, list[str]] = {}
 			for d in items_to_check:
@@ -151,7 +151,7 @@ def _should_block(pos_profile):
 	return bool(block_sale)
 
 
-def _validate_stock_on_invoice(invoice_doc):
+def validate_stock_on_invoice(invoice_doc):
 	if invoice_doc.doctype == "Sales Invoice" and not cint(getattr(invoice_doc, "update_stock", 0)):
 		return
 

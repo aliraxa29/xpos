@@ -6,6 +6,7 @@ import { isOnline } from "@/utils";
 import { showError, showSuccess } from "@/services/api";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { usePosStore } from "@/stores/posStore";
+import { hasPermission } from "@/services/userRights";
 
 export interface Shortcut {
 	id: string;
@@ -41,6 +42,7 @@ export function useKeyboardShortcuts() {
 			if (isOnline()) {
 				void Promise.allSettled([settingsStore.fetchSettings()]);
 			}
+			window.location.reload();
 		} catch (error) {
 			console.error("Failed to clear cached data:", error);
 			showError("Failed to clear cached data");
@@ -67,6 +69,16 @@ export function useKeyboardShortcuts() {
 			global: true,
 			action: () => {
 				showShortcutsDialog.value = true;
+			},
+		},
+		{
+			id: "error-inspector",
+			keys: ["ctrl", "shift", "e"],
+			description: "Toggle Error Inspector",
+			category: "General",
+			global: true,
+			action: () => {
+				window.dispatchEvent(new CustomEvent("xpos:toggle-error-inspector"));
 			},
 		},
 		{
@@ -184,6 +196,16 @@ export function useKeyboardShortcuts() {
 			},
 		},
 		{
+			id: "goto-cashier",
+			keys: ["alt", "0"],
+			description: "Go to Cashier",
+			category: "Navigation",
+			global: true,
+			action: () => {
+				router.push("/cashier");
+			},
+		},
+		{
 			id: "focus-cart",
 			keys: ["f3"],
 			description: "Focus Cart (First Item Qty)",
@@ -257,6 +279,7 @@ export function useKeyboardShortcuts() {
 			description: "Print Last Receipt",
 			category: "POS",
 			action: () => {
+				if (!hasPermission("allow_reprint_invoice")) return;
 				window.dispatchEvent(new CustomEvent("xpos:print-last"));
 			},
 		},
@@ -302,6 +325,7 @@ export function useKeyboardShortcuts() {
 			description: "Close Shift",
 			category: "Shift",
 			action: () => {
+				if (!hasPermission("close_shift")) return;
 				window.dispatchEvent(new CustomEvent("xpos:close-shift"));
 			},
 		},

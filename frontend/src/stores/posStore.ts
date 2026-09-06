@@ -1,8 +1,9 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { call } from "@/services/api";
-import { cachePOSData, getCachedPOSData } from "@/services/dbBridge";
+import { cachePOSData, getCachedPOSData, cacheReceiptContext } from "@/services/dbBridge";
 import { isElectron } from "@/services/electronBridge";
+import { loadPermissions } from "@/services/userRights";
 import {
 	type POSOpeningShift,
 	type POSProfile,
@@ -12,15 +13,16 @@ import {
 	type OpeningData,
 	type ShiftSummary,
 	type PrintFormat,
-	type CurrencySymbolMap,
 	type TaxDetail,
 	type PrintSettings,
+	type ReceiptContext,
 } from "@/types/pos.types";
 import { isOnline } from "@/utils";
 
 export const usePosStore = defineStore("pos", () => {
 	const isLoading = ref(true);
 	const isReady = ref(false);
+	const isCashier = ref(true);
 	const currentView = ref("pos");
 	const posOpeningShift = ref<POSOpeningShift | null>(null);
 	const posProfile = ref<POSProfile | null>(null);
@@ -41,6 +43,12 @@ export const usePosStore = defineStore("pos", () => {
 	const profileName = computed(() => posProfile.value?.name || "");
 	const warehouse = computed(() => posProfile.value?.warehouse || "");
 	const currency = computed(() => posProfile.value?.currency);
+
+	watch(profileName, async (name, prev) => {
+		if (isElectron() || !name || name === prev) return;
+		const { useAuthStore } = await import("@/stores/authStore");
+		await loadPermissions(useAuthStore().userName, name);
+	});
 
 	const currencySymbol = computed(() => {
 		if (window.xpos) {
@@ -67,17 +75,13 @@ export const usePosStore = defineStore("pos", () => {
 
 	const sellingPriceList = computed(() => posProfile.value?.selling_price_list || "");
 
-	const invoiceType = computed(() =>
-		posProfile.value?.create_pos_invoice_instead_of_sales_invoice ? "POS Invoice" : "Sales Invoice",
-	);
+	const invoiceType = computed(() => xpos.boot?.pos_settings?.invoice_type);
 
 	const defaultPrintFormat = computed(
 		() => posProfile.value?.default_print_format || "XPOS Thermal Receipt",
 	);
 
 	const defaultCustomer = computed(() => posProfile.value?.customer || "");
-
-	const allowEditRate = computed(() => !!posProfile.value?.allow_rate_change);
 
 	const hideImages = computed(() => !!posProfile.value?.hide_images);
 
@@ -95,12 +99,6 @@ export const usePosStore = defineStore("pos", () => {
 
 	const useOfflineMode = computed(() => !!posProfile.value?.use_offline_mode);
 
-	const allowEditItemDiscount = computed(() => !!posProfile.value?.allow_discount_change);
-
-	const allowEditAdditionalDiscount = computed(
-		() => !!posProfile.value?.allow_user_to_edit_additional_discount,
-	);
-
 	const allowChangePostingDate = computed(() => !!posProfile.value?.allow_change_posting_date);
 
 	const displayItemsInStock = computed(() => !!posProfile.value?.display_items_in_stock);
@@ -116,8 +114,6 @@ export const usePosStore = defineStore("pos", () => {
 	const allowSalesOrder = computed(() => !!posProfile.value?.allow_sales_order);
 
 	const allowDeleteOfflineInvoice = computed(() => !!posProfile.value?.allow_delete_offline_invoice);
-
-	const allowPrintLastInvoice = computed(() => !!posProfile.value?.allow_print_last_invoice);
 
 	const displayAdditionalNotes = computed(() => !!posProfile.value?.display_additional_notes);
 
@@ -159,7 +155,9 @@ export const usePosStore = defineStore("pos", () => {
 
 	const applyCustomerDiscount = computed(() => !!posProfile.value?.apply_customer_discount);
 
-	const allowPrintDraftInvoices = computed(() => !!posProfile.value?.allow_print_draft_invoices);
+	const enableCashierSettlement = computed(() => !!posProfile.value?.enable_cashier_settlement);
+
+	const printBackupReceipt = computed(() => !!posProfile.value?.print_backup_receipt);
 
 	const cashModeOfPayment = computed(() => posProfile.value?.cash_mode_of_payment || "Cash");
 
@@ -175,6 +173,7 @@ export const usePosStore = defineStore("pos", () => {
 		disableRoundedTotal.value = false;
 		printSettings.value = null;
 		isReady.value = false;
+		isCashier.value = true;
 		printFormats.value = [];
 		lastInvoiceName.value = "";
 	}
@@ -188,6 +187,7 @@ export const usePosStore = defineStore("pos", () => {
 		taxInclusiveMode.value = !!result.tax_inclusive;
 		disableRoundedTotal.value = !!result.disable_rounded_total;
 		printSettings.value = result.print_settings || null;
+		isCashier.value = result.is_cashier ?? true;
 		showOpeningDialog.value = false;
 		isReady.value = true;
 	}
@@ -207,6 +207,7 @@ export const usePosStore = defineStore("pos", () => {
 
 				if (result) {
 					applyShiftState(result);
+					refreshReceiptContext(result.pos_profile?.name || "");
 
 					import("@/stores/settingsStore").then(({ useSettingsStore }) => {
 						const settingsStore = useSettingsStore();
@@ -372,6 +373,7 @@ export const usePosStore = defineStore("pos", () => {
 			isReady.value = true;
 
 			fetchPrintFormats();
+			refreshReceiptContext(profileName);
 
 			import("@/stores/settingsStore").then(({ useSettingsStore }) => {
 				const settingsStore = useSettingsStore();
@@ -465,9 +467,23 @@ export const usePosStore = defineStore("pos", () => {
 		}
 	}
 
+	async function refreshReceiptContext(profileName: string): Promise<void> {
+		if (!isElectron() || !isOnline() || !profileName) return;
+		try {
+			const ctx = await call<ReceiptContext>("xpos.api.print_formats.get_receipt_context", {
+				pos_profile: profileName,
+				print_format: defaultPrintFormat.value,
+			});
+			await cacheReceiptContext(profileName, ctx);
+		} catch (error) {
+			console.warn("[XPOS] Failed to cache receipt context:", error);
+		}
+	}
+
 	return {
 		isLoading,
 		isReady,
+		isCashier,
 		currentView,
 		posOpeningShift,
 		posProfile,
@@ -494,9 +510,6 @@ export const usePosStore = defineStore("pos", () => {
 		companyName,
 		sellingPriceList,
 		defaultCustomer,
-		allowEditRate,
-		allowEditItemDiscount,
-		allowEditAdditionalDiscount,
 		allowChangePostingDate,
 		displayItemsInStock,
 		allowPartialPayment,
@@ -505,7 +518,6 @@ export const usePosStore = defineStore("pos", () => {
 		allowReturnWithoutInvoice,
 		allowSalesOrder,
 		allowDeleteOfflineInvoice,
-		allowPrintLastInvoice,
 		displayAdditionalNotes,
 		allowWriteOffChange,
 		displayItemCode,
@@ -526,7 +538,8 @@ export const usePosStore = defineStore("pos", () => {
 		returnValidityDays,
 		useCustomerCredit,
 		applyCustomerDiscount,
-		allowPrintDraftInvoices,
+		enableCashierSettlement,
+		printBackupReceipt,
 		cashModeOfPayment,
 		purchaseTaxes,
 		hideImages,

@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Ali Raza and contributors
+# Copyright (c) 2026, Kodlyft and contributors
 # For license information, please see license.txt
 
 import json
@@ -7,6 +7,8 @@ import frappe
 from frappe.query_builder import DocType
 from frappe.query_builder.functions import Sum
 from frappe.utils import cint, flt, getdate, nowdate
+
+from xpos.api.utilities import get_invoice_type
 
 
 @frappe.whitelist()
@@ -22,7 +24,7 @@ def get_pos_items(
 	pos = frappe.get_cached_doc("POS Profile", pos_profile)
 	warehouse = pos.warehouse
 
-	filters = {"disabled": 0, "is_sales_item": 1, "is_stock_item": 1}
+	filters = {"disabled": 0, "is_sales_item": 1}
 
 	if not (include_templates or pos.get("show_template_items")):
 		filters["has_variants"] = 0
@@ -58,7 +60,7 @@ def get_pos_items(
 		]
 
 	hide_unavailable = pos.get("hide_unavailable_items") and warehouse
-	use_pos_deduction = bool(pos.get("create_pos_invoice_instead_of_sales_invoice"))
+	use_pos_deduction = bool(get_invoice_type() == "POS Invoice")
 
 	if hide_unavailable:
 		wh_list = [warehouse]
@@ -321,6 +323,7 @@ def search_barcode(barcode: str, pos_profile: str | None = None):
 			"rate": _get_item_rate(item.name),
 			"has_batch_no": item.has_batch_no,
 			"has_serial_no": item.has_serial_no,
+			"is_stock_item": item.is_stock_item,
 			"image": item.image,
 			"actual_qty": get_stock_qty(item.name, warehouse, pos_profile=pos_profile) if warehouse else 0,
 		}
@@ -337,6 +340,7 @@ def search_barcode(barcode: str, pos_profile: str | None = None):
 			"rate": _get_item_rate(item.name),
 			"has_batch_no": item.has_batch_no,
 			"has_serial_no": item.has_serial_no,
+			"is_stock_item": item.is_stock_item,
 			"image": item.image,
 			"actual_qty": get_stock_qty(item.name, warehouse, pos_profile=pos_profile) if warehouse else 0,
 		}
@@ -558,7 +562,7 @@ def get_stock_availability(items: str | list, warehouse: str | None = None, pos_
 	if not items:
 		return []
 
-	use_pos_deduction = bool(pos_profile and _is_pos_invoice_mode(pos_profile))
+	use_pos_deduction = bool(pos_profile and get_invoice_type() == "POS Invoice")
 	pending_map: dict[str, float] = {}
 	if use_pos_deduction and warehouse:
 		wh_list = [warehouse]
@@ -684,18 +688,11 @@ def get_stock_qty(item_code: str, warehouse: str, pos_profile: str | None = None
 	)
 	bin_qty = flt(rows[0].actual_qty) if rows else 0
 
-	if pos_profile and _is_pos_invoice_mode(pos_profile):
+	if pos_profile and get_invoice_type() == "POS Invoice":
 		pending_map = _get_pending_pos_qty_map(warehouses, item_codes=[item_code])
 		bin_qty -= pending_map.get(item_code, 0.0)
 
 	return bin_qty
-
-
-def _is_pos_invoice_mode(pos_profile: str) -> bool:
-	"""Return True when the POS Profile creates POS Invoices instead of Sales Invoices."""
-	return bool(
-		frappe.db.get_value("POS Profile", pos_profile, "create_pos_invoice_instead_of_sales_invoice")
-	)
 
 
 def get_pending_batch_qty(warehouse: str, pos_profile: str | None) -> dict[str, float]:
@@ -705,7 +702,7 @@ def get_pending_batch_qty(warehouse: str, pos_profile: str | None) -> dict[str, 
 	not moved yet, so they need the same pending deduction as item quantities.
 	"""
 
-	if not warehouse or not pos_profile or not _is_pos_invoice_mode(pos_profile):
+	if not warehouse or not pos_profile or get_invoice_type() != "POS Invoice":
 		return {}
 
 	warehouses = [warehouse]

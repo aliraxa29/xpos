@@ -1,8 +1,8 @@
 app_name = "xpos"
 app_title = "X POS"
-app_publisher = "Ali Raza"
+app_publisher = "Kodlyft"
 app_description = "A modern, offline-capable Point of Sale application for Frappe and ERPNext"
-app_email = "ar.frappe.dev@gmail.com"
+app_email = "hello@kodlyft.com"
 app_license = "mit"
 
 # Apps
@@ -93,7 +93,7 @@ jinja = {
 # ------------
 
 # before_install = "xpos.install.before_install"
-# after_install = "xpos.install.after_install"
+after_install = "xpos.install.after_install"
 
 # Uninstallation
 # ------------
@@ -129,10 +129,11 @@ after_uninstall = "xpos.uninstall.after_uninstall"
 # permission_query_conditions = {
 # 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
 # }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+
+has_permission = {
+	"Sales Invoice": "xpos.api.print_formats.invoice_has_permission",
+	"POS Invoice": "xpos.api.print_formats.invoice_has_permission",
+}
 
 # DocType Class
 # ---------------

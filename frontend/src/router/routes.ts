@@ -1,5 +1,6 @@
 const PosView = () => import("@/views/PosView.vue");
 const OrdersView = () => import("@/views/OrdersView.vue");
+const CashierView = () => import("@/views/CashierView.vue");
 const ReportsIndexView = () => import("@/views/ReportsIndexView.vue");
 const ReportViewerView = () => import("@/views/ReportViewerView.vue");
 const SettingsView = () => import("@/views/SettingsView.vue");
@@ -14,6 +15,7 @@ const LoginView = () => import("@/views/LoginView.vue");
 const ResetPasswordView = () => import("@/views/ResetPasswordView.vue");
 const BarcodePrintView = () => import("@/views/BarcodePrintView.vue");
 const SetupWizardView = () => import("@/views/SetupWizardView.vue");
+const RolePermissionsView = () => import("@/views/RolePermissionsView.vue");
 import { RouteRecordRaw } from "vue-router";
 
 const routes: RouteRecordRaw[] = [
@@ -50,6 +52,12 @@ const routes: RouteRecordRaw[] = [
 		name: "orders",
 		component: OrdersView,
 		meta: { title: "Orders", requiresAuth: true },
+	},
+	{
+		path: "/cashier",
+		name: "cashier",
+		component: CashierView,
+		meta: { title: "Cashier", requiresAuth: true },
 	},
 	{
 		path: "/reports",
@@ -116,6 +124,18 @@ const routes: RouteRecordRaw[] = [
 		name: "bank-drops",
 		component: BankDropView,
 		meta: { title: "Bank Drops", requiresAuth: true },
+	},
+	{
+		path: "/role-permissions",
+		name: "role-permissions",
+		component: RolePermissionsView,
+		meta: { title: "Role Permissions", requiresAuth: true, requiresAdmin: true },
+	},
+	{
+		path: "/price-checker",
+		name: "price-checker",
+		component: () => import("@/views/PriceChecker.vue"),
+		meta: { title: "Price Checker", requiresAuth: true, fullScreen: true },
 	},
 ];
 

@@ -87,6 +87,7 @@ class TestFBRIntegration(unittest.TestCase):
 		profile.fbr_pos_id = "110014"
 		profile.fbr_api_url = ""
 		profile.fbr_skip_ssl_verification = 0
+		profile.fbr_local_service_url = "http://localhost:8524"
 		profile.get_password.return_value = "secret-token"
 		return profile
 
@@ -155,6 +156,66 @@ class TestFBRIntegration(unittest.TestCase):
 			fbr.fiscalize_invoice(invoice)
 
 		mock_post.assert_not_called()
+
+	@patch("xpos.x_pos.integrations.fbr.requests.post")
+	@patch("xpos.x_pos.integrations.fbr.frappe")
+	def test_prepare_fiscalization_cloud_success(self, mock_frappe, mock_post):
+		invoice = self._make_invoice()
+		mock_frappe.get_doc.return_value = self._mock_profile(enabled=True)
+		mock_frappe.db.get_value.side_effect = self._db_get_value_side_effect
+
+		response = MagicMock()
+		response.status_code = 200
+		response.json.return_value = {"FBRInvoiceNumber": "9329402106181682148", "Code": "100"}
+		response.text = '{"FBRInvoiceNumber":"9329402106181682148","Code":"100"}'
+		mock_post.return_value = response
+
+		outcome = fbr.prepare_fiscalization(invoice)
+
+		self.assertEqual(outcome.status, "cloud")
+		self.assertEqual(outcome.fbr_invoice_number, "9329402106181682148")
+		# prepare_fiscalization must not mutate the document.
+		self.assertFalse(invoice.get("fbr_invoice_number"))
+
+	@patch("xpos.x_pos.integrations.fbr.requests.post")
+	@patch("xpos.x_pos.integrations.fbr.frappe")
+	def test_prepare_fiscalization_local_required_when_offline(self, mock_frappe, mock_post):
+		invoice = self._make_invoice()
+		mock_frappe.get_doc.return_value = self._mock_profile(enabled=True)
+		mock_frappe.db.get_value.side_effect = self._db_get_value_side_effect
+		mock_post.side_effect = fbr.requests.RequestException("connection refused")
+
+		outcome = fbr.prepare_fiscalization(invoice)
+
+		self.assertEqual(outcome.status, "local_required")
+		self.assertIsNotNone(outcome.payload)
+		self.assertEqual(outcome.payload["POSID"], 110014)
+		self.assertEqual(outcome.local_service_url, "http://localhost:8524")
+		self.assertFalse(invoice.get("fbr_invoice_number"))
+
+	@patch("xpos.x_pos.integrations.fbr.requests.post")
+	@patch("xpos.x_pos.integrations.fbr.frappe")
+	def test_fiscalize_invoice_raises_connection_error_when_offline(self, mock_frappe, mock_post):
+		invoice = self._make_invoice()
+		mock_frappe.get_doc.return_value = self._mock_profile(enabled=True)
+		mock_frappe.db.get_value.side_effect = self._db_get_value_side_effect
+		mock_post.side_effect = fbr.requests.RequestException("connection refused")
+
+		# The submit-time hook has no client to drive the local fallback → hard-fail.
+		with self.assertRaises(fbr.FBRConnectionError):
+			fbr.fiscalize_invoice(invoice)
+
+	@patch("xpos.x_pos.integrations.fbr.requests.post")
+	@patch("xpos.x_pos.integrations.fbr.frappe")
+	def test_prepare_fiscalization_uses_local_id_as_usin(self, mock_frappe, mock_post):
+		invoice = self._make_invoice(xpos_local_id="inv_local_123")
+		mock_frappe.get_doc.return_value = self._mock_profile(enabled=True)
+		mock_frappe.db.get_value.side_effect = self._db_get_value_side_effect
+		mock_post.side_effect = fbr.requests.RequestException("offline")
+
+		outcome = fbr.prepare_fiscalization(invoice)
+
+		self.assertEqual(outcome.payload["USIN"], "inv_local_123")
 
 
 if __name__ == "__main__":

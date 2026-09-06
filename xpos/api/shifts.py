@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Ali Raza and contributors
+# Copyright (c) 2026, Kodlyft and contributors
 # For license information, please see license.txt
 
 import json
@@ -7,14 +7,7 @@ import frappe
 from frappe import Any, _
 from frappe.utils import cint, flt, now_datetime, nowdate
 
-
-def _resolve_invoice_doctype(pos_profile: str) -> str:
-	"""Return 'POS Invoice' or 'Sales Invoice' based on POS Profile setting."""
-	if pos_profile and cint(
-		frappe.db.get_value("POS Profile", pos_profile, "create_pos_invoice_instead_of_sales_invoice")
-	):
-		return "POS Invoice"
-	return "Sales Invoice"
+from xpos.api.utilities import can_close_shift, get_invoice_type, is_pos_cashier
 
 
 def _row_value(row: dict | object, key: str, default: Any | None = None):
@@ -150,10 +143,13 @@ def close_shift(opening_shift: str, closing_details: str | list[dict] | None):
 	- Tax summary per shift
 	- Payment reconciliation with expected vs actual amounts
 	"""
+	if not can_close_shift():
+		frappe.throw(_("Only a Supervisor can close a shift."), frappe.PermissionError)
+
 	closing_details = json.loads(closing_details) if isinstance(closing_details, str) else closing_details
 
 	opening = frappe.get_doc("POS Opening Shift", opening_shift)
-	doctype = _resolve_invoice_doctype(opening.pos_profile)
+	doctype = get_invoice_type()
 
 	filters = {
 		"pos_opening_shift": opening.name,
@@ -282,7 +278,7 @@ def get_shift_summary(opening_shift: str):
 	Enhanced version with tax breakdown and return info.
 	"""
 	opening = frappe.get_doc("POS Opening Shift", opening_shift)
-	doctype = _resolve_invoice_doctype(opening.pos_profile)
+	doctype = get_invoice_type()
 
 	filters = {
 		"pos_opening_shift": opening.name,
@@ -399,6 +395,7 @@ def _enrich_shift_data(data: dict, pos_profile: str):
 		profile = frappe.get_doc("POS Profile", pos_profile)
 	data["pos_profile"] = profile.as_dict()
 	data["company"] = frappe.get_cached_doc("Company", profile.company).as_dict()
+	data["is_cashier"] = is_pos_cashier(frappe.session.user, pos_profile)
 
 	allow_negative_stock = cint(frappe.db.get_single_value("Stock Settings", "allow_negative_stock") or 0)
 	data["stock_settings"] = {"allow_negative_stock": bool(allow_negative_stock)}
@@ -431,10 +428,14 @@ def _enrich_shift_data(data: dict, pos_profile: str):
 		data["taxes"] = []
 		data["tax_inclusive"] = 0
 
+	from xpos.api.auth import user_has_pos_permission
+
 	data["print_settings"] = {
 		"print_format": profile.get("print_format") or "POS Invoice",
 		"print_format_for_online": profile.get("print_format_for_online"),
-		"allow_print_before_pay": cint(profile.get("allow_print_draft_invoices")) or 0,
+		"allow_print_before_pay": 1
+		if user_has_pos_permission("print_draft_invoice", pos_profile=pos_profile)
+		else 0,
 		"auto_print_receipt": cint(profile.get("auto_print_receipt")) or 0,
 		"letter_head": profile.get("letter_head") or "",
 	}
@@ -452,7 +453,7 @@ def _get_shift_tax_summary(invoices: list, doctype: str = "Sales Invoice") -> li
 	taxes = frappe.get_all(
 		"Sales Taxes and Charges",
 		filters={"parent": ["in", inv_names], "parenttype": doctype},
-		fields=["account_head", "rate", "SUM(tax_amount) AS amount"],
+		fields=["account_head", "rate", {"SUM": "tax_amount", "as": "amount"}],
 		group_by="account_head, rate",
 		order_by="account_head",
 	)
@@ -522,6 +523,9 @@ def create_closing_shift(data: str | dict, local_id: str | None = None) -> dict:
 	Returns:
 	    dict with 'name' key containing the server docname
 	"""
+	if not can_close_shift():
+		frappe.throw(_("Only a Supervisor can close a shift."), frappe.PermissionError)
+
 	data = json.loads(data) if isinstance(data, str) else data
 
 	if local_id:

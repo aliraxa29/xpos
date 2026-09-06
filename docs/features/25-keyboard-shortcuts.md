@@ -62,6 +62,19 @@ X POS is designed for fast operation with extensive keyboard support for power u
 
 ---
 
+## Cashier Settlement
+
+| Key | Action | Context |
+|---|---|---|
+| `Alt+0` | Open the Cashier screen | Anywhere (cashier users only) |
+| `↑` (Up Arrow) | Highlight previous unsettled bill | Cashier screen |
+| `↓` (Down Arrow) | Highlight next unsettled bill | Cashier screen |
+| `Enter` | Open the payment dialog to settle the highlighted bill | Cashier screen |
+
+See [Cashier Settlement](26-cashier-settlement.md) for the full workflow.
+
+---
+
 ## Workflow Examples
 
 ### Fast Checkout (Keyboard Only)

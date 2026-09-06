@@ -139,7 +139,7 @@
 		<div class="flex gap-2">
 			<TooltipWrapper :content="__('Additional Discount')">
 				<Button
-					v-if="posStore.allowEditAdditionalDiscount"
+					v-if="hasPermission('apply_additional_discount')"
 					variant="outline"
 					size="sm"
 					:class="{
@@ -332,7 +332,7 @@
 					: 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-primary/25'
 			"
 			:disabled="cartStore.isEmpty || !cartStore.customer"
-			@click="cartStore.openPaymentDialog()"
+			@click="handleCheckout()"
 		>
 			<Wallet class="w-5 h-5" />
 			{{ payButtonLabel }}
@@ -343,12 +343,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { usePosStore } from "@/stores/posStore";
+import { hasPermission } from "@/services/userRights";
 import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useOfferStore } from "@/stores/offerStore";
 import { call, showSuccess, showError } from "@/services/api";
 import { __ } from "@/lib/translate";
 import { isElectron } from "@/services/electronBridge";
 import { useOfflineStore } from "@/stores/offlineStore";
+import { usePrintInvoice } from "@/composables/usePrintInvoice";
 import { Button } from "@/components/ui/button";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
@@ -371,8 +374,10 @@ import type { DeliveryCharge } from "@/types/pos.types";
 
 const posStore = usePosStore();
 const cartStore = useCartStore();
+const authStore = useAuthStore();
 const offerStore = useOfferStore();
 const offlineStore = useOfflineStore();
+const { printInvoice, printInvoiceLocal } = usePrintInvoice();
 
 const showDiscount = ref(false);
 const showCoupon = ref(false);
@@ -432,9 +437,18 @@ const discountValue = computed(() => {
 const payButtonLabel = computed(() => {
 	if (cartStore.isEmpty) return __("Add items to pay");
 	if (!cartStore.customer) return __("Select customer first");
+	if (posStore.enableCashierSettlement && !cartStore.isReturnMode) return __("Send to Cashier");
 	const amt = `${posStore.currencySymbol}${formatPrice(Math.abs(cartStore.grandTotal))}`;
 	return cartStore.isReturnMode ? __("Process Return {0}", [amt]) : __("Pay {0}", [amt]);
 });
+
+function handleCheckout() {
+	if (posStore.enableCashierSettlement && !cartStore.isReturnMode) {
+		sendToCashier();
+		return;
+	}
+	cartStore.openPaymentDialog();
+}
 
 function applyDiscount() {
 	cartStore.setDiscount(discountType.value as "percentage" | "amount", discountInput.value || 0);
@@ -508,6 +522,20 @@ watch(
 		void syncAutoDeliveryCharge();
 	},
 	{ immediate: true },
+);
+
+watch(
+	() => cartStore.isEmpty,
+	(empty) => {
+		if (!empty) return;
+		discountInput.value = 0;
+		discountType.value = "percentage";
+		couponInput.value = "";
+		couponError.value = "";
+		showDiscount.value = false;
+		showCoupon.value = false;
+		showDelivery.value = false;
+	},
 );
 
 async function toggleDelivery() {
@@ -663,6 +691,88 @@ async function holdOrder() {
 		}
 	} catch (error: unknown) {
 		showError(__("Failed to save draft: {0}", [extractErrorMessage(error)]));
+	}
+}
+
+async function sendToCashier() {
+	if (cartStore.isEmpty) return;
+
+	const profileName = posStore.profileName;
+	const shiftName = posStore.posOpeningShift?.name || "";
+
+	if (!profileName) {
+		showError(__("POS Profile is not set. Please close and reopen the shift."));
+		return;
+	}
+
+	if (!shiftName) {
+		showError(__("No open shift found. Please open a shift first."));
+		return;
+	}
+
+	try {
+		const data = cartStore.getInvoiceData(profileName, shiftName);
+		data.pos_awaiting_settlement = true;
+
+		if (!data.customer) {
+			const bootCustomer = (window.xpos?.boot as Record<string, unknown>)?.sysdefaults as
+				| Record<string, string>
+				| undefined;
+			data.customer = bootCustomer?.customer || "";
+		}
+
+		if (!data.customer) {
+			showError(__("Please select a customer before sending to cashier."));
+			return;
+		}
+
+		if (!data.items || data.items.length === 0) {
+			showError(__("No items in cart to send."));
+			return;
+		}
+
+		if (isElectron() && window.electronAPI?.db) {
+			const result = await window.electronAPI.db.addPendingInvoice({
+				data: {
+					...data,
+					is_draft: true,
+					pos_opening_shift_local_id: shiftName,
+					receipt: cartStore.getReceiptSnapshot("", authStore.userFullName),
+				},
+				customer_name: cartStore.customerName || data.customer,
+				grand_total: cartStore.grandTotal || 0,
+			});
+			if (posStore.printBackupReceipt && result?.id) {
+				await printInvoiceLocal(result.id);
+			}
+			cartStore.clearAll();
+			showSuccess(__("Sent to cashier"));
+		} else {
+			const serverData = { ...data };
+			if (serverData.pos_opening_shift && /^\d+$/.test(String(serverData.pos_opening_shift))) {
+				delete serverData.pos_opening_shift;
+			}
+			if (offlineStore.isOnline) {
+				const result = await call<{ name: string }>("xpos.api.invoices.save_draft_invoice", {
+					data: JSON.stringify(serverData),
+				});
+				if (posStore.printBackupReceipt && result?.name) {
+					await printInvoice(result.name);
+				}
+				cartStore.clearAll();
+				showSuccess(__("Sent to cashier"));
+			} else {
+				await offlineStore.saveOffline(
+					{ ...serverData, is_draft: true } as Parameters<typeof offlineStore.saveOffline>[0],
+					cartStore.customerName || data.customer,
+					cartStore.grandTotal || 0,
+				);
+				cartStore.clearAll();
+				showSuccess(__("No connection – will sync to cashier when back online"));
+			}
+		}
+	} catch (error: unknown) {
+		showError(__("Failed to send to cashier: {0}", [extractErrorMessage(error)]));
 	}
 }
 

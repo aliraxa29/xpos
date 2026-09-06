@@ -26,7 +26,8 @@
 					class="absolute top-full start-0 min-w-[220px] bg-[#252526] dark:bg-[#252526] border border-[#454545] shadow-2xl py-1 z-[200]"
 				>
 					<template v-for="item in menu.items" :key="item.id">
-						<div v-if="item.separator" class="h-px bg-[#3c3c3c] mx-0 my-1" />
+						<template v-if="item.hidden?.()" />
+						<div v-else-if="item.separator" class="h-px bg-[#3c3c3c] mx-0 my-1" />
 						<button
 							v-else
 							class="w-full flex items-center justify-between px-4 py-1 text-[13px] transition-colors duration-75 outline-none"
@@ -72,6 +73,7 @@ import { usePaymentStore } from "@/stores/paymentStore";
 import { useCustomerStore } from "@/stores/customerStore";
 import { useAuthStore } from "@/stores/authStore";
 import { isElectron } from "@/services/electronBridge";
+import { hasPermission } from "@/services/userRights";
 import __ from "@/lib/translate";
 import { get_full_url } from "@/utils";
 import AboutDialog from "@/components/dialogs/AboutDialog.vue";
@@ -107,6 +109,7 @@ import {
 	RefreshCw,
 	Info,
 	BarChart3,
+	ShieldCheck,
 } from "lucide-vue-next";
 
 const router = useRouter();
@@ -135,7 +138,7 @@ const activeMenuIdx = computed(() => {
 function getNavigableItems(): MenuItem[] {
 	const idx = activeMenuIdx.value;
 	if (idx < 0) return [];
-	return menus.value[idx].items.filter((item) => !item.separator && !item.disabled?.());
+	return menus.value[idx].items.filter((item) => !item.separator && !item.hidden?.() && !item.disabled?.());
 }
 
 function toggleMenu(label: string, menuIndex: number) {
@@ -322,6 +325,7 @@ interface MenuItem {
 	shortcut?: string;
 	separator?: boolean;
 	disabled?: () => boolean;
+	hidden?: () => boolean;
 	action?: () => void;
 }
 
@@ -358,6 +362,7 @@ const menus = computed<Menu[]>(() => [
 				label: "Return Invoice",
 				icon: RotateCcw,
 				shortcut: "Ctrl+R",
+				hidden: () => !hasPermission("sale_return"),
 				disabled: () => !posStore.allowReturn,
 				action: () => {
 					window.dispatchEvent(new CustomEvent("xpos:show-return-dialog"));
@@ -369,6 +374,7 @@ const menus = computed<Menu[]>(() => [
 				label: "Print Last Receipt",
 				icon: Printer,
 				shortcut: "Ctrl+P",
+				hidden: () => !hasPermission("allow_reprint_invoice"),
 				disabled: () => !posStore.lastInvoiceName,
 				action: () => {
 					const name = posStore.lastInvoiceName;
@@ -388,6 +394,13 @@ const menus = computed<Menu[]>(() => [
 				icon: Settings,
 				shortcut: "Ctrl+,",
 				action: () => router.push("/settings"),
+			},
+			{
+				id: "role-permissions",
+				label: "Role Permissions",
+				icon: ShieldCheck,
+				hidden: () => isElectron() || !authStore.canManagePermissions,
+				action: () => router.push("/role-permissions"),
 			},
 			{ id: "sep-f2", separator: true },
 			{
@@ -556,6 +569,7 @@ const menus = computed<Menu[]>(() => [
 				label: "Close Shift",
 				icon: LogOut,
 				shortcut: "Ctrl+Shift+O",
+				hidden: () => !hasPermission("close_shift"),
 				disabled: () => !posStore.isShiftOpen,
 				action: () => {
 					posStore.showClosingDialog = true;

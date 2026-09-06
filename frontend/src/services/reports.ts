@@ -3,7 +3,6 @@ import { __ } from "@/lib/utils";
 import { hasPermission, type PosPermissions } from "@/services/userRights";
 
 export type ReportCategory = "Inventory" | "Sales" | "Purchasing" | "Operations";
-export type ReportTone = "emerald" | "blue" | "amber" | "violet" | "cyan";
 export type ReportFilterType = "link" | "multi-link" | "date" | "integer" | "float" | "select" | "text";
 
 export interface ReportFilterOption {
@@ -21,8 +20,8 @@ export interface ReportFilterDefinition {
 	helpText?: string;
 	defaultValue?: string | number | string[];
 	options?: ReportFilterOption[];
-	linkFilters?: (values: Record<string, unknown>) => Record<string, unknown>;
-	dependsOn?: string[];
+	getQueryFilters?: Record<string, unknown>;
+	clears?: string[];
 }
 
 export interface ReportDefinition {
@@ -31,10 +30,8 @@ export interface ReportDefinition {
 	reportName: string;
 	description: string;
 	category: ReportCategory;
-	tone: ReportTone;
 	permissionKey?: keyof PosPermissions;
 	thermalPrint?: boolean;
-	filters: ReportFilterDefinition[];
 }
 
 export interface ReportColumn {
@@ -91,528 +88,130 @@ const reportUtilityFields = new Set([
 const reportDefinitions: ReportDefinition[] = [
 	{
 		slug: "current-stock-report",
-		title: "Current Stock Report",
+		title: __("Current Stock Report"),
 		reportName: "Current Stock Report",
-		description: "Live stock valuation by item, warehouse, supplier, brand, and group.",
+		description: __("Live stock valuation by item, warehouse, supplier, brand, and group."),
 		category: "Inventory",
-		tone: "emerald",
 		permissionKey: "current_stock_report",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "warehouse",
-				label: "Warehouse",
-				type: "link",
-				doctype: "Warehouse",
-				required: true,
-				linkFilters: (values) => ({ company: values.company, is_group: 0 }),
-				dependsOn: ["company"],
-			},
-			{
-				fieldname: "supplier",
-				label: "Supplier",
-				type: "link",
-				doctype: "Supplier",
-			},
-			{
-				fieldname: "brand",
-				label: "Brand",
-				type: "link",
-				doctype: "Brand",
-			},
-			{
-				fieldname: "item_group",
-				label: "Item Group",
-				type: "link",
-				doctype: "Item Group",
-			},
-		],
 	},
 	{
 		slug: "current-stock-by-brand",
-		title: "Current Stock By Brand",
+		title: __("Current Stock By Brand"),
 		reportName: "Current Stock By Brand",
-		description: "Brand-wise stock snapshot with quantities and valuation.",
+		description: __("Brand-wise stock snapshot with quantities and valuation."),
 		category: "Inventory",
-		tone: "emerald",
 		permissionKey: "current_stock_by_brand",
-		filters: [
-			{
-				fieldname: "brand",
-				label: "Brand",
-				type: "multi-link",
-				doctype: "Brand",
-				required: true,
-			},
-		],
 	},
 	{
 		slug: "current-stock-summary",
-		title: "Current Stock Summary",
+		title: __("Current Stock Summary"),
 		reportName: "Current Stock Summary",
-		description: "Compact warehouse stock overview with totals and stock movement levels.",
+		description: __("Compact warehouse stock overview with totals and stock movement levels."),
 		category: "Inventory",
-		tone: "emerald",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "warehouse",
-				label: "Warehouse",
-				type: "link",
-				doctype: "Warehouse",
-				required: true,
-				linkFilters: (values) => ({ company: values.company, is_group: 0 }),
-				dependsOn: ["company"],
-			},
-		],
 	},
 	{
 		slug: "current-stock-with-levels",
-		title: "Current Stock With Levels",
+		title: __("Current Stock With Levels"),
 		reportName: "Current Stock With Levels",
-		description: "Stock snapshot grouped with reorder and alert levels.",
+		description: __("Stock snapshot grouped with reorder and alert levels."),
 		category: "Inventory",
-		tone: "emerald",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "warehouse",
-				label: "Warehouse",
-				type: "link",
-				doctype: "Warehouse",
-				required: true,
-				linkFilters: (values) => ({ company: values.company, is_group: 0 }),
-				dependsOn: ["company"],
-			},
-		],
 	},
 	{
 		slug: "dead-stock-report",
-		title: "Dead Stock Report",
+		title: __("Dead Stock Report"),
 		reportName: "Dead Stock Report",
-		description: "Stock that has been sitting too long with low value movement.",
+		description: __("Stock that has been sitting too long with low value movement."),
 		category: "Inventory",
-		tone: "emerald",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "warehouse",
-				label: "Warehouse",
-				type: "link",
-				doctype: "Warehouse",
-				linkFilters: (values) => ({ company: values.company, is_group: 0 }),
-				dependsOn: ["company"],
-			},
-			{
-				fieldname: "days",
-				label: "Days",
-				type: "integer",
-				defaultValue: 30,
-				required: true,
-			},
-			{
-				fieldname: "min_value",
-				label: "Minimum Value",
-				type: "float",
-				defaultValue: 1000,
-				required: true,
-			},
-			{
-				fieldname: "supplier",
-				label: "Supplier",
-				type: "multi-link",
-				doctype: "Supplier",
-			},
-		],
 	},
 	{
 		slug: "stock-value-by-warehouse",
-		title: "Stock Value By Warehouse",
+		title: __("Stock Value By Warehouse"),
 		reportName: "Stock Value By Warehouse",
-		description: "Warehouse value and quantity summary for quick inventory valuation.",
+		description: __("Warehouse value and quantity summary for quick inventory valuation."),
 		category: "Inventory",
-		tone: "emerald",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-		],
 	},
 	{
 		slug: "stock-value-summary-by-date",
-		title: "Stock Value Summary By Date",
+		title: __("Stock Value Summary By Date"),
 		reportName: "Stock Value Summary By Date",
-		description: "Snapshot stock balance by posting date for trend review.",
+		description: __("Snapshot stock balance by posting date for trend review."),
 		category: "Inventory",
-		tone: "emerald",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "from_posting_date",
-				label: "From Posting Date",
-				type: "date",
-				defaultValue: today(),
-				required: true,
-			},
-		],
 	},
 	{
 		slug: "warehouse-stock-movement",
-		title: "Warehouse Stock Movement",
+		title: __("Warehouse Stock Movement"),
 		reportName: "Warehouse Stock Movement",
-		description: "Movement summary by warehouse and voucher type over time.",
+		description: __("Movement summary by warehouse and voucher type over time."),
 		category: "Operations",
-		tone: "violet",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "from_date",
-				label: "From Date",
-				type: "date",
-				defaultValue: daysAgo(30),
-				required: true,
-			},
-			{
-				fieldname: "to_date",
-				label: "To Date",
-				type: "date",
-				defaultValue: today(),
-				required: true,
-			},
-		],
 	},
 	{
 		slug: "branch-item-summary",
-		title: "Branch Item Summary",
+		title: __("Branch Item Summary"),
 		reportName: "Branch Item Summary",
-		description: "Item movement and sales summary for a branch and warehouse window.",
+		description: __("Item movement and sales summary for a branch and warehouse window."),
 		category: "Operations",
-		tone: "violet",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "warehouse",
-				label: "Warehouse",
-				type: "link",
-				doctype: "Warehouse",
-				required: true,
-				linkFilters: (values) => ({ company: values.company, is_group: 0 }),
-				dependsOn: ["company"],
-			},
-			{
-				fieldname: "from_date",
-				label: "From Date",
-				type: "date",
-				defaultValue: today(),
-				required: true,
-			},
-			{
-				fieldname: "to_date",
-				label: "To Date",
-				type: "date",
-				defaultValue: today(),
-				required: true,
-			},
-		],
 	},
 	{
 		slug: "branch-set-summary",
-		title: "Branch Set Summary",
+		title: __("Branch Set Summary"),
 		reportName: "Branch Set Summary",
-		description: "Set-level summary for branch stock and movement tracking.",
+		description: __("Set-level summary for branch stock and movement tracking."),
 		category: "Operations",
-		tone: "violet",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "warehouse",
-				label: "Warehouse",
-				type: "link",
-				doctype: "Warehouse",
-				required: true,
-				linkFilters: (values) => ({ company: values.company, is_group: 0 }),
-				dependsOn: ["company"],
-			},
-			{
-				fieldname: "date",
-				label: "Date",
-				type: "date",
-				defaultValue: today(),
-				required: true,
-			},
-		],
 	},
 	{
 		slug: "low-qty-sales-report",
-		title: "Low Qty Sales Report",
+		title: __("Low Qty Sales Report"),
 		reportName: "Low Qty Sales Report",
 		description: "Items sold in low quantities over a selected period.",
 		category: "Sales",
-		tone: "blue",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "from_date",
-				label: "From Date",
-				type: "date",
-				defaultValue: daysAgo(30),
-				required: true,
-			},
-			{
-				fieldname: "to_date",
-				label: "To Date",
-				type: "date",
-				defaultValue: today(),
-				required: true,
-			},
-			{
-				fieldname: "min_qty",
-				label: "Min Qty",
-				type: "integer",
-				defaultValue: 10,
-				required: true,
-			},
-		],
 	},
 	{
 		slug: "zero-qty-sales-report",
-		title: "Zero Qty Sales Report",
+		title: __("Zero Qty Sales Report"),
 		reportName: "Zero Qty Sales Report",
-		description: "Sales lines where no quantity was fulfilled during the period.",
+		description: __("Sales lines where no quantity was fulfilled during the period."),
 		category: "Sales",
-		tone: "blue",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "from_date",
-				label: "From Date",
-				type: "date",
-				defaultValue: daysAgo(30),
-				required: true,
-			},
-			{
-				fieldname: "to_date",
-				label: "To Date",
-				type: "date",
-				defaultValue: today(),
-				required: true,
-			},
-		],
 	},
 	{
 		slug: "slow-fast-moving-items",
-		title: "Slow Fast Moving Items",
+		title: __("Slow Fast Moving Items"),
 		reportName: "Slow Fast Moving Items",
-		description: "Movement velocity overview to identify fast and slow sellers.",
+		description: __("Movement velocity overview to identify fast and slow sellers."),
 		category: "Sales",
-		tone: "blue",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "from_date",
-				label: "From Date",
-				type: "date",
-				defaultValue: daysAgo(30),
-				required: true,
-			},
-			{
-				fieldname: "to_date",
-				label: "To Date",
-				type: "date",
-				defaultValue: today(),
-				required: true,
-			},
-			{
-				fieldname: "supplier",
-				label: "Supplier",
-				type: "multi-link",
-				doctype: "Supplier",
-			},
-		],
 	},
+	// prettier-ignore
 	{
 		slug: "stock-audit-report",
-		title: "Stock Audit Report",
+		title: __("Stock Audit Report"),
 		reportName: "Stock Audit Report",
-		description:
-			"Thermal-printable stock audit by item with available qty. Filter by warehouse, brand, supplier, or item.",
+		description: __(
+			"Thermal-printable stock audit by item with available qty. Filter by warehouse, brand, supplier, or item."
+		),
 		category: "Inventory",
-		tone: "emerald",
 		thermalPrint: true,
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "warehouse",
-				label: "Warehouse",
-				type: "multi-link",
-				doctype: "Warehouse",
-				linkFilters: (values) => ({ company: values.company, is_group: 0 }),
-				dependsOn: ["company"],
-			},
-			{
-				fieldname: "brand",
-				label: "Brand",
-				type: "multi-link",
-				doctype: "Brand",
-			},
-			{
-				fieldname: "supplier",
-				label: "Supplier",
-				type: "multi-link",
-				doctype: "Supplier",
-			},
-			{
-				fieldname: "item_group",
-				label: "Item Group",
-				type: "multi-link",
-				doctype: "Item Group",
-			},
-		],
 	},
 	{
 		slug: "purchase-order-report",
-		title: "Purchase Order Report",
+		title: __("Purchase Order Report"),
 		reportName: "Purchase Order Report",
-		description: "Purchase order summary with supplier, date range, and type filters.",
+		description: __("Purchase order summary with supplier, date range, and type filters."),
 		category: "Purchasing",
-		tone: "amber",
-		filters: [
-			{
-				fieldname: "company",
-				label: "Company",
-				type: "link",
-				doctype: "Company",
-				required: true,
-			},
-			{
-				fieldname: "supplier",
-				label: "Supplier",
-				type: "link",
-				doctype: "Supplier",
-				required: true,
-			},
-			{
-				fieldname: "from_date",
-				label: "From Date",
-				type: "date",
-				required: true,
-			},
-			{
-				fieldname: "to_date",
-				label: "To Date",
-				type: "date",
-				required: true,
-			},
-			{
-				fieldname: "type",
-				label: "Type",
-				type: "select",
-				defaultValue: "All",
-				options: [
-					{ label: "All", value: "All" },
-					{ label: "Based on ReOrder Level", value: "Based on ReOrder Level" },
-					{ label: "Based on Sales", value: "Based on Sales" },
-				],
-				required: true,
-			},
-		],
+	},
+	// prettier-ignore
+	{
+		slug: "pos-shift-reconciliation",
+		title: __("Shift Reconciliation"),
+		reportName: "POS Shift Reconciliation",
+		description: __(
+			"Z-report: items sold with quantities plus totals by payment mode for end-of-shift cash-up."
+		),
+		category: "Sales",
+		permissionKey: "shift_report",
+		thermalPrint: true,
 	},
 ];
 
 const reportMap = new Map(reportDefinitions.map((report) => [report.slug, report]));
-
-function today(): string {
-	const now = new Date();
-	const year = now.getFullYear();
-	const month = String(now.getMonth() + 1).padStart(2, "0");
-	const day = String(now.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
-}
-
-function daysAgo(days: number): string {
-	const date = new Date();
-	date.setDate(date.getDate() - days);
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
-}
 
 function cloneValue<T>(value: T): T {
 	if (Array.isArray(value)) return [...value] as T;
@@ -638,35 +237,33 @@ export function isReportAccessible(report: ReportDefinition): boolean {
 }
 
 export function buildInitialReportFilters(
-	report: ReportDefinition,
+	filters: ReportFilterDefinition[],
 	context: ReportContextDefaults = {},
 ): Record<string, unknown> {
-	const filters: Record<string, unknown> = {};
+	const state: Record<string, unknown> = {};
 
-	for (const filter of report.filters) {
-		filters[filter.fieldname] = cloneValue(
-			filter.defaultValue ?? (filter.type === "multi-link" ? [] : ""),
-		);
+	for (const filter of filters) {
+		state[filter.fieldname] = cloneValue(filter.defaultValue ?? (filter.type === "multi-link" ? [] : ""));
 	}
 
-	if (context.company && Object.prototype.hasOwnProperty.call(filters, "company")) {
-		filters.company = context.company;
+	if (context.company && Object.prototype.hasOwnProperty.call(state, "company")) {
+		state.company = context.company;
 	}
 
-	if (context.warehouse && Object.prototype.hasOwnProperty.call(filters, "warehouse")) {
-		filters.warehouse = context.warehouse;
+	if (context.warehouse && Object.prototype.hasOwnProperty.call(state, "warehouse")) {
+		state.warehouse = context.warehouse;
 	}
 
-	return filters;
+	return state;
 }
 
 export function normalizeReportFilters(
-	report: ReportDefinition,
+	filters: ReportFilterDefinition[],
 	values: Record<string, unknown>,
 ): Record<string, unknown> {
 	const payload: Record<string, unknown> = {};
 
-	for (const filter of report.filters) {
+	for (const filter of filters) {
 		const rawValue = values[filter.fieldname];
 
 		if (rawValue === undefined || rawValue === null || rawValue === "") {
@@ -700,12 +297,12 @@ export function normalizeReportFilters(
 }
 
 export function hydrateReportFiltersFromQuery(
-	report: ReportDefinition,
+	filters: ReportFilterDefinition[],
 	query: Record<string, string | string[] | null | undefined>,
 ): Record<string, unknown> {
-	const hydrated = buildInitialReportFilters(report);
+	const hydrated = buildInitialReportFilters(filters);
 
-	for (const filter of report.filters) {
+	for (const filter of filters) {
 		const queryValue = query[filter.fieldname];
 		if (queryValue === undefined || queryValue === null || queryValue === "") {
 			continue;
@@ -742,11 +339,11 @@ export function hydrateReportFiltersFromQuery(
 }
 
 export function serializeReportFiltersToQuery(
-	report: ReportDefinition,
+	filters: ReportFilterDefinition[],
 	values: Record<string, unknown>,
 ): Record<string, string | string[]> {
 	const query: Record<string, string | string[]> = {};
-	const normalized = normalizeReportFilters(report, values);
+	const normalized = normalizeReportFilters(filters, values);
 
 	for (const [fieldname, value] of Object.entries(normalized)) {
 		if (Array.isArray(value)) {
@@ -766,6 +363,22 @@ export function serializeReportFiltersToQuery(
 	return query;
 }
 
+export function resolveReportLinkFilters(
+	filter: ReportFilterDefinition,
+	values: Record<string, unknown>,
+): Record<string, unknown> {
+	if (!filter.getQueryFilters) return {};
+	const resolved: Record<string, unknown> = {};
+	for (const [key, raw] of Object.entries(filter.getQueryFilters)) {
+		if (typeof raw === "string" && raw.startsWith("$")) {
+			resolved[key] = values[raw.slice(1)];
+		} else {
+			resolved[key] = raw;
+		}
+	}
+	return resolved;
+}
+
 export function getVisibleReportColumns(columns: ReportColumn[]): ReportColumn[] {
 	return columns.filter(
 		(column) => !reportUtilityFields.has(column.fieldname) && !String(column.fieldname).startsWith("_"),
@@ -778,6 +391,89 @@ export function isReportNumericColumn(column: ReportColumn): boolean {
 
 export function isReportTotalRow(row: Record<string, unknown>): boolean {
 	return Boolean(row.is_total_row || row.is_subtotal || row._is_total_row);
+}
+
+export function normalizeReportRows(
+	columns: ReportColumn[],
+	result: unknown[],
+	options: { addTotalRow?: boolean | number; skipTotalRow?: boolean | number } = {},
+): Record<string, unknown>[] {
+	const lastIndex = result.length - 1;
+	const markLastAsTotal = Boolean(options.addTotalRow) && !options.skipTotalRow;
+
+	return result.map((row, index) => {
+		let record: Record<string, unknown>;
+		if (Array.isArray(row)) {
+			record = {};
+			columns.forEach((column, columnIndex) => {
+				record[column.fieldname] = row[columnIndex];
+			});
+		} else {
+			record = (row as Record<string, unknown>) ?? {};
+		}
+
+		if (markLastAsTotal && index === lastIndex) {
+			record._is_total_row = 1;
+		}
+
+		return record;
+	});
+}
+
+export function compareReportRows(
+	left: Record<string, unknown>,
+	right: Record<string, unknown>,
+	column: ReportColumn,
+): number {
+	const leftValue = left[column.fieldname];
+	const rightValue = right[column.fieldname];
+	const fieldtype = String(column.fieldtype || "");
+
+	if (["Currency", "Float", "Int", "Percent", "Check"].includes(fieldtype)) {
+		const leftNumber = Number(leftValue ?? 0);
+		const rightNumber = Number(rightValue ?? 0);
+		if (Number.isNaN(leftNumber) && Number.isNaN(rightNumber)) return 0;
+		if (Number.isNaN(leftNumber)) return 1;
+		if (Number.isNaN(rightNumber)) return -1;
+		return leftNumber - rightNumber;
+	}
+
+	if (["Date", "Datetime"].includes(fieldtype)) {
+		const leftTime = new Date(String(leftValue || "")).getTime();
+		const rightTime = new Date(String(rightValue || "")).getTime();
+		if (Number.isNaN(leftTime) && Number.isNaN(rightTime)) return 0;
+		if (Number.isNaN(leftTime)) return 1;
+		if (Number.isNaN(rightTime)) return -1;
+		return leftTime - rightTime;
+	}
+
+	return String(leftValue ?? "").localeCompare(String(rightValue ?? ""), undefined, {
+		numeric: true,
+		sensitivity: "base",
+	});
+}
+
+function escapeDelimited(value: string, delimiter: string): string {
+	const needsQuotes = value.includes(delimiter) || value.includes("\n") || value.includes('"');
+	const escaped = value.replace(/"/g, '""');
+	return needsQuotes ? `"${escaped}"` : escaped;
+}
+
+export function buildReportDelimitedRows(
+	columns: ReportColumn[],
+	rows: Record<string, unknown>[],
+	currencySymbol: string,
+	delimiter: "," | "\t",
+): string {
+	const header = columns.map((column) => escapeDelimited(column.label, delimiter)).join(delimiter);
+	const body = rows.map((row) =>
+		columns
+			.map((column) =>
+				escapeDelimited(formatReportCell(column, row[column.fieldname], currencySymbol), delimiter),
+			)
+			.join(delimiter),
+	);
+	return [header, ...body].join("\n");
 }
 
 function formatReportDateTime(value: unknown): string {
@@ -841,6 +537,13 @@ export function formatReportCell(column: ReportColumn, value: unknown, currencyS
 		default:
 			return String(value);
 	}
+}
+
+export async function fetchReportMeta(reportName: string): Promise<ReportFilterDefinition[]> {
+	const response = await call<{ filters: ReportFilterDefinition[] }>("xpos.api.reports.get_report_meta", {
+		report: reportName,
+	});
+	return Array.isArray(response?.filters) ? response.filters : [];
 }
 
 export async function fetchReportData(

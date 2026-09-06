@@ -26,9 +26,21 @@ export interface ElectronAPI {
 	) => () => void;
 	onSyncError: (callback: (error: { message: string; table?: string }) => void) => () => void;
 	onSyncComplete: (callback: (summary: { pulled: number; pushed: number }) => void) => () => void;
+	onSyncDeadLetter: (
+		callback: (info: {
+			table: string;
+			pendingTable: string;
+			id: number;
+			localId: string;
+			retryCount: number;
+			error: string;
+		}) => void,
+	) => () => void;
 	onStockUpdated: (
 		callback: (data: { warehouse: string; item_code: string; actual_qty: number }) => void,
 	) => () => void;
+	onMainError: (callback: (err: { message: string; stack?: string }) => void) => () => void;
+	logs: ElectronLogsAPI;
 	triggerSync: () => Promise<boolean>;
 	startSyncEngine: (opts?: {
 		csrfToken?: string;
@@ -43,6 +55,19 @@ export interface ElectronAPI {
 	update: ElectronUpdateAPI;
 	node: ElectronNodeAPI;
 	print: ElectronPrintAPI;
+	fbr: ElectronFbrAPI;
+}
+
+export interface ElectronLogsAPI {
+	list: () => Promise<string[]>;
+	read: (name: string) => Promise<string>;
+}
+
+export interface ElectronFbrAPI {
+	fiscalizeLocal: (
+		url: string,
+		payload: Record<string, unknown>,
+	) => Promise<{ success: boolean; data?: unknown; error?: string }>;
 }
 
 export interface ElectronPrintAPI {
@@ -224,6 +249,12 @@ export interface ElectronDbAPI {
 	updatePendingInvoice: (id: number, updates: Record<string, unknown>) => Promise<boolean>;
 	deletePendingInvoice: (id: number) => Promise<boolean>;
 	countPendingInvoices: () => Promise<number>;
+	getDeadLetters: () => Promise<{
+		invoices: Record<string, unknown>[];
+		purchases: Record<string, unknown>[];
+	}>;
+	countDeadLetters: () => Promise<number>;
+	retryDeadLetter: (table: string, id: number) => Promise<boolean>;
 	addPendingPurchase: (record: {
 		type: string;
 		data: unknown;
@@ -256,6 +287,7 @@ export interface ElectronDbAPI {
 		password: string;
 		role?: string;
 	}) => Promise<{ success: boolean; error?: string }>;
+	verifyPassword: (username: string, password: string) => Promise<boolean>;
 	createPosOpeningShift: (shift: Record<string, unknown>) => Promise<Record<string, unknown>>;
 	getOpenShift: (user: string) => Promise<Record<string, unknown> | null>;
 	checkOpenShift: (user: string) => Promise<Record<string, unknown> | null>;

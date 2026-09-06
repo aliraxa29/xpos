@@ -272,7 +272,12 @@
 			</div>
 
 			<DialogFooter class="p-6 pt-4 border-t border-border gap-2 sm:gap-2">
-				<Button variant="outline" size="sm" @click="printInvoice(invoice!.name)">
+				<Button
+					v-if="hasPermission('allow_reprint_invoice')"
+					variant="outline"
+					size="sm"
+					@click="printInvoice(invoice!.name)"
+				>
 					<Printer class="w-4 h-4" />
 					{{ __("Print") }}
 				</Button>
@@ -316,6 +321,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { hasPermission } from "@/services/userRights";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { usePosStore } from "@/stores/posStore";
 import { useCartStore } from "@/stores/cartStore";

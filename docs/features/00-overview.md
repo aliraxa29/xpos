@@ -32,6 +32,7 @@
 | 23 | [Product Bundles](23-product-bundles.md) | Bundle items with component expansion |
 | 24 | [POS Profile Configuration](24-pos-profile-config.md) | Complete POS Profile settings reference |
 | 25 | [Keyboard Shortcuts](25-keyboard-shortcuts.md) | Full keyboard shortcut reference |
+| 26 | [Cashier Settlement](26-cashier-settlement.md) | Create bills at the terminal, collect payment at a separate cashier |
 
 ---
 
@@ -39,10 +40,10 @@
 
 | Requirement | Version |
 |---|---|
-| Python | ≥ 3.10 |
-| Frappe Framework | v15 |
-| ERPNext | v15 |
-| Node.js | ≥ 18 |
+| Python | ≥ 3.14 |
+| Frappe Framework | v16 |
+| ERPNext | v16 |
+| Node.js | ≥ 24 |
 
 ---
 

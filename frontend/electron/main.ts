@@ -19,14 +19,27 @@ const log = createLogger("Main");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+let mainWindow: BrowserWindow | null = null;
+
+function sendMainError(message: string, stack?: string): void {
+	try {
+		mainWindow?.webContents.send("main-process-error", { message, stack });
+	} catch {
+		// Window may be gone or not yet created file log above still captured it.
+	}
+}
+
 process.on("uncaughtException", (err) => {
 	log.error("Uncaught exception", { message: err.message, stack: err.stack });
+	sendMainError(err.message, err.stack);
 });
 process.on("unhandledRejection", (reason) => {
 	log.error("Unhandled rejection", { reason: String(reason) });
+	sendMainError(
+		reason instanceof Error ? reason.message : String(reason),
+		reason instanceof Error ? reason.stack : undefined,
+	);
 });
-
-let mainWindow: BrowserWindow | null = null;
 
 const SERVER_URL = process.env.XPOS_SERVER_URL || "http://localhost:8000";
 
@@ -135,6 +148,38 @@ ipcMain.handle("get-platform-info", () => ({
 	isElectron: true,
 	logDir: getLogDir(),
 }));
+
+ipcMain.handle("logs:list", () => {
+	try {
+		return fs
+			.readdirSync(getLogDir())
+			.filter((f) => f.startsWith("xpos-") && f.endsWith(".log"))
+			.sort()
+			.reverse();
+	} catch {
+		return [];
+	}
+});
+
+ipcMain.handle("logs:read", (_event, name: string) => {
+	try {
+		if (!/^xpos-[\w-]+\.log$/.test(name)) return "";
+		const file = path.join(getLogDir(), name);
+		const stat = fs.statSync(file);
+		const MAX_BYTES = 200 * 1024;
+		if (stat.size <= MAX_BYTES) return fs.readFileSync(file, "utf8");
+		const fd = fs.openSync(file, "r");
+		try {
+			const buf = Buffer.alloc(MAX_BYTES);
+			fs.readSync(fd, buf, 0, MAX_BYTES, stat.size - MAX_BYTES);
+			return "…(truncated)…\n" + buf.toString("utf8");
+		} finally {
+			fs.closeSync(fd);
+		}
+	} catch {
+		return "";
+	}
+});
 
 ipcMain.handle("check-mariadb", async () => {
 	const bins: string[] =
@@ -532,8 +577,36 @@ ipcMain.handle(
 	},
 );
 
+ipcMain.handle("fbr:fiscalize-local", async (_event, url: string, payload: Record<string, unknown>) => {
+	try {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), 12000);
+		try {
+			const response = await fetch(url, {
+				method: "POST",
+				headers: { "Content-Type": "application/json", Accept: "application/json" },
+				body: JSON.stringify(payload),
+				signal: controller.signal,
+			});
+			if (!response.ok) {
+				return { success: false, error: `Local FBR service responded with HTTP ${response.status}.` };
+			}
+			const data = await response.json();
+			return { success: true, data };
+		} finally {
+			clearTimeout(timer);
+		}
+	} catch (err) {
+		return { success: false, error: err instanceof Error ? err.message : String(err) };
+	}
+});
+
 app.whenReady().then(async () => {
 	Menu.setApplicationMenu(null);
+
+	if (process.platform === "win32") {
+		app.setAppUserModelId("com.xpos.app");
+	}
 
 	try {
 		const ses = session.defaultSession;

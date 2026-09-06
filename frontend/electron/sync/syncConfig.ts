@@ -8,6 +8,7 @@ export interface SyncTableConfig {
 	orderBy: string;
 	direction: "pull" | "push" | "both";
 	idbStore: string;
+	primaryKey?: string;
 	localIdField: string;
 	incremental: boolean;
 	batchSize: number;
@@ -210,7 +211,6 @@ export const SYNC_TABLES: SyncTableConfig[] = [
 			"display_items_in_stock",
 			"cash_mode_of_payment",
 			"apply_customer_discount",
-			"allow_print_draft_invoices",
 			"use_offline_mode",
 		],
 		orderBy: "modified",
@@ -259,6 +259,7 @@ export const SYNC_TABLES: SyncTableConfig[] = [
 		orderBy: "modified",
 		direction: "pull",
 		idbStore: "items",
+		primaryKey: "item_code",
 		localIdField: "xpos_local_id",
 		incremental: true,
 		batchSize: 500,
@@ -676,7 +677,7 @@ export const SYNC_TABLES: SyncTableConfig[] = [
 	{
 		doctype: "Purchase Order",
 		label: "Purchase Orders",
-		pushMethod: "xpos.api.purchase.create_purchase_order",
+		pushMethod: "xpos.x_pos.api.purchase_orders.create_purchase_order",
 		fields: ["*"],
 		orderBy: "creation",
 		direction: "push",
@@ -688,6 +689,20 @@ export const SYNC_TABLES: SyncTableConfig[] = [
 		dependsOn: ["suppliers", "items"],
 	},
 ];
+
+const PRIMARY_KEY_BY_STORE: Record<string, string> = Object.fromEntries(
+	SYNC_TABLES.filter((t) => t.primaryKey).map((t) => [t.idbStore, t.primaryKey as string]),
+);
+
+/**
+ * Central source of truth for a store's local primary-key column.
+ *
+ * Both the sync engine and the hub till-client must resolve upsert keys through
+ * here so the two paths can never drift (a mismatch silently corrupts upserts).
+ */
+export function getPrimaryKeyForTable(idbStore: string): string {
+	return PRIMARY_KEY_BY_STORE[idbStore] || "name";
+}
 
 export const SYNC_DEFAULTS = {
 	intervalMs: 5 * 60 * 1000,

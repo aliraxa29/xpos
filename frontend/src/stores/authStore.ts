@@ -18,6 +18,12 @@ export const useAuthStore = defineStore("auth", () => {
 	const userEmail = computed(() => user.value?.user_email || "");
 	const userFullName = computed(() => user.value?.user_fullname || "");
 	const isGuest = computed(() => !user.value || user.value.user === "Guest");
+	const isSystemManager = computed(() =>
+		Boolean((window.xpos?.boot as Record<string, unknown> | undefined)?.xpos_is_system_manager),
+	);
+	const canManagePermissions = computed(() =>
+		Boolean((window.xpos?.boot as Record<string, unknown> | undefined)?.xpos_can_manage_permissions),
+	);
 
 	async function checkAuth(): Promise<boolean> {
 		try {
@@ -70,7 +76,36 @@ export const useAuthStore = defineStore("auth", () => {
 	}
 
 	async function checkOfflineAuth(): Promise<boolean> {
-		return false;
+		try {
+			const lastUser = await window.electronAPI!.db.getSetting("last_logged_user");
+			if (!lastUser) return false;
+
+			const posUser = (await window.electronAPI!.db.getPosUser(lastUser)) as Record<
+				string,
+				unknown
+			> | null;
+			if (!posUser || posUser.enabled === 0 || posUser.enabled === false) {
+				return false;
+			}
+
+			isAuthenticated.value = true;
+			isOfflineAuth.value = true;
+			user.value = {
+				user: lastUser,
+				user_email: (posUser.email as string) || lastUser,
+				user_fullname: (posUser.full_name as string) || lastUser,
+			};
+
+			window
+				.electronAPI!.startSyncEngine()
+				.catch((err) => console.warn("[XPOS] startSyncEngine error:", err));
+
+			await loadPermissions(lastUser);
+			return true;
+		} catch (err) {
+			console.error("Offline auth check failed:", err);
+			return false;
+		}
 	}
 
 	async function login(username: string, password: string): Promise<boolean> {
@@ -114,14 +149,13 @@ export const useAuthStore = defineStore("auth", () => {
 			}
 
 			const userData = posUser as Record<string, unknown>;
-			const storedHash = userData.password_hash as string | undefined;
-			if (!storedHash) {
+			if (!userData.password_hash) {
 				error.value = "No password configured for this user.";
 				return false;
 			}
 
-			const inputHash = await hashPassword(password);
-			if (inputHash !== storedHash) {
+			const valid = await window.electronAPI!.db.verifyPassword(username, password);
+			if (!valid) {
 				error.value = "Invalid password";
 				return false;
 			}
@@ -153,15 +187,6 @@ export const useAuthStore = defineStore("auth", () => {
 			error.value = "Login failed";
 			return false;
 		}
-	}
-
-	async function hashPassword(password: string): Promise<string> {
-		const encoder = new TextEncoder();
-		const data = encoder.encode(password);
-		const hash = await crypto.subtle.digest("SHA-256", data);
-		return Array.from(new Uint8Array(hash))
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
 	}
 
 	async function sendResetPasswordEmail(email: string): Promise<boolean> {
@@ -239,6 +264,8 @@ export const useAuthStore = defineStore("auth", () => {
 		userEmail,
 		userFullName,
 		isGuest,
+		isSystemManager,
+		canManagePermissions,
 		checkAuth,
 		login,
 		sendResetPasswordEmail,

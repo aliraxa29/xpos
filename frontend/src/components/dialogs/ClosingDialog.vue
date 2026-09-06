@@ -219,6 +219,7 @@
 import { ref, onMounted } from "vue";
 import { usePosStore } from "@/stores/posStore";
 import { showSuccess, showError } from "@/services/api";
+import { hasPermission } from "@/services/userRights";
 import {
 	Dialog,
 	DialogScrollContent,
@@ -319,6 +320,10 @@ function calculateDifference(index: number) {
 
 async function handleCloseShift() {
 	if (isClosing.value) return;
+	if (!hasPermission("close_shift")) {
+		showError(__("Only a Supervisor can close a shift."));
+		return;
+	}
 	isClosing.value = true;
 
 	try {

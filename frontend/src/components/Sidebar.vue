@@ -10,7 +10,7 @@
 				class="fixed start-0 top-0 h-full w-64 bg-card ltr:border-r rtl:border-l border-border z-50 flex flex-col shadow-xl"
 			>
 				<div class="p-4 border-b border-border flex items-center gap-3">
-					<img :src="isDark ? LogoDark : LogoLight" alt="X POS Logo" class="w-8 h-8" />
+					<img :src="isDark ? logoDark : logoLight" alt="X POS Logo" class="w-8 h-8" />
 					<div>
 						<h1 class="font-semibold text-foreground">X POS</h1>
 						<p class="text-xs text-muted-foreground">{{ posStore.companyName }}</p>
@@ -25,7 +25,7 @@
 							{{ __("Main") }}
 						</p>
 						<router-link
-							v-for="item in mainNavItems"
+							v-for="item in mainNavItems.filter((it) => it.show)"
 							:key="item.route"
 							:to="item.route"
 							@click="isOpen = false"
@@ -147,15 +147,17 @@ import {
 	Wallet,
 	Landmark,
 	BarChart3,
+	Banknote,
+	ScanBarcode,
 } from "lucide-vue-next";
 
-import LogoDark from "@/assets/images/xpos-logo-dark.svg";
-import LogoLight from "@/assets/images/xpos-logo-light.svg";
+import { useBranding } from "@/composables/useBranding";
 import { isElectron } from "@/services/electronBridge";
 
 const route = useRoute();
 const posStore = usePosStore();
 const isDark = inject<Ref<boolean>>("isDark")!;
+const { logoLight, logoDark } = useBranding();
 
 const isOpen = ref(false);
 
@@ -171,11 +173,17 @@ onUnmounted(() => {
 	window.removeEventListener("xpos:toggle-sidebar", handleToggleSidebar);
 });
 
-const mainNavItems = [
-	{ route: "/pos", label: __("POS"), icon: LayoutGrid },
-	{ route: "/orders", label: __("Orders"), icon: FileText },
-	{ route: "/reports", label: __("Reports"), icon: BarChart3 },
-];
+const mainNavItems = computed(() => [
+	{ route: "/pos", label: __("POS"), icon: LayoutGrid, show: true },
+	{ route: "/orders", label: __("Orders"), icon: FileText, show: true },
+	{
+		route: "/cashier",
+		label: __("Cashier"),
+		icon: Banknote,
+		show: posStore.enableCashierSettlement && posStore.isCashier,
+	},
+	{ route: "/reports", label: __("Reports"), icon: BarChart3, show: true },
+]);
 
 const purchaseNavItems = [
 	{ route: "/purchase-order", label: __("Purchase Order"), icon: ClipboardList },
@@ -184,6 +192,7 @@ const purchaseNavItems = [
 ];
 
 const toolsNavItems = [
+	{ route: "/price-checker", label: __("Price Checker"), icon: ScanBarcode, show: true },
 	{ route: "/barcode-print", label: __("Barcode Printer"), icon: Printer, show: true },
 	{ route: "/settings", label: __("Settings"), icon: Settings, show: isElectron() },
 ];

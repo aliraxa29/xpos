@@ -5,7 +5,7 @@
 		<div class="w-full max-w-md animate-in fade-in zoom-in-95 duration-300 my-auto">
 			<div class="text-center mb-8">
 				<img
-					:src="LogoLight"
+					:src="logoLight"
 					alt="X POS Logo"
 					class="w-16 h-16 mx-auto mb-4 rounded-2xl text-primary-foreground flex items-center justify-center"
 				/>
@@ -146,9 +146,10 @@ import { useSyncStatus } from "@/composables/useSyncStatus";
 import { isElectron } from "@/services/electronBridge";
 import __ from "@/lib/translate";
 import { Select } from "../ui/select";
-import LogoLight from "@/assets/images/xpos-logo-light.svg";
+import { useBranding } from "@/composables/useBranding";
 
 const isElectronMode = isElectron();
+const { logoLight } = useBranding();
 
 interface ProfileOption {
 	name: string;
